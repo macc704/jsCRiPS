@@ -1,7 +1,89 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <script type="text/javascript" src="./ConcurrentThread.js"></script>
-<script type="text/javascript" src="./turtleJS.js"></script>
+<script type="text/javascript">
+
+var th = {};
+var Thread = Concurrent.Thread;
+
+var Turtle = (function () {
+
+    var Turtle = function () {
+        this.x = 50;
+        this.y = 50;
+        this.size = 10;
+    };
+
+    var p = Turtle.prototype;
+    p.fd = function (d) {	// 使ってない、関数実装サンプル
+        th = Thread.create(function (d) {
+            for (var i = 0; i < 50; i += 3) {
+               drawTurtle(t);
+               t.y -= 3;
+               sleep(32);
+           }
+           t.y += d % 3;
+           drawTurtle(t);
+       },d)
+    };
+    return Turtle;
+})();
+
+var t = new Turtle();
+
+function main() {
+    Thread.create(function(){
+        console.log("aa");
+        fd(100);
+        th.join();
+
+        fd(50);
+        console.log("bb");
+    })   
+}
+
+function fd(d) {
+    th = Thread.create(function (d) {
+        for (var i = 0; i < d; i += 3) {
+            drawTurtle(t);
+            t.y += 3;
+            sleep(32);
+        }
+        t.y -= d % 3;
+        drawTurtle(t);
+    },d)
+}
+
+function start() {
+    main();
+}
+
+function drawTurtle(tt) {
+    var canvas = document.getElementById('tCanvas');
+    if (!canvas.getContext)return;
+    var w = canvas.width;
+    var h = canvas.height;
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, w, h);
+    ctx.beginPath();
+    ctx.arc(tt.x, tt.y, 10, 0, Math.PI * 2, true);
+    ctx.fill();
+    ctx.closePath();
+}
+
+function draw() {
+   var canvas = document.getElementById('tCanvas');
+   if (!canvas.getContext)return;
+   var w = canvas.width;
+   var h = canvas.height;
+   var ctx = canvas.getContext('2d');
+   while (true) {
+   }
+}
+
+window.onload = start();
+
+</script>
 
 <style type="text/css">
     canvas {
@@ -11,5 +93,5 @@
 </style>
 
 <body>
-<canvas id="tCanvas" width="400" height="300"></canvas>
+<canvas id="tCanvas" width="600" height="600"></canvas>
 </body>
