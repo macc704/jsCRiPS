@@ -6,7 +6,7 @@
     var th = {};
     var Thread = Concurrent.Thread;
     var moveStep = 2;
-    var sleepTime = 30;
+    var sleepTime = 10;
     var rotateStep = 5;
 
     var Turtle = (function () {
@@ -55,6 +55,7 @@
             ttl.rubber = ttl.penDown;
             ttl.dx = Math.cos(deg2rad(ttl.angle));
             ttl.dy = Math.sin(deg2rad(ttl.angle));
+            setRxRy(ttl);
             for (var i = 0; i < d; i += moveStep) {
                 ttl.x = xx + ttl.dx * i;
                 ttl.y = yy + ttl.dy * i;
@@ -76,6 +77,7 @@
             ttl.rubber = ttl.penDown;
             ttl.dx = Math.cos(deg2rad(ttl.angle));
             ttl.dy = Math.sin(deg2rad(ttl.angle));
+            setRxRy(ttl);
             for (var i = 0; i < d; i += moveStep) {
                 ttl.x = xx - ttl.dx * i;
                 ttl.y = yy - ttl.dy * i;
@@ -131,6 +133,10 @@
 
     function down(){
         ttl.penDown = true;
+    }
+
+    function color(c){
+        ttl.penColor = c;
     }
 
     /* 描画関連 */
@@ -211,8 +217,13 @@
             rt(30);
             th.join();
 
+            up();
+
             fd(50);
             th.join();
+
+            down();
+            color("red");
 
             lt(-120);
             th.join();
