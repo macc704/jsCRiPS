@@ -95,12 +95,15 @@
         if (deg < 0) lt(-deg);
         else th = Thread.create(function (deg) {
             var tmpAngle = ttl.angle;
+            var tmpPendown = ttl.penDown;
+            up();
             for (var i = 0; i < deg; i += rotateStep) {
                 draw(ttl);
                 ttl.angle += rotateStep;
                 sleep(sleepTime);
             }
             ttl.angle = tmpAngle + deg;
+            ttl.penDown = tmpPendown;
             drawTurtle(ttl);
         }, deg);
     }
@@ -108,16 +111,29 @@
     function lt(deg) {
         if (deg < 0) rt(-deg);
         else th = Thread.create(function (deg) {
-            var befAngle = ttl.angle;
+            var tmpAngle = ttl.angle;
+            var tmpPendown = ttl.penDown;
+            up();
             for (var i = 0; i < deg; i += rotateStep) {
                 draw(ttl);
                 ttl.angle -= rotateStep;
                 sleep(sleepTime);
             }
-            ttl.angle = befAngle - deg;
+            ttl.angle = tmpAngle - deg;
+            ttl.penDown = tmpPendown;
             drawTurtle(ttl);
         }, deg);
     }
+
+    function up(){
+        ttl.penDown = false;
+    }
+
+    function down(){
+        ttl.penDown = true;
+    }
+
+    /* 描画関連 */
 
     function draw(t) {
         if (t.show)drawTurtle(t);
