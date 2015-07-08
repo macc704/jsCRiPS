@@ -1,86 +1,210 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<script type="text/javascript" src="./ConcurrentThread.js"></script>
-<script type="text/javascript">
+<script src="./ConcurrentThread.js"></script>
+<script>
 
     var th = {};
     var Thread = Concurrent.Thread;
-    var walkStep = 3;
+    var moveStep = 2;
     var sleepTime = 30;
+    var rotateStep = 5;
 
     var Turtle = (function () {
 
         var Turtle = function () {
-            this.x = 50;
-            this.y = 50;
+            this.x = 50.0;
+            this.y = 50.0;
+
+            //  dx = sin(angle), dy = -cos(angle)
+            this.dx = 0.0;
+            this.dy = 0.0;
+
+            // Turtle animation rubber line
+            this.rx = this.x;
+            this.ry = this.y;
+            this.rubber = false; // 何に使ってる…？
+
+            this.angle = 90.0;
+
+            this.show = true;
+
+            this.penDown = true;
+            this.penColor = "black";
+
+            this.kameColor = "green";
+
             this.size = 10;
         };
 
         var p = Turtle.prototype;
         p.fd = function (d) {	// 使ってない、関数実装サンプル
             th = Thread.create(function (d) {
-                for (var i = 0; i < 50; i += 3) {
-                    drawTurtle(t);
-                    t.y -= 3;
-                    sleep(32);
-                }
-                t.y += d % 3;
-                drawTurtle(t);
+
             }, d)
         };
         return Turtle;
     })();
 
-    var t = new Turtle();
+    var ttl = new Turtle();
+
 
     function fd(d) {
-        return Thread.create(function (d) {
-            for (var i = 0; i < d; i += walkStep) {
-                drawTurtle(t);
-                t.y += walkStep;
+        if (d < 0) bk(-d);
+        else th = Thread.create(function (d) {
+            var xx = ttl.x, yy = ttl.y;
+            ttl.rubber = ttl.penDown;
+            ttl.dx = Math.cos(deg2rad(ttl.angle));
+            ttl.dy = Math.sin(deg2rad(ttl.angle));
+            for (var i = 0; i < d; i += moveStep) {
+                ttl.x = xx + ttl.dx * i;
+                ttl.y = yy + ttl.dy * i;
+                draw(ttl);
+                setRxRy(ttl);
                 sleep(sleepTime);
             }
-            t.y -= d % walkStep;
-            drawTurtle(t);
-        }, d)
+            ttl.x = xx + ttl.dx * d;
+            ttl.y = yy + ttl.dy * d;
+            draw(ttl);
+        }, d);
+        // TODO if penDown then save Line
     }
 
-    function drawTurtle(tt) {
-        var canvas = document.getElementById('tCanvas');
+    function bk(d) {
+        if (d < 0) fd(-d);
+        else th = Thread.create(function (d) {
+            var xx = ttl.x, yy = ttl.y;
+            ttl.rubber = ttl.penDown;
+            ttl.dx = Math.cos(deg2rad(ttl.angle));
+            ttl.dy = Math.sin(deg2rad(ttl.angle));
+            for (var i = 0; i < d; i += moveStep) {
+                ttl.x = xx - ttl.dx * i;
+                ttl.y = yy - ttl.dy * i;
+                draw(ttl);
+                setRxRy(ttl);
+                sleep(sleepTime);
+            }
+            ttl.x = xx - ttl.dx * d;
+            ttl.y = yy - ttl.dy * d;
+            draw(ttl);
+        }, d);
+        // TODO if penDown then save Line
+    }
+
+
+    function rt(deg) {
+        if (deg < 0) lt(-deg);
+        else th = Thread.create(function (deg) {
+            var tmpAngle = ttl.angle;
+            for (var i = 0; i < deg; i += rotateStep) {
+                draw(ttl);
+                ttl.angle += rotateStep;
+                sleep(sleepTime);
+            }
+            ttl.angle = tmpAngle + deg;
+            drawTurtle(ttl);
+        }, deg);
+    }
+
+    function lt(deg) {
+        if (deg < 0) rt(-deg);
+        else th = Thread.create(function (deg) {
+            var befAngle = ttl.angle;
+            for (var i = 0; i < deg; i += rotateStep) {
+                draw(ttl);
+                ttl.angle -= rotateStep;
+                sleep(sleepTime);
+            }
+            ttl.angle = befAngle - deg;
+            drawTurtle(ttl);
+        }, deg);
+    }
+
+    function draw(t) {
+        if (t.show)drawTurtle(t);
+        if (t.penDown) drawLine(t);
+    }
+
+    function drawTurtle(t) {
+        var canvas = document.getElementById('turtleCanvas');
         if (!canvas.getContext)return;
         var w = canvas.width;
         var h = canvas.height;
         var ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, w, h);
+
+        // 胴体
         ctx.beginPath();
-        ctx.arc(tt.x, tt.y, 10, 0, Math.PI * 2, true);
+        ctx.arc(t.x, t.y, 10, 0, Math.PI * 2, true);
+        ctx.fillStyle = t.kameColor;
         ctx.fill();
         ctx.closePath();
+
+        // 頭部分
+        ctx.beginPath();
+        ctx.arc(t.x + 5 * Math.cos(deg2rad(t.angle)),
+                t.y + 5 * Math.sin(deg2rad(t.angle)), 3, 0, Math.PI * 2, true);
+        ctx.fillStyle = "red";
+        ctx.fill();
+        ctx.closePath();
+
     }
 
-    function draw() {
-        var canvas = document.getElementById('tCanvas');
+    function drawLine(t) {
+        var canvas = document.getElementById('locusCanvas');
         if (!canvas.getContext)return;
-        var w = canvas.width;
-        var h = canvas.height;
         var ctx = canvas.getContext('2d');
+
+        ctx.beginPath();
+        ctx.moveTo(t.rx, t.ry);
+        ctx.lineTo(t.x, t.y);
+        ctx.closePath();
+        ctx.strokeStyle = t.penColor;
+        ctx.stroke();
     }
 
-    function start() {
-        main();
+    /* Turtle補助メソッド */
+    function setRxRy(t) {
+        t.rx = t.x;
+        t.ry = t.y;
     }
+
+    /* 一般補助メソッド */
+
+    function deg2rad(deg) {
+        return deg * Math.PI / 180;
+    }
+
 
     function sleep(t) {
         Thread.sleep(t)
     }
 
+
+    /* 実行部分 */
+    function start() {
+        main();
+    }
+
     function main() {
         Thread.create(function () {
-            console.log("aa");
-            fd(100).join();
-            console.log("bb");
-            fd(50).join();
-            console.log("cc");
+            console.log("start");
+
+            fd(100);
+            th.join();
+
+            rt(30);
+            th.join();
+
+            fd(50);
+            th.join();
+
+            lt(-120);
+            th.join();
+
+            bk(50);
+            th.join();
+
+            console.log("finish");
         })
     }
 
@@ -96,5 +220,6 @@
 </style>
 
 <body>
-<canvas id="tCanvas" width="600" height="600"></canvas>
+<canvas id="locusCanvas" width="600" height="600"></canvas>
+<canvas id="turtleCanvas" width="600" height="600"></canvas>
 </body>
