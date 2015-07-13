@@ -38,22 +38,29 @@ t.y = 200;
 
 function main() {
 
-    fd(50);
+    console.log('x');
+    fd(100);
+    yield 0;
+    console.log('y');    
+    fd(100);
+    //yield 0;    
+    console.log('z');    
+
     // var t2 = new Turtle();
     // t2.fd(50);
 }
 
 function fd(d) {
-    Concurrent.Thread.create(function () {
-        for (var i = 0; i < 50; i += 3) {
+    Concurrent.Thread.create(function (d) {
+        for (var i = 0; i < d; i += 3) {
             drawTurtle(t);
             t.y -= 3;
-            sleep(3);
+            sleep(100);
         }
-        t.y += d % 3;
+        //t.y += d % 3;
         drawTurtle(t);
         // sleep(1);
-    })
+    }, d);
 }
 
 function damefd(d) {
