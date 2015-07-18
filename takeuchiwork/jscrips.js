@@ -1,5 +1,6 @@
 'use strict';
 var th = {};
+/*global Concurrent*/
 var Thread = Concurrent.Thread;
 var moveStep = 2;
 var sleepTime = 10;
@@ -41,7 +42,7 @@ var ttl = new Turtle();
 
 
 function fd(d) {
-    if (d < 0){
+    if (d < 0) {
         bk(-d);
     } else {
         th = Thread.create(function (d) {
@@ -159,10 +160,8 @@ function drawTurtle(t) {
     if (!canvas.getContext) {
         return;
     }
-    var w = canvas.width;
-    var h = canvas.height;
     var ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, w, h);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // 胴体
     ctx.beginPath();
@@ -208,10 +207,15 @@ function deg2rad(deg) {
     return deg * Math.PI / 180;
 }
 
-
 function sleep(t) {
     Thread.sleep(t)
 }
+
+function changeSpeed(x){
+    sleepTime = x;
+}
+
+
 
 
 // /* 実行部分 */

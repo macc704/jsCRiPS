@@ -1,53 +1,46 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<script src="./ConcurrentThread.js" ></script>
+<script src="./ConcurrentThread.js"></script>
 <script src="./jscrips.js"></script>
 <script>
-  function main() {
-        Thread.create(function () {
-            for(var i=4;i<10;i++){
-                for(var j=0;j<4;j++){
-                fd(i*10);
-                th.join();
-                rt(90);
-                th.join();
+    var mth = {};
+    function main() {
+        mth = Thread.create(function () {
+            for (var i = 4; i < 10; i++) {
+                for (var j = 0; j < 4; j++) {
+                    fd(i * 10);
+                    th.join();
+                    rt(90);
+                    th.join();
                 }
                 rt(30);
                 th.join();
             }
-            // for(var i=0;i<4;i++){
-            //     fd(100);
-            //     th.join();
-            //     rt(90);
-            //     th.join();
-            // }
-            // console.log("start");
-
-            // fd(100);
-            // th.join();
-
-            // rt(30);
-            // th.join();
-
-            // up();
-
-            // fd(50);
-            // th.join();
-
-            // down();
-            // color("red");
-
-            // lt(-120);
-            // th.join();
-
-            // bk(50);
-            // th.join();
-
-            // console.log("finish");
         })
     }
     window.onload = main();
 
+    // うまく動かず
+    function restart() {
+        var canvas = document.getElementById('turtleCanvas');
+        if (!canvas.getContext) {
+            return;
+        }
+        var ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        canvas = document.getElementById('locusCanvas');
+        ctx = canvas.getContext('2d');
+        if (!canvas.getContext) {
+            return;
+        }
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        th.kill();
+        mth.kill();
+        main();
+
+    }
 </script>
 
 <style type="text/css">
@@ -58,6 +51,10 @@
 </style>
 
 <body>
+速<input type="range" name="moveSpeed" min="0" max="20" step="2"
+        value="10" onchange="changeSpeed(this.value)">遅
+<input type="button" value="再描画" onclick="restart()">
+<br>
 <canvas id="locusCanvas" width="600" height="600"></canvas>
 <canvas id="turtleCanvas" width="600" height="600"></canvas>
 </body>
