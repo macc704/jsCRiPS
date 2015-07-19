@@ -6,26 +6,26 @@
     var mth = {};
     function main() {
         mth = Thread.create(function () {
-            var ttl = createTurtle();
-            var ttl2 = createTurtle();
-            ttl2.color("green");
-            ttl.warp(100, 50);
+            var arr = [];
+            var ttl = createImageTurtle("./img/man1.gif");
+            for (var i = 1; i <= 8; i++) {
+                arr[i - 1] = createImageTurtle("./img/man" + i + ".gif");
+                arr[i - 1].hide();
+            }
+            ttl.hide();
             ttl.rt(90);
             th.join();
-            ttl2.rt(90);
-            th.join();
-            for (var i = 0; i < 20; i++) {
-                ttl.fd(Math.random() * 5 + 2);
+            ttl.show();
+            for (var i = 0; i < 100; i++) {
+                ttl.warp(100 + i * 2, 100);
+                ttl.looks(arr[i % 8]);
+                ttl.rt(10);
                 th.join();
-                ttl2.fd(Math.random() * 5 + 2);
-                th.join();
+                sleep(10);
+                update();
             }
-            for (var i = 0; i < 360; i += 5) {
-                ttl.fd(5);
-                th.join();
-                ttl.rt(5);
-                th.join();
-            }
+            ttl.printState();
+
         })
     }
     window.onload = main();
@@ -34,11 +34,12 @@
     function restart() {
         clearTurtleCanvas();
         clearLocusCanvas();
+        document.getElementById('msg').value =
         try {
             mth.kill();
             th.kill();
         } catch (e) {
-            // mth,thが終了時に例外が出る、無視でok?
+            // TODO mth,thが終了時に例外が出る、無視でok?
         }
         ttls = [];
         main();
@@ -52,6 +53,11 @@
         border: 1px solid #999;
         position: absolute;
     }
+
+    textarea {
+        position: absolute;
+        top: 640px;
+    }
 </style>
 
 <body>
@@ -61,6 +67,7 @@
 <br>
 <canvas id="locusCanvas" width="600" height="600"></canvas>
 <canvas id="turtleCanvas" width="600" height="600"></canvas>
+<textarea id="msg" rows="12" cols="80"></textarea>
 </body>
 
 <script>
