@@ -6,41 +6,45 @@
     var mth = {};
     function main() {
         mth = Thread.create(function () {
-            for (var i = 4; i < 10; i++) {
-                for (var j = 0; j < 4; j++) {
-                    fd(i * 10);
-                    th.join();
-                    rt(90);
-                    th.join();
-                }
-                rt(30);
+            var ttl = createTurtle();
+            var ttl2 = createTurtle();
+            ttl2.color("green");
+            ttl.warp(100, 50);
+            ttl.rt(90);
+            th.join();
+            ttl2.rt(90);
+            th.join();
+            for (var i = 0; i < 20; i++) {
+                ttl.fd(Math.random() * 5 + 2);
+                th.join();
+                ttl2.fd(Math.random() * 5 + 2);
+                th.join();
+            }
+            for (var i = 0; i < 360; i += 5) {
+                ttl.fd(5);
+                th.join();
+                ttl.rt(5);
                 th.join();
             }
         })
     }
     window.onload = main();
 
-    // うまく動かず
+
     function restart() {
-        var canvas = document.getElementById('turtleCanvas');
-        if (!canvas.getContext) {
-            return;
+        clearTurtleCanvas();
+        clearLocusCanvas();
+        try {
+            mth.kill();
+            th.kill();
+        } catch (e) {
+            // mth,thが終了時に例外が出る、無視でok?
         }
-        var ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        canvas = document.getElementById('locusCanvas');
-        ctx = canvas.getContext('2d');
-        if (!canvas.getContext) {
-            return;
-        }
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        th.kill();
-        mth.kill();
+        ttls = [];
         main();
-
     }
+
+
 </script>
 
 <style type="text/css">
@@ -51,10 +55,16 @@
 </style>
 
 <body>
-速<input type="range" name="moveSpeed" min="0" max="20" step="2"
-        value="10" onchange="changeSpeed(this.value)">遅
+速<input type="range" name="moveSpeed" min="0" max="12" step="2"
+        value="6" onchange="changeSpeed(this.value)">遅
 <input type="button" value="再描画" onclick="restart()">
 <br>
 <canvas id="locusCanvas" width="600" height="600"></canvas>
 <canvas id="turtleCanvas" width="600" height="600"></canvas>
 </body>
+
+<script>
+    // 余計なアンチエイリアスの解除
+    var c = document.getElementById('locusCanvas');
+    c.getContext('2d').translate(0.5, 0.5);
+</script>

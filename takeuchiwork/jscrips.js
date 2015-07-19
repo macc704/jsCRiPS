@@ -1,155 +1,197 @@
 'use strict';
 var th = {};
+var ttls = [];
 /*global Concurrent*/
 var Thread = Concurrent.Thread;
-var moveStep = 2;
+var DEFAULT_MOVE_STEP = 2;
+var DEFAULT_ROTATE_STEP = 5;
 var sleepTime = 10;
-var rotateStep = 5;
+var moveStep = DEFAULT_MOVE_STEP;
+var rotateStep = DEFAULT_ROTATE_STEP;
 
-var Turtle = (function () {
+function createTurtle() {
+    var t = {};
 
-    var Turtle = function () {
-        this.x = 100.0;
-        this.y = 100.0;
+    t.x = 100.0;
+    t.y = 100.0;
 
-        //  dx = sin(angle), dy = -cos(angle)
-        this.dx = 0.0;
-        this.dy = 0.0;
+    //  dx = sin(angle), dy = -cos(angle)
+    t.dx = 0.0;
+    t.dy = 0.0;
 
-        // Turtle animation rubber line
-        this.rx = this.x;
-        this.ry = this.y;
-        this.rubber = false; // 何に使ってる…？
+    // (x,y)から(rx,ry)まで線を引く
+    t.rx = t.x;
+    t.ry = t.y;
 
-        this.angle = -90.0;
+    t.angle = -90.0;
 
-        this.show = true;
+    t.show = true;
 
-        this.penDown = true;
-        this.penColor = "black";
+    t.penDown = true;
+    t.penColor = "black";
 
-        this.kameColor = "green";
+    t.kameColor = "green";
 
-        this.size = 10;
+    t.size = 10;
+
+    t.fd = function (d) {
+        if (d < 0) {
+            t.bk(-d);
+        } else {
+            th = Thread.create(function (d, t) {
+                var xx = t.x, yy = t.y;
+                t.dx = Math.cos(deg2rad(t.angle));
+                t.dy = Math.sin(deg2rad(t.angle));
+                setRxRy(t);
+                for (var i = moveStep; i < d; i += moveStep) {
+                    t.x = xx + t.dx * i;
+                    t.y = yy + t.dy * i;
+                    draw(t);
+                    setRxRy(t);
+                    sleep(sleepTime);
+                }
+                t.x = xx + t.dx * d;
+                t.y = yy + t.dy * d;
+                draw(t);
+            }, d, t);
+        }
     };
 
-    var p = Turtle.prototype;
+    t.bk = function (d) {
+        if (d < 0) {
+            t.fd(-d);
+        } else {
+            th = Thread.create(function (d, t) {
+                var xx = t.x, yy = t.y;
+                t.dx = Math.cos(deg2rad(t.angle));
+                t.dy = Math.sin(deg2rad(t.angle));
+                setRxRy(t);
+                for (var i = moveStep; i < d; i += moveStep) {
+                    t.x = xx - t.dx * i;
+                    t.y = yy - t.dy * i;
+                    draw(t);
+                    setRxRy(t);
+                    sleep(sleepTime);
+                }
+                t.x = xx - t.dx * d;
+                t.y = yy - t.dy * d;
+                draw(t);
+            }, d, t);
+        }
+    };
 
-    return Turtle;
-})();
+    t.rt = function (deg) {
+        if (deg < 0) {
+            lt(-deg);
+        } else {
+            th = Thread.create(function (deg, t) {
+                var tmpAngle = t.angle;
+                var tmpPendown = t.penDown;
+                up();
+                for (var i = rotateStep; i < deg; i += rotateStep) {
+                    draw(t);
+                    t.angle += rotateStep;
+                    sleep(sleepTime);
+                }
+                t.angle = tmpAngle + deg;
+                t.penDown = tmpPendown;
+                drawTurtle(t);
+            }, deg, t);
+        }
+    };
 
-var ttl = new Turtle();
+    t.lt = function (deg) {
+        if (deg < 0) {
+            rt(-deg);
+        } else {
+            th = Thread.create(function (deg, t) {
+                var tmpAngle = t.angle;
+                var tmpPendown = t.penDown;
+                up();
+                for (var i = rotateStep; i < deg; i += rotateStep) {
+                    draw(t);
+                    t.angle -= rotateStep;
+                    sleep(sleepTime);
+                }
+                t.angle = tmpAngle - deg;
+                t.penDown = tmpPendown;
+                drawTurtle(t);
+            }, deg, t);
+        }
+    };
 
+    t.up = function () {
+        t.penDown = false;
+    };
+
+    t.down = function () {
+        t.penDown = true;
+    };
+
+    t.color = function (c) {
+        t.penColor = c;
+    };
+
+    t.warp = function (x, y) {
+        var tmpPendown = t.penDown;
+        t.up();
+        t.x = x;
+        t.y = y;
+        setRxRy(t);
+        t.penDown = tmpPendown;
+    };
+
+    ttls.push(t);
+    return t;
+}
+
+function createImageTurtle(imgName){
+    var t = createTurtle();
+
+}
+
+
+var defaultTurtle = createTurtle();
 
 function fd(d) {
-    if (d < 0) {
-        bk(-d);
-    } else {
-        th = Thread.create(function (d) {
-            var xx = ttl.x, yy = ttl.y;
-            ttl.rubber = ttl.penDown;
-            ttl.dx = Math.cos(deg2rad(ttl.angle));
-            ttl.dy = Math.sin(deg2rad(ttl.angle));
-            setRxRy(ttl);
-            for (var i = 0; i < d; i += moveStep) {
-                ttl.x = xx + ttl.dx * i;
-                ttl.y = yy + ttl.dy * i;
-                draw(ttl);
-                setRxRy(ttl);
-                sleep(sleepTime);
-            }
-            ttl.x = xx + ttl.dx * d;
-            ttl.y = yy + ttl.dy * d;
-            draw(ttl);
-        }, d);
-    }
-    // TODO if penDown then save Line
+    defaultTurtle.fd(d);
 }
 
 function bk(d) {
-    if (d < 0){
-        fd(-d);
-    } else {
-        th = Thread.create(function (d) {
-            var xx = ttl.x, yy = ttl.y;
-            ttl.rubber = ttl.penDown;
-            ttl.dx = Math.cos(deg2rad(ttl.angle));
-            ttl.dy = Math.sin(deg2rad(ttl.angle));
-            setRxRy(ttl);
-            for (var i = 0; i < d; i += moveStep) {
-                ttl.x = xx - ttl.dx * i;
-                ttl.y = yy - ttl.dy * i;
-                draw(ttl);
-                setRxRy(ttl);
-                sleep(sleepTime);
-            }
-            ttl.x = xx - ttl.dx * d;
-            ttl.y = yy - ttl.dy * d;
-            draw(ttl);
-        }, d);
-    // TODO if penDown then save Line
-}
+    defaultTurtle.bk(d);
 }
 
 
 function rt(deg) {
-    if (deg < 0) {
-        lt(-deg);
-    } else {
-       th = Thread.create(function (deg) {
-        var tmpAngle = ttl.angle;
-        var tmpPendown = ttl.penDown;
-        up();
-        for (var i = 0; i < deg; i += rotateStep) {
-            draw(ttl);
-            ttl.angle += rotateStep;
-            sleep(sleepTime);
-        }
-        ttl.angle = tmpAngle + deg;
-        ttl.penDown = tmpPendown;
-        drawTurtle(ttl);
-    }, deg);
-   }
+    defaultTurtle.rt(deg);
 }
 
 function lt(deg) {
-    if (deg < 0) {
-        rt(-deg);
-    } else {
-        th = Thread.create(function (deg) {
-            var tmpAngle = ttl.angle;
-            var tmpPendown = ttl.penDown;
-            up();
-            for (var i = 0; i < deg; i += rotateStep) {
-                draw(ttl);
-                ttl.angle -= rotateStep;
-                sleep(sleepTime);
-            }
-            ttl.angle = tmpAngle - deg;
-            ttl.penDown = tmpPendown;
-            drawTurtle(ttl);
-        }, deg);
-    }
+    defaultTurtle.lt(deg);
 }
 
-function up(){
-    ttl.penDown = false;
+function up() {
+    defaultTurtle.up();
 }
 
-function down(){
-    ttl.penDown = true;
+function down() {
+    defaultTurtle.down();
 }
 
-function color(c){
-    ttl.penColor = c;
+function color(c) {
+    defaultTurtle.color(c);
 }
 
 /* 描画関連 */
 
 function draw(t) {
-    if (t.show) {
-        drawTurtle(t);
+    clearTurtleCanvas();
+    for (var i = 0; i < ttls.size(); i++) {
+        if (ttls[i].show) {
+            drawTurtle(ttls[i]);
+        }
     }
+
     if (t.penDown) {
         drawLine(t);
     }
@@ -161,7 +203,6 @@ function drawTurtle(t) {
         return;
     }
     var ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // 胴体
     ctx.beginPath();
@@ -177,8 +218,8 @@ function drawTurtle(t) {
     ctx.fillStyle = "red";
     ctx.fill();
     ctx.closePath();
-
 }
+
 
 function drawLine(t) {
     var canvas = document.getElementById('locusCanvas');
@@ -186,13 +227,29 @@ function drawLine(t) {
         return;
     }
     var ctx = canvas.getContext('2d');
-
     ctx.beginPath();
     ctx.moveTo(t.rx, t.ry);
     ctx.lineTo(t.x, t.y);
     ctx.closePath();
     ctx.strokeStyle = t.penColor;
     ctx.stroke();
+}
+
+function clearTurtleCanvas() {
+    clearCanvas('turtleCanvas');
+}
+
+function clearLocusCanvas() {
+    clearCanvas('locusCanvas');
+}
+
+function clearCanvas(name) {
+    var canvas = document.getElementById(name);
+    if (!canvas.getContext) {
+        return;
+    }
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
 /* Turtle補助メソッド */
@@ -202,20 +259,24 @@ function setRxRy(t) {
 }
 
 /* 一般補助メソッド */
-
 function deg2rad(deg) {
     return deg * Math.PI / 180;
 }
 
 function sleep(t) {
-    Thread.sleep(t)
+    Thread.sleep(t);
 }
 
-function changeSpeed(x){
-    sleepTime = x;
+function changeSpeed(x) {
+    sleepTime = Number(x);
+    if (Number(x) === 0) {
+        moveStep = 1000;
+        rotateStep = 1000;
+    } else {
+        moveStep = DEFAULT_MOVE_STEP;
+        rotateStep = DEFAULT_ROTATE_STEP;
+    }
 }
-
-
 
 
 // /* 実行部分 */
