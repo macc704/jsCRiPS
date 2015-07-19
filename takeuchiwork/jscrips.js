@@ -151,7 +151,7 @@ function createTurtle() {
         if (tt && tt._looks) {
             t._looks = tt._looks;
         } else {
-            println("looks対象が間違っています[" + tt + "]\n");
+            println("looks対象が間違っています[" + tt + "]");
         }
     };
 
@@ -175,7 +175,7 @@ function createTurtle() {
         println(
             "(x,y) = (" + parseInt(t.x) + "," + parseInt(t.y) + ")\n" +
             "angle = " + t.angle + "\n" +
-            "(width,height) = (" + t.width + "," + t.height + ")\n"
+            "(width,height) = (" + t.width + "," + t.height + ")"
         );
     };
 
@@ -349,10 +349,85 @@ function changeSpeed(x) {
     }
 }
 
-function println(str) {
+function print() {
+    var str = "";
+    for (var i = 0; i < arguments.length - 1; i++) {
+        str += arguments[i] + ',';
+    }
+    str += arguments[arguments.length - 1];
     var msgArea = document.getElementById('msg');
     msgArea.value += msgArea.value + str;
     while (msgArea.value.length > 1000) {
         msgArea.value = msgArea.value.split('\n').slice(1).join('\n');
     }
+    msgArea.scrollTop = msgArea.scrollHeight;
 }
+
+function println() {
+    var str = "";
+    for (var i = 0; i < arguments.length - 1; i++) {
+        str += arguments[i] + ',';
+    }
+    str += arguments[arguments.length - 1];
+    print(str + '\n');
+}
+
+/* イベント関係 */
+var keys = {};
+document.addEventListener("keydown", keyDown);
+document.addEventListener("keyup", keyUp);
+
+var mx = -1, my = -1;
+var _isMouseDown = false;
+document.addEventListener('mousemove', mouseMove);
+document.addEventListener('mousedown', mouseDown);
+document.addEventListener('mouseup', mouseUp);
+
+function keyDown(e) {
+    keys[e.keyCode] = true;
+}
+
+function keyUp(e) {
+    keys[e.keyCode] = false;
+}
+// TODO key関連の関数をどうするか
+function isPressing(keyCode) {
+    return keys[keyCode] ? keys[keyCode] : false;
+}
+// TODO 座標のずれをどうするか
+function mouseMove(e) {
+    mx = e.clientX;
+    my = e.clientY;
+}
+
+function mouseX() {
+    return mx;
+}
+
+function mouseY() {
+    return my;
+}
+
+function mouseDown(e) {
+    _isMouseDown = true;
+}
+
+function mouseUp(e) {
+    _isMouseDown = false;
+}
+
+function isMouseDown() {
+    return _isMouseDown;
+}
+
+
+
+
+
+
+
+
+
+
+
+
