@@ -350,9 +350,9 @@ function changeSpeed(x) {
 }
 
 function println(str) {
-    var msgBox = document.getElementById('msg');
-    msgBox.value += msgBox.value + str;
-    while (msgBox.value.length > 1000) {
-        msgBox.value = msgBox.value.split('\n').slice(1).join('\n');
+    var msgArea = document.getElementById('msg');
+    msgArea.value += msgArea.value + str;
+    while (msgArea.value.length > 1000) {
+        msgArea.value = msgArea.value.split('\n').slice(1).join('\n');
     }
 }

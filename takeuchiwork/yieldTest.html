@@ -34,7 +34,7 @@
     function restart() {
         clearTurtleCanvas();
         clearLocusCanvas();
-        document.getElementById('msg').value =
+        document.getElementById('msg').value = "";
         try {
             mth.kill();
             th.kill();
@@ -62,12 +62,12 @@
 
 <body>
 速<input type="range" name="moveSpeed" min="0" max="12" step="2"
-        value="6" onchange="changeSpeed(this.value)">遅
+        value="6" onchange="changeSpeed(this.value)" title="moveSpeed">遅
 <input type="button" value="再描画" onclick="restart()">
 <br>
 <canvas id="locusCanvas" width="600" height="600"></canvas>
 <canvas id="turtleCanvas" width="600" height="600"></canvas>
-<textarea id="msg" rows="12" cols="80"></textarea>
+<textarea id="msg" rows="12" cols="80" title="msgArea"></textarea>
 </body>
 
 <script>
