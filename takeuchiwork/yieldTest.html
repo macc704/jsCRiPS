@@ -14,10 +14,10 @@
             }
             var text;
 //            text = input(); ↓のように変形する必要あり？
-            input();
-            th.join();
-            text = inputText;
-            println(text);
+//            input();
+//            th.join();
+//            text = inputText;
+//            println(text);
 
             ttl.hide();
             ttl.rt(90);
@@ -28,6 +28,9 @@
                 ttl.looks(arr[i % 8]);
                 ttl.rt(10);
                 th.join();
+                println(ttl.contains(mouseX(), mouseY()), ttl.x, mouseX(),
+                        parseInt(ttl.x + ttl.width * Math.abs(Math.cos(deg2rad(ttl.angle)))));
+                println(ttl.y, mouseY(),(parseInt(ttl.y + ttl.height * Math.abs(Math.sin(deg2rad(ttl.angle))))));
                 //      println(isPressing(99));
                 //       println(mouseY(), mouseX());
                 //    println(isMouseDown());
@@ -82,7 +85,7 @@
 <br>
 <canvas id="locusCanvas" width="600" height="600"></canvas>
 <canvas id="turtleCanvas" width="600" height="600"></canvas>
-<input id="in" type="text" onkeypress="entered(event.keyCode);" placeholder="入力欄" title="in"/>
+<input id="in" type="text" onkeypress="entered(event.keyCode,this.id);" placeholder="input()入力欄" title="in"/>
 <textarea id="msg" rows="12" cols="80" title="msgArea" readonly></textarea>
 </body>
 

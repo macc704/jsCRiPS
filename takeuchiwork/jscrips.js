@@ -17,7 +17,7 @@ var KEY_ENTER = 13;
 function createTurtle() {
     var t = {};
 
-    t.x = 100.0;    // TODO 中心座標？どこを基準？
+    t.x = 100.0;    // TODO どこ(左上か真ん中か)をx,yとするのか決める
     t.y = 100.0;
 
     //  dx = sin(angle), dy = -cos(angle) メンバ変数にする必要なし？
@@ -51,12 +51,12 @@ function createTurtle() {
                 var xx = t.x, yy = t.y;
                 var dx = Math.cos(deg2rad(t.angle));
                 var dy = Math.sin(deg2rad(t.angle));
-                setRxRy(t);
+                t.setRxRy();
                 for (var i = moveStep; i < d; i += moveStep) {
                     t.x = xx + dx * i;
                     t.y = yy + dy * i;
                     draw(t);
-                    setRxRy(t);
+                    t.setRxRy();
                     sleep(sleepTime);
                 }
                 t.x = xx + dx * d;
@@ -74,12 +74,12 @@ function createTurtle() {
                 var xx = t.x, yy = t.y;
                 var dx = Math.cos(deg2rad(t.angle));
                 var dy = Math.sin(deg2rad(t.angle));
-                setRxRy(t);
+                t.setRxRy();
                 for (var i = moveStep; i < d; i += moveStep) {
                     t.x = xx - dx * i;
                     t.y = yy - dy * i;
                     draw(t);
-                    setRxRy(t);
+                    t.setRxRy();
                     sleep(sleepTime);
                 }
                 t.x = xx - dx * d;
@@ -146,13 +146,15 @@ function createTurtle() {
         t.up();
         t.x = x;
         t.y = y;
-        setRxRy(t);
+        t.setRxRy();
         t.penDown = tmpPendown;
     };
 
     t.looks = function (tt) {
         if (tt && tt._looks) {
             t._looks = tt._looks;
+            t.width = tt.width;
+            t.height = tt.height;
         } else {
             println("looks対象が間違っています[" + tt + "]");
         }
@@ -172,6 +174,26 @@ function createTurtle() {
 
     t.setHeight = function (h) {
         t.height = h;
+    };
+
+    t.contains = function (tx, ty) {
+        return t.x <= tx &&
+            tx <= (t.x + t.width * Math.abs(Math.cos(deg2rad(t.angle)))) &&
+            t.y <= ty &&
+            ty <= (t.y + t.height * Math.abs(Math.sin(deg2rad(t.angle))));
+    };
+
+    t.midX = function () {
+        return t.x + t.width / 2;
+    };
+
+    t.midY = function () {
+        return t.y + t.height / 2;
+    };
+
+    t.setRxRy = function () {
+        t.rx = t.x;
+        t.ry = t.y;
     };
 
     t.printState = function () {
@@ -261,7 +283,7 @@ function drawTurtle(t) {
     } else {
         drawImg();
     }
-
+    // 亀は、x,yを左上として描画している
     function drawKame() {
         // 胴体
         ctx.beginPath();
@@ -279,12 +301,13 @@ function drawTurtle(t) {
         ctx.closePath();
     }
 
+    // x,yを真ん中として描画している
     function drawImg() {
         ctx.save();
-        ctx.translate(t.x + t.width / 2, t.y + t.height / 2);
+        ctx.translate(t.x, t.y);
         ctx.rotate(deg2rad(t.angle));
-        ctx.translate(-(t.x + t.width / 2), -(t.y + t.height / 2));
-        ctx.drawImage(t._looks, t.x, t.y, t.width, t.height);
+        ctx.translate(-t.x, -t.y);
+        ctx.drawImage(t._looks, t.x - t.width / 2, t.y - t.height / 2, t.width, t.height);
         ctx.restore();
     }
 
@@ -322,12 +345,6 @@ function clearCanvas(name) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
-/* Turtle補助メソッド */
-function setRxRy(t) {
-    t.rx = t.x;
-    t.ry = t.y;
-}
-
 /* 一般補助メソッド */
 function deg2rad(deg) {
     return deg * Math.PI / 180;
@@ -340,7 +357,7 @@ function sleep(t) {
 function update() {
     draw();
 }
-
+// TODO MAXスピードが遅い、関数呼び出しのオーバーヘッド？
 function changeSpeed(x) {
     sleepTime = Number(x);
     if (Number(x) === 0) {
@@ -399,8 +416,8 @@ function isPressing(keyCode) {
 }
 // TODO 座標のずれをどうするか
 function mouseMove(e) {
-    mx = e.clientX;
-    my = e.clientY;
+    mx = e.clientX - 8;
+    my = e.clientY - 36;
 }
 // TODO クリック関連の関数をどうするか
 function mouseX() {
@@ -422,12 +439,12 @@ function mouseUp(e) {
 function isMouseDown() {
     return _isMouseDown;
 }
-
-function entered(k) {
+// TODO 標準入力はこの方法でいいのか…？
+function entered(k, id) {
     if (k === KEY_ENTER) {
-        var text = document.getElementById('in');
+        var text = document.getElementById(id);
         inputText = text.value;
-        println("inputted[" + inputText + "]");
+        println("INPUT [" + inputText + "]");
         text.value = "";
         inputted = true;
     }
