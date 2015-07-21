@@ -439,7 +439,6 @@ function input() {
             sleep(1);
         }
         inputted = false;
-        return inputText;
     });
 }
 
