@@ -1,7 +1,9 @@
 'use strict';
-var th = {};    //
-var ttls = [];  //
-var imgs = {};  //
+var th = {};    // スレッド制御用
+var ttls = [];  // タートルを管理するリスト
+var imgs = {};  // 画像を管理するマップ
+var inputText = ""; // 入力されたテキスト
+var inputted = false; // 入力制御用
 
 /*global Concurrent*/
 var Thread = Concurrent.Thread;
@@ -10,6 +12,7 @@ var DEFAULT_ROTATE_STEP = 5;
 var sleepTime = 10;
 var moveStep = DEFAULT_MOVE_STEP;
 var rotateStep = DEFAULT_ROTATE_STEP;
+var KEY_ENTER = 13;
 
 function createTurtle() {
     var t = {};
@@ -356,7 +359,7 @@ function print() {
     }
     str += arguments[arguments.length - 1];
     var msgArea = document.getElementById('msg');
-    msgArea.value += msgArea.value + str;
+    msgArea.value += str;
     while (msgArea.value.length > 1000) {
         msgArea.value = msgArea.value.split('\n').slice(1).join('\n');
     }
@@ -420,8 +423,25 @@ function isMouseDown() {
     return _isMouseDown;
 }
 
+function entered(k) {
+    if (k === KEY_ENTER) {
+        var text = document.getElementById('in');
+        inputText = text.value;
+        println("inputted[" + inputText + "]");
+        text.value = "";
+        inputted = true;
+    }
+}
 
-
+function input() {
+    th = Thread.create(function () {
+        while (!inputted) {
+            sleep(1);
+        }
+        inputted = false;
+        return inputText;
+    });
+}
 
 
 

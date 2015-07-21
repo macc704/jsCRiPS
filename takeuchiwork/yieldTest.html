@@ -12,6 +12,13 @@
                 arr[i - 1] = createImageTurtle("./img/man" + i + ".gif");
                 arr[i - 1].hide();
             }
+            var text;
+//            text = input(); ↓のように変形する必要あり？
+            input();
+            th.join();
+            text = inputText;
+            println(text);
+
             ttl.hide();
             ttl.rt(90);
             th.join();
@@ -21,9 +28,9 @@
                 ttl.looks(arr[i % 8]);
                 ttl.rt(10);
                 th.join();
-                println(isPressing(99));
-                println(mouseY(),mouseX());
-                println(isMouseDown());
+                //      println(isPressing(99));
+                //       println(mouseY(), mouseX());
+                //    println(isMouseDown());
                 sleep(10);
                 update();
             }
@@ -42,6 +49,7 @@
             th.kill();
         } catch (e) {
             // TODO mth,thが終了時に例外が出る、無視でok?
+            println("ERROR [" + e + "]");
         }
         ttls = [];
         main();
@@ -56,9 +64,14 @@
         position: absolute;
     }
 
-    textarea {
+    #in {
         position: absolute;
         top: 640px;
+    }
+
+    textarea {
+        position: absolute;
+        top: 666px;
     }
 </style>
 
@@ -69,6 +82,7 @@
 <br>
 <canvas id="locusCanvas" width="600" height="600"></canvas>
 <canvas id="turtleCanvas" width="600" height="600"></canvas>
+<input id="in" type="text" onkeypress="entered(event.keyCode);" placeholder="入力欄" title="in"/>
 <textarea id="msg" rows="12" cols="80" title="msgArea" readonly></textarea>
 </body>
 
