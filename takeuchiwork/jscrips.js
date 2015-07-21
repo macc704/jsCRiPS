@@ -402,7 +402,7 @@ function mouseMove(e) {
     mx = e.clientX;
     my = e.clientY;
 }
-
+// TODO クリック関連の関数をどうするか
 function mouseX() {
     return mx;
 }
