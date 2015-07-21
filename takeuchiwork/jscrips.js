@@ -28,7 +28,7 @@ function createTurtle() {
     t.rx = t.x;
     t.ry = t.y;
 
-    t.angle = -90.0;
+    t.angle = 0;
 
     t.isShow = true;
 
@@ -176,18 +176,23 @@ function createTurtle() {
         t.height = h;
     };
 
+    // 参考：http://mclass13.web.fc2.com/hsplecture/nanamekukei.htm
     t.contains = function (tx, ty) {
-        return t.x <= tx &&
-            tx <= (t.x + t.width * Math.abs(Math.cos(deg2rad(t.angle)))) &&
-            t.y <= ty &&
-            ty <= (t.y + t.height * Math.abs(Math.sin(deg2rad(t.angle))));
+        var xx = t.x - t.width / 2, yy = t.y - t.height / 2;
+        var cx = t.x, cy = t.y;
+        var l = Math.sqrt((tx - cx) * (tx - cx) + (ty - cy) * (ty - cy));
+        var r2 = (Math.atan((ty - cy) / (tx - cx))) - deg2rad(t.angle);
+        var tx2 = l * Math.cos(r2) + cx;
+        var ty2 = l * Math.sin(r2) + cy;
+        return xx <= tx2 && tx2 <= xx + t.width &&
+            yy <= ty2 && ty2 <= yy + t.height;
     };
 
-    t.midX = function () {
+    t.centerX = function () {
         return t.x + t.width / 2;
     };
 
-    t.midY = function () {
+    t.centerY = function () {
         return t.y + t.height / 2;
     };
 
@@ -416,8 +421,8 @@ function isPressing(keyCode) {
 }
 // TODO 座標のずれをどうするか
 function mouseMove(e) {
-    mx = e.clientX - 8;
-    my = e.clientY - 36;
+    mx = document.body.scrollLeft + e.clientX - 8;
+    my = document.body.scrollTop + e.clientY - 36;
 }
 // TODO クリック関連の関数をどうするか
 function mouseX() {

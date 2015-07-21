@@ -12,11 +12,11 @@
                 arr[i - 1] = createImageTurtle("./img/man" + i + ".gif");
                 arr[i - 1].hide();
             }
-            var text;
+//            var text;
 //            text = input(); ↓のように変形する必要あり？
-//            input();
-//            th.join();
-//            text = inputText;
+//            input();         // 1.input()を単独で呼ぶ
+//            th.join();        // 2.join
+//            text = inputText; // 3.inputが内部でinputTextに代入したのでその変数をかわりに代入
 //            println(text);
 
             ttl.hide();
@@ -28,14 +28,12 @@
                 ttl.looks(arr[i % 8]);
                 ttl.rt(10);
                 th.join();
-                println(ttl.contains(mouseX(), mouseY()), ttl.x, mouseX(),
-                        parseInt(ttl.x + ttl.width * Math.abs(Math.cos(deg2rad(ttl.angle)))));
-                println(ttl.y, mouseY(),(parseInt(ttl.y + ttl.height * Math.abs(Math.sin(deg2rad(ttl.angle))))));
+                println(ttl.contains(mouseX(), mouseY()));
                 //      println(isPressing(99));
                 //       println(mouseY(), mouseX());
                 //    println(isMouseDown());
-                sleep(10);
                 update();
+                sleep(500);
             }
             ttl.printState();
         })
@@ -86,7 +84,7 @@
 <canvas id="locusCanvas" width="600" height="600"></canvas>
 <canvas id="turtleCanvas" width="600" height="600"></canvas>
 <input id="in" type="text" onkeypress="entered(event.keyCode,this.id);" placeholder="input()入力欄" title="in"/>
-<textarea id="msg" rows="12" cols="80" title="msgArea" readonly></textarea>
+<textarea id="msg" rows="6" cols="80" title="msgArea" readonly></textarea>
 </body>
 
 <script>
