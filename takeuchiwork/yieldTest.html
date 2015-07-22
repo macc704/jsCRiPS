@@ -3,6 +3,7 @@
 <script src="./ConcurrentThread.js"></script>
 <script src="./jscrips.js"></script>
 <script>
+    // TODO 時々イメージタートルが描画されない、原因不明。再描画or更新すれば大抵直る、IntelliJでデバッグしてる時のみ？
     var mth = {};
     function main() {
         mth = Thread.create(function () {
@@ -28,7 +29,8 @@
                 ttl.looks(arr[i % 8]);
                 ttl.rt(10);
                 th.join();
-                println(ttl.contains(mouseX(), mouseY()));
+               // println(key(),mouseDown(),doubleClick(),leftMouseDown(),rightMouseDown());
+           //     println(ttl.contains(mouseX(), mouseY()));
                 //      println(isPressing(99));
                 //       println(mouseY(), mouseX());
                 //    println(isMouseDown());

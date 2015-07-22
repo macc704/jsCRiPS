@@ -17,7 +17,7 @@ var KEY_ENTER = 13;
 function createTurtle() {
     var t = {};
 
-    t.x = 100.0;    // TODO どこ(左上か真ん中か)をx,yとするのか決める
+    t.x = 100.0;    // (x,y)は対象の中心を示す
     t.y = 100.0;
 
     //  dx = sin(angle), dy = -cos(angle) メンバ変数にする必要なし？
@@ -288,7 +288,7 @@ function drawTurtle(t) {
     } else {
         drawImg();
     }
-    // 亀は、x,yを左上として描画している
+    // TODO x,yを左上として描画しているので直す必要あり
     function drawKame() {
         // 胴体
         ctx.beginPath();
@@ -306,7 +306,7 @@ function drawTurtle(t) {
         ctx.closePath();
     }
 
-    // x,yを真ん中として描画している
+    // x,yを中心座標として描画している
     function drawImg() {
         ctx.save();
         ctx.translate(t.x, t.y);
@@ -399,23 +399,36 @@ function println() {
 
 /* イベント関係 */
 var keys = {};
+var recentPressKey = -1;
 document.addEventListener("keydown", keyDown);
 document.addEventListener("keyup", keyUp);
 
 var mx = -1, my = -1;
-var _isMouseDown = false;
+var MOUSE_LEFT = 0;
+var MOUSE_RIGHT = 2;
+var mouseLeftDown = false;
+var mouseRightDown = false;
+var wclick = false;
 document.addEventListener('mousemove', mouseMove);
-document.addEventListener('mousedown', mouseDown);
+document.addEventListener('mousedown', _mouseDown);
 document.addEventListener('mouseup', mouseUp);
+document.addEventListener('dblclick', mouseDoubleClick);
+function key() {
+    return recentPressKey;
+}
 
 function keyDown(e) {
     keys[e.keyCode] = true;
+    recentPressKey = e.keyCode;
 }
 
 function keyUp(e) {
     keys[e.keyCode] = false;
+    if (recentPressKey === e.keyCode) {
+        recentPressKey = -1;
+    }
 }
-// TODO key関連の関数をどうするか
+
 function isPressing(keyCode) {
     return keys[keyCode] ? keys[keyCode] : false;
 }
@@ -424,7 +437,7 @@ function mouseMove(e) {
     mx = document.body.scrollLeft + e.clientX - 8;
     my = document.body.scrollTop + e.clientY - 36;
 }
-// TODO クリック関連の関数をどうするか
+
 function mouseX() {
     return mx;
 }
@@ -433,17 +446,38 @@ function mouseY() {
     return my;
 }
 
-function mouseDown(e) {
-    _isMouseDown = true;
+function _mouseDown(e) {
+    mouseLeftDown = (mouseLeftDown || (e.button === MOUSE_LEFT));
+    mouseRightDown = (mouseRightDown || (e.button === MOUSE_RIGHT));
 }
 
 function mouseUp(e) {
-    _isMouseDown = false;
+    mouseLeftDown = (mouseLeftDown && (e.button !== MOUSE_LEFT));
+    mouseRightDown = (mouseRightDown && (e.button !== MOUSE_RIGHT));
 }
 
-function isMouseDown() {
-    return _isMouseDown;
+function mouseDown() {
+    return (mouseLeftDown || mouseRightDown);
 }
+
+function leftMouseDown() {
+    return mouseDown() && mouseLeftDown;
+}
+
+function rightMouseDown() {
+    return mouseDown() && mouseRightDown;
+}
+
+function doubleClick() {
+    var tmp = wclick;
+    wclick = false;
+    return tmp;
+}
+
+function mouseDoubleClick(e) {
+    wclick = true;
+}
+
 // TODO 標準入力はこの方法でいいのか…？
 function entered(k, id) {
     if (k === KEY_ENTER) {
