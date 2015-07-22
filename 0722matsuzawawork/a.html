@@ -1,0 +1,38 @@
+<html>
+
+<head>
+    <!-- <script src="https://cdn.rawgit.com/jquery/esprima/1.2/esprima.js"></script> -->
+    <script src="esprima-2.4.1/esprima.js"></script>
+    <script src="escodegen-1.6.1/escodegen.browser.js"></script>
+    <!-- <script src="estraverse-4.1.0/estraverse.js"></script> -->
+    <script type="text/javascript">
+    window.onload = function() {
+        var ast = esprima.parse('fd(100); rt(50);');
+        var yield = esprima.parse('a.update();').body[0];
+        //document.getElementById('hoge').innerHTML = JSON.stringify(ast, null, 2);
+        console.log(JSON.stringify(ast, null, 2));
+        // estraverse.traverse(ast, {
+        //     enter: function(node) {},
+
+        //     // Iterating the child **nodes** of unknown nodes.
+        //     fallback: 'iteration'
+        // });
+        var body = ast.body;
+        var newBody = [];
+        body.forEach(function(each){
+            newBody.push(each);
+            newBody.push(yield);
+        });
+        ast.body = newBody;
+        var translated = escodegen.generate(ast);
+        document.getElementById('hoge').innerHTML = translated;
+    }
+    </script>
+</head>
+
+<body>
+    <h1>Test2</h1>
+    <p id="hoge">hoge</p>
+</body>
+
+</html>
