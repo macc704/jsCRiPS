@@ -270,8 +270,8 @@ function createImageTurtle(imgName) {
         img.src = imgName;
         imgs[imgName] = img;
         img.onerror = function() {
-            document.getElementById('msg').value +=
-                document.getElementById('msg').value + "画像[" + imgName + "]が見つかりません\n";
+            document.getElementById('console').value +=
+                document.getElementById('console').value + "画像[" + imgName + "]が見つかりません\n";
         };
     }
     var t = createTurtle();
@@ -431,7 +431,7 @@ function print() {
         str += arguments[i] + ',';
     }
     str += arguments[arguments.length - 1];
-    var msgArea = document.getElementById('msg');
+    var msgArea = document.getElementById('console');
     msgArea.value += str;
     while (msgArea.value.length > 1000) {
         msgArea.value = msgArea.value.split('\n').slice(1).join('\n');
