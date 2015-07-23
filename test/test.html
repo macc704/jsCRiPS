@@ -1,3 +1,5 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
 <html>
 
 <head>
@@ -5,89 +7,93 @@
     <script src="../lib/escodegen-1.6.1/escodegen.browser.js"></script>
     <script src="../lib/ConcurrentThread.js"></script>
     <script src="../src/jscrips.js"></script>
-    <script type="text/javascript">
-    var mth = {};
+    <script>
 
-    function main() {
-        var source = document.getElementById('source').value;
-        var converted = converter.convert(source);
-        document.getElementById('result').value = converted;        
-        eval('var func = function(){' + converted + '}');
-        mth = Thread.create(func);
-    }
-
-    function restart() {
-        clearTurtleCanvas();
-        clearLocusCanvas();
-        document.getElementById('console').value = "";
-        try {
-            mth.kill();
-            th.kill();
-        } catch (e) {
-            // TODO mth,thが終了時に例外が出る、無視でok?
-            println("ERROR [" + e + "]");
+        function main() {
+            var source = document.getElementById('source').value;
+            var converted = converter.convert(source);
+            document.getElementById('result').value = converted;
+            eval('var func = function(){' + converted + '}');
+            start(func);
         }
-        ttls = [];
-        main();
-    }
+
     </script>
     <style type="text/css">
-    canvas {
-        border: 1px solid #999;
-        position: absolute;
-        left: 340px;
-    }
-    
-    #restart {
-        position: absolute;
-        top: 30px;
-        left: 340px;
-    }
-    
-    #in {
-        position: absolute;
-        top: 640px;
-    }
-    
-    textarea {
-        position: absolute;
-    }
-    
-    textarea#result {
-        position: absolute;
-        top: 400px;
-    }
-    
-    textarea#ast {
-        position: absolute;
-        left: 340px;
-        top: 400px;
-    }
-    
-    textarea#console {
-        position: absolute;
-        bottom: 10px;
-    }
+        canvas {
+            border: 1px solid #999;
+            position: absolute;
+            left: 340px;
+        }
+
+        #restart {
+            position: absolute;
+            top: 24px;
+            left: 340px;
+        }
+
+        #in {
+            position: absolute;
+            top: 50px;
+            left: 340px;
+        }
+
+        textarea {
+            position: absolute;
+        }
+
+        #sldiv {
+            position: absolute;
+            top: 20px;
+            left: 440px;
+        }
+
+        textarea#result {
+            position: absolute;
+            top: 400px;
+        }
+
+        textarea#ast {
+            position: absolute;
+            left: 340px;
+            top: 400px;
+        }
+
+        textarea#console {
+            position: absolute;
+            bottom: 10px;
+        }
     </style>
 </head>
 
 <body>
-    <h1>Test2</h1>
-    <textarea id="source" cols="45" rows="20">
-for(var i=0;i<4;i++){
-fd(50);
-rt(90);
+<h1>Test2</h1>
+<textarea id="source" cols="45" rows="20" title="source">
+var t = createTurtle();
+for(var i=0;i<12;i++){
+    t.fd(10);
+    t.rt(30);
 }    
-    </textarea>
-    <button type="button" id="restart" onclick="restart()">press me</button>
-    </br>
-    <canvas id="locusCanvas" width="200" height="200"></canvas>
-    <canvas id="turtleCanvas" width="200" height="200"></canvas>
+</textarea>
+
+<div id="sldiv">
+    速<input type="range" name="moveSpeed" min="0" max="12" step="2"
+            value="6" onchange="changeSpeed(this.value)" title="moveSpeed">遅
+</div>
+<input id="in" type="text" onkeypress="entered(event.keyCode,this.id);" placeholder="input()入力欄" title="in"/>
+
+<button type="button" id="restart" onclick="restart()">press me</button>
+
+<canvas id="locusCanvas" width="200" height="200"></canvas>
+<canvas id="turtleCanvas" width="200" height="200"></canvas>
     <textarea id="result" cols="45" rows="20">
     </textarea>
     <textarea id="ast" cols="45" rows="20">
     </textarea>
-    <textarea id="console" rows="6" cols="80" title="msgArea" readonly></textarea>
+<textarea id="console" rows="6" cols="80" title="msgArea" readonly></textarea>
 </body>
-
+<script>
+    // 余計なアンチエイリアスの解除
+    var c = document.getElementById('locusCanvas');
+    c.getContext('2d').translate(0.5, 0.5);
+</script>
 </html>

@@ -1,14 +1,15 @@
 'use strict';
 
+/*global esprima,console,escodegen*/
 var converter = {};
-converter.convert = function(source) {
+converter.convert = function (source) {
     var ast = esprima.parse(source);
     var yieldAST = esprima.parse('th.join();').body[0];
 
     //for debug       
     document.getElementById('ast').value = JSON.stringify(ast, null, 4);
 
-    var processStatement = function(stmt) {
+    var processStatement = function (stmt) {
         if (stmt.type === 'BlockStatement') {
             stmt.body = processStatements(stmt.body);
         }
@@ -22,9 +23,9 @@ converter.convert = function(source) {
         return stmt;
     };
 
-    var processStatements = function(stmts) {
+    var processStatements = function (stmts) {
         var newStmts = [];
-        stmts.forEach(function(each) {
+        stmts.forEach(function (each) {
             if (each.type === 'IfStatement') {
                 if (each.consequent) {
                     each.consequent = processStatement(each.consequent);
@@ -35,7 +36,7 @@ converter.convert = function(source) {
             }
             if (each.body) { //while series
                 each.body = processStatement(each.body);
-            };
+            }
             newStmts.push(each);
             if (each.type === 'ExpressionStatement' && each.expression.type === 'CallExpression') {
                 newStmts.push(yieldAST);
@@ -44,12 +45,11 @@ converter.convert = function(source) {
         return newStmts;
     };
 
-    var newBody = processStatements(ast.body);
-    ast.body = newBody;
-    var translated = escodegen.generate(ast);
-    return translated;
+    ast.body = processStatements(ast.body);
+    return escodegen.generate(ast);
 };
 
+var mth = {};// メインスレッド
 var th = {}; // スレッド制御用
 var ttls = []; // タートルを管理するリスト
 var imgs = {}; // 画像を管理するマップ
@@ -79,7 +79,7 @@ function createTurtle() {
     t.rx = t.x;
     t.ry = t.y;
 
-    t.angle = 0;
+    t.angle = -90;
 
     t.isShow = true;
 
@@ -94,11 +94,11 @@ function createTurtle() {
     t.width = 0;
     t.height = 0;
 
-    t.fd = function(d) {
+    t.fd = function (d) {
         if (d < 0) {
             t.bk(-d);
         } else {
-            th = Thread.create(function(d, t) {
+            th = Thread.create(function (d, t) {
                 var xx = t.x,
                     yy = t.y;
                 var dx = Math.cos(deg2rad(t.angle));
@@ -118,11 +118,11 @@ function createTurtle() {
         }
     };
 
-    t.bk = function(d) {
+    t.bk = function (d) {
         if (d < 0) {
             t.fd(-d);
         } else {
-            th = Thread.create(function(d, t) {
+            th = Thread.create(function (d, t) {
                 var xx = t.x,
                     yy = t.y;
                 var dx = Math.cos(deg2rad(t.angle));
@@ -142,14 +142,14 @@ function createTurtle() {
         }
     };
 
-    t.rt = function(deg) {
+    t.rt = function (deg) {
         if (deg < 0) {
-            lt(-deg);
+            t.lt(-deg);
         } else {
-            th = Thread.create(function(deg, t) {
+            th = Thread.create(function (deg, t) {
                 var tmpAngle = t.angle;
                 var tmpPendown = t.penDown;
-                up();
+                t.up();
                 for (var i = rotateStep; i < deg; i += rotateStep) {
                     draw(t);
                     t.angle += rotateStep;
@@ -162,14 +162,14 @@ function createTurtle() {
         }
     };
 
-    t.lt = function(deg) {
+    t.lt = function (deg) {
         if (deg < 0) {
-            rt(-deg);
+            t.rt(-deg);
         } else {
-            th = Thread.create(function(deg, t) {
+            th = Thread.create(function (deg, t) {
                 var tmpAngle = t.angle;
                 var tmpPendown = t.penDown;
-                up();
+                t.up();
                 for (var i = rotateStep; i < deg; i += rotateStep) {
                     draw(t);
                     t.angle -= rotateStep;
@@ -182,19 +182,19 @@ function createTurtle() {
         }
     };
 
-    t.up = function() {
+    t.up = function () {
         t.penDown = false;
     };
 
-    t.down = function() {
+    t.down = function () {
         t.penDown = true;
     };
 
-    t.color = function(c) {
+    t.color = function (c) {
         t.penColor = c;
     };
 
-    t.warp = function(x, y) {
+    t.warp = function (x, y) {
         var tmpPendown = t.penDown;
         t.up();
         t.x = x;
@@ -203,7 +203,7 @@ function createTurtle() {
         t.penDown = tmpPendown;
     };
 
-    t.looks = function(tt) {
+    t.looks = function (tt) {
         if (tt && tt._looks) {
             t._looks = tt._looks;
             t.width = tt.width;
@@ -213,50 +213,50 @@ function createTurtle() {
         }
     };
 
-    t.show = function() {
+    t.show = function () {
         t.isShow = true;
     };
 
-    t.hide = function() {
+    t.hide = function () {
         t.isShow = false;
     };
 
-    t.setWidth = function(w) {
+    t.setWidth = function (w) {
         t.width = w;
     };
 
-    t.setHeight = function(h) {
+    t.setHeight = function (h) {
         t.height = h;
     };
 
     // 参考：http://mclass13.web.fc2.com/hsplecture/nanamekukei.htm
-    t.contains = function(tx, ty) {
-        var xx = t.x - t.width / 2,
-            yy = t.y - t.height / 2;
+    t.contains = function (tx, ty) {
+        var xx = t.x - t.width / 2, yy = t.y - t.height / 2;
         var cx = t.x,
             cy = t.y;
         var l = Math.sqrt((tx - cx) * (tx - cx) + (ty - cy) * (ty - cy));
-        var r2 = (Math.atan((ty - cy) / (tx - cx))) - deg2rad(t.angle);
+        var r2 = Math.atan((ty - cy) / (tx - cx)) - deg2rad(t.angle);
         var tx2 = l * Math.cos(r2) + cx;
         var ty2 = l * Math.sin(r2) + cy;
+        println(xx, yy);
         return xx <= tx2 && tx2 <= xx + t.width &&
             yy <= ty2 && ty2 <= yy + t.height;
     };
 
-    t.centerX = function() {
+    t.centerX = function () {
         return t.x + t.width / 2;
     };
 
-    t.centerY = function() {
+    t.centerY = function () {
         return t.y + t.height / 2;
     };
 
-    t.setRxRy = function() {
+    t.setRxRy = function () {
         t.rx = t.x;
         t.ry = t.y;
     };
 
-    t.printState = function() {
+    t.printState = function () {
         println(
             "(x,y) = (" + parseInt(t.x) + "," + parseInt(t.y) + ")\n" +
             "angle = " + t.angle + "\n" +
@@ -269,16 +269,16 @@ function createTurtle() {
 }
 
 function createImageTurtle(imgName) {
+    var t = createTurtle(); // 先頭に書かないとなんかおかしくなる？
     if (imgs[imgName] === undefined) {
         var img = new Image();
         img.src = imgName;
         imgs[imgName] = img;
-        img.onerror = function() {
+        img.onerror = function () {
             document.getElementById('console').value +=
                 document.getElementById('console').value + "画像[" + imgName + "]が見つかりません\n";
         };
     }
-    var t = createTurtle();
     t.penDown = false;
     t._looks = imgs[imgName];
     t.width = t._looks.width;
@@ -286,36 +286,36 @@ function createImageTurtle(imgName) {
     return t;
 }
 
-var defaultTurtle = createTurtle();
-
-function fd(d) {
-    defaultTurtle.fd(d);
-}
-
-function bk(d) {
-    defaultTurtle.bk(d);
-}
-
-
-function rt(deg) {
-    defaultTurtle.rt(deg);
-}
-
-function lt(deg) {
-    defaultTurtle.lt(deg);
-}
-
-function up() {
-    defaultTurtle.up();
-}
-
-function down() {
-    defaultTurtle.down();
-}
-
-function color(c) {
-    defaultTurtle.color(c);
-}
+//var defaultTurtle = createTurtle();
+//
+//function fd(d) {
+//    defaultTurtle.fd(d);
+//}
+//
+//function bk(d) {
+//    defaultTurtle.bk(d);
+//}
+//
+//
+//function rt(deg) {
+//    defaultTurtle.rt(deg);
+//}
+//
+//function lt(deg) {
+//    defaultTurtle.lt(deg);
+//}
+//
+//function up() {
+//    defaultTurtle.up();
+//}
+//
+//function down() {
+//    defaultTurtle.down();
+//}
+//
+//function color(c) {
+//    defaultTurtle.color(c);
+//}
 
 
 /* 描画関連 */
@@ -417,6 +417,27 @@ function sleep(t) {
 function update() {
     draw();
 }
+
+function start(f) {
+    mth = Thread.create(f);
+}
+
+/*global main*/
+function restart(f) {
+    clearTurtleCanvas();
+    clearLocusCanvas();
+    document.getElementById('console').value = "";
+    try {
+        mth.kill();
+        th.kill();
+    } catch (e) {
+        // TODO mth,thが終了時に例外が出る、無視でok?
+        println("ERROR [" + e + "]");
+    }
+    ttls = [];
+    main();
+}
+
 // TODO MAXスピードが遅い、関数呼び出しのオーバーヘッド？
 function changeSpeed(x) {
     sleepTime = Number(x);
@@ -491,8 +512,8 @@ function isPressing(keyCode) {
 }
 // TODO 座標のずれをどうするか
 function mouseMove(e) {
-    mx = document.body.scrollLeft + e.clientX - 8;
-    my = document.body.scrollTop + e.clientY - 36;
+    mx = document.body.scrollLeft + e.clientX - 332;
+    my = document.body.scrollTop + e.clientY - 76;
 }
 
 function mouseX() {
@@ -547,7 +568,7 @@ function entered(k, id) {
 }
 
 function input() {
-    th = Thread.create(function() {
+    th = Thread.create(function () {
         while (!inputted) {
             sleep(1);
         }
