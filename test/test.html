@@ -6,95 +6,88 @@
     <script src="../lib/ConcurrentThread.js"></script>
     <script src="../src/jscrips.js"></script>
     <script type="text/javascript">
-        var mth = {};
+    var mth = {};
 
-        function main() {
-            mth = Thread.create(function () {
-                var x = createTurtle();
-                x.fd(50);
-                th.join();
-                x.rt(90);
-                th.join();
-                x.fd(50);
-                th.join();
-            });
-        }
+    function main() {
+        var source = document.getElementById('source').value;
+        var converted = converter.convert(source);
+        document.getElementById('result').value = converted;        
+        eval('var func = function(){' + converted + '}');
+        mth = Thread.create(func);
+    }
 
-        function convert() {
-            var source = document.getElementById('source').value;
-            var converted = converter.convert(source);
-            document.getElementById('result').value = converted;
+    function restart() {
+        clearTurtleCanvas();
+        clearLocusCanvas();
+        document.getElementById('console').value = "";
+        try {
+            mth.kill();
+            th.kill();
+        } catch (e) {
+            // TODO mth,thが終了時に例外が出る、無視でok?
+            println("ERROR [" + e + "]");
         }
-
-        function restart() {
-            clearTurtleCanvas();
-            clearLocusCanvas();
-            document.getElementById('console').value = "";
-            try {
-                mth.kill();
-                th.kill();
-            } catch (e) {
-                // TODO mth,thが終了時に例外が出る、無視でok?
-                println("ERROR [" + e + "]");
-            }
-            ttls = [];
-            main();
-        }
+        ttls = [];
+        main();
+    }
     </script>
     <style type="text/css">
-        canvas {
-            border: 1px solid #999;
-            position: absolute;
-            left: 340px;
-        }
-
-        #restart {
-            position: absolute;
-            top: 30px;
-            left: 340px;
-        }
-
-        #in {
-            position: absolute;
-            top: 640px;
-        }
-
-        textarea {
-            position: absolute;
-        }
-
-        textarea#result {
-            position: absolute;
-            top: 400px;
-        }
-
-        textarea#ast {
-            position: absolute;
-            left: 340px;
-            top: 400px;
-        }
-
-        textarea#console {
-            position: absolute;
-            bottom: 10px;
-        }
+    canvas {
+        border: 1px solid #999;
+        position: absolute;
+        left: 340px;
+    }
+    
+    #restart {
+        position: absolute;
+        top: 30px;
+        left: 340px;
+    }
+    
+    #in {
+        position: absolute;
+        top: 640px;
+    }
+    
+    textarea {
+        position: absolute;
+    }
+    
+    textarea#result {
+        position: absolute;
+        top: 400px;
+    }
+    
+    textarea#ast {
+        position: absolute;
+        left: 340px;
+        top: 400px;
+    }
+    
+    textarea#console {
+        position: absolute;
+        bottom: 10px;
+    }
     </style>
 </head>
 
 <body>
-<h1>Test2</h1>
+    <h1>Test2</h1>
     <textarea id="source" cols="45" rows="20">
-        fd(100);
+for(var i=0;i<4;i++){
+fd(50);
+rt(90);
+}    
     </textarea>
-<button type="button" id="restart" onclick="restart()">press me</button>
-</br>
-<canvas id="locusCanvas" width="200" height="200"></canvas>
-<canvas id="turtleCanvas" width="200" height="200"></canvas>
+    <button type="button" id="restart" onclick="restart()">press me</button>
+    </br>
+    <canvas id="locusCanvas" width="200" height="200"></canvas>
+    <canvas id="turtleCanvas" width="200" height="200"></canvas>
     <textarea id="result" cols="45" rows="20">
     </textarea>
     <textarea id="ast" cols="45" rows="20">
     </textarea>
-<textarea id="console" rows="6" cols="80" title="msgArea" readonly></textarea>
+    <textarea id="console" rows="6" cols="80" title="msgArea" readonly></textarea>
 </body>
 
 </html>
