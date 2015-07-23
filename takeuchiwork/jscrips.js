@@ -461,11 +461,11 @@ function mouseDown() {
 }
 
 function leftMouseDown() {
-    return mouseDown() && mouseLeftDown;
+    return (mouseDown() && mouseLeftDown);
 }
 
 function rightMouseDown() {
-    return mouseDown() && mouseRightDown;
+    return (mouseDown() && mouseRightDown);
 }
 
 function doubleClick() {
