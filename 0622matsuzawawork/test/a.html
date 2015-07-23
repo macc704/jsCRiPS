@@ -1,25 +1,30 @@
 <html>
 <script type="text/javascript" src="Concurrent.Thread.js"></script>
+<!--<script type="application/javascript;version=1.7">-->
 <script type="text/javascript">
 var o = {};
+
 o.fd = function(x) {
     document.body.innerHTML += 'fd' + "<br>";
     var cur = Concurrent.Thread.self();
-    var th = Concurrent.Thread.create(function() {
+    o.th = Concurrent.Thread.create(function() {
         for (var i = 0; i < 10; i++) {
             sleep(100);
             document.body.innerHTML += 'x' + "<br>";
         }
         //cur.notify(e);
     });
-
-    //return th;
     // try {
     //     cur.stop();
     // } catch (e) {
     // }
     //th.join(); // does not work
 };
+
+o.x = function(){
+    o.th.join();
+};
+
 // var th = Concurrent.Thread.create(function(){
 //     while(1){
 //         sleep(100);
@@ -30,9 +35,11 @@ o.fd = function(x) {
  
 Concurrent.Thread.create(function() {
     for (var i = 0; i < 4; i++) {
-        /*var th = */o.fd(100);
-        //th.join();
-        yield 0;
+        o.fd(100);
+        sleep(10);
+        o.x();
+        //o.th.join();
+        //yield 0;
     }
 });
 </script>
