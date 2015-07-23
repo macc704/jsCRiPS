@@ -3,14 +3,41 @@
 <head>
     <script src="../lib/esprima-2.4.1/esprima.js"></script>
     <script src="../lib/escodegen-1.6.1/escodegen.browser.js"></script>
-    <script src="../lib/ConcurrentThread.js"></script>    
-    <script src="../src/jscrips.js"></script>        
-
+    <script src="../lib/ConcurrentThread.js"></script>
+    <script src="../src/jscrips.js"></script>
     <script type="text/javascript">
+    var mth = {};
+
+    function main() {
+        mth = Thread.create(function() {
+            fd(50);
+            th.join();
+            rt(90);
+            th.join();
+            fd(50);
+            th.join();            
+        });
+    }
+
     function convert() {
         var source = document.getElementById('source').value;
         var converted = converter.convert(source);
         document.getElementById('result').value = converted;
+    }
+
+    function restart() {
+        clearTurtleCanvas();
+        clearLocusCanvas();
+        document.getElementById('msg').value = "";
+        try {
+            mth.kill();
+            th.kill();
+        } catch (e) {
+            // TODO mth,thが終了時に例外が出る、無視でok?
+            println("ERROR [" + e + "]");
+        }
+        ttls = [];
+        main();
     }
     </script>
 </head>
@@ -20,12 +47,15 @@
     <textarea id="source" cols="45" rows="20">
         fd(100);
     </textarea>
-    <button type="button" onclick="convert()">press me</button>
+    <button type="button" onclick="restart()">press me</button>
     </br>
+    <canvas id="locusCanvas" width="200" height="200"></canvas>
+    <canvas id="turtleCanvas" width="200" height="200"></canvas>
     <textarea id="result" cols="45" rows="20">
     </textarea>
     <textarea id="ast" cols="45" rows="20">
     </textarea>
+    <textarea id="msg" rows="6" cols="80" title="msgArea" readonly></textarea>
 </body>
 
 </html>
