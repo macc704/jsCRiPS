@@ -1,52 +1,63 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<script src="./ConcurrentThread.js" ></script>
+<script src="./ConcurrentThread.js"></script>
 <script src="./jscrips.js"></script>
 <script>
-  function main() {
-        Thread.create(function () {
-            for(var i=4;i<10;i++){
-                for(var j=0;j<4;j++){
-                fd(i*10);
-                th.join();
-                rt(90);
-                th.join();
-                }
-                rt(30);
-                th.join();
+    // TODO 時々イメージタートルが描画されない、原因不明。再描画or更新すれば大抵直る、IntelliJでデバッグしてる時のみ？
+    var mth = {};
+    function main() {
+        mth = Thread.create(function () {
+            var arr = [];
+            var ttl = createImageTurtle("./img/man1.gif");
+            for (var i = 1; i <= 8; i++) {
+                arr[i - 1] = createImageTurtle("./img/man" + i + ".gif");
+                arr[i - 1].hide();
             }
-            // for(var i=0;i<4;i++){
-            //     fd(100);
-            //     th.join();
-            //     rt(90);
-            //     th.join();
-            // }
-            // console.log("start");
+//            var text;
+//            text = input(); ↓のように変形する必要あり？
+//            input();         // 1.input()を単独で呼ぶ
+//            th.join();        // 2.join
+//            text = inputText; // 3.inputが内部でinputTextに代入したのでその変数をかわりに代入
+//            println(text);
 
-            // fd(100);
-            // th.join();
-
-            // rt(30);
-            // th.join();
-
-            // up();
-
-            // fd(50);
-            // th.join();
-
-            // down();
-            // color("red");
-
-            // lt(-120);
-            // th.join();
-
-            // bk(50);
-            // th.join();
-
-            // console.log("finish");
+            ttl.hide();
+            ttl.rt(90);
+            th.join();
+            ttl.show();
+            for (var i = 0; i < 100; i++) {
+                ttl.warp(100 + i * 2, 100);
+                ttl.looks(arr[i % 8]);
+                ttl.rt(10);
+                th.join();
+               // println(key(),mouseDown(),doubleClick(),leftMouseDown(),rightMouseDown());
+           //     println(ttl.contains(mouseX(), mouseY()));
+                //      println(isPressing(99));
+                //       println(mouseY(), mouseX());
+                //    println(isMouseDown());
+                update();
+                sleep(500);
+            }
+            ttl.printState();
         })
     }
     window.onload = main();
+
+
+    function restart() {
+        clearTurtleCanvas();
+        clearLocusCanvas();
+        document.getElementById('msg').value = "";
+        try {
+            mth.kill();
+            th.kill();
+        } catch (e) {
+            // TODO mth,thが終了時に例外が出る、無視でok?
+            println("ERROR [" + e + "]");
+        }
+        ttls = [];
+        main();
+    }
+
 
 </script>
 
@@ -55,9 +66,31 @@
         border: 1px solid #999;
         position: absolute;
     }
+
+    #in {
+        position: absolute;
+        top: 640px;
+    }
+
+    textarea {
+        position: absolute;
+        top: 666px;
+    }
 </style>
 
 <body>
+速<input type="range" name="moveSpeed" min="0" max="12" step="2"
+        value="6" onchange="changeSpeed(this.value)" title="moveSpeed">遅
+<input type="button" value="再描画" onclick="restart()">
+<br>
 <canvas id="locusCanvas" width="600" height="600"></canvas>
 <canvas id="turtleCanvas" width="600" height="600"></canvas>
+<input id="in" type="text" onkeypress="entered(event.keyCode,this.id);" placeholder="input()入力欄" title="in"/>
+<textarea id="msg" rows="6" cols="80" title="msgArea" readonly></textarea>
 </body>
+
+<script>
+    // 余計なアンチエイリアスの解除
+    var c = document.getElementById('locusCanvas');
+    c.getContext('2d').translate(0.5, 0.5);
+</script>
