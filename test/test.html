@@ -1,0 +1,31 @@
+<html>
+
+<head>
+    <script src="../lib/esprima-2.4.1/esprima.js"></script>
+    <script src="../lib/escodegen-1.6.1/escodegen.browser.js"></script>
+    <script src="../lib/ConcurrentThread.js"></script>    
+    <script src="../src/jscrips.js"></script>        
+
+    <script type="text/javascript">
+    function convert() {
+        var source = document.getElementById('source').value;
+        var converted = converter.convert(source);
+        document.getElementById('result').value = converted;
+    }
+    </script>
+</head>
+
+<body>
+    <h1>Test2</h1>
+    <textarea id="source" cols="45" rows="20">
+        fd(100);
+    </textarea>
+    <button type="button" onclick="convert()">press me</button>
+    </br>
+    <textarea id="result" cols="45" rows="20">
+    </textarea>
+    <textarea id="ast" cols="45" rows="20">
+    </textarea>
+</body>
+
+</html>
