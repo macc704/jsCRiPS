@@ -26,8 +26,12 @@ converter.convert = function(source) {
         var newStmts = [];
         stmts.forEach(function(each) {
             if (each.type === 'IfStatement') {
-                each.consequent = processStatement(each.consequent);
-                each.alternate = processStatement(each.alternate);
+                if (each.consequent) {
+                    each.consequent = processStatement(each.consequent);
+                }
+                if (each.alternate) {
+                    each.alternate = processStatement(each.alternate);
+                }
             }
             if (each.body) { //while series
                 each.body = processStatement(each.body);
