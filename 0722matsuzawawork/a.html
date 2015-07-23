@@ -1,50 +1,68 @@
 <html>
 
 <head>
-    <!-- <script src="https://cdn.rawgit.com/jquery/esprima/1.2/esprima.js"></script> -->
     <script src="esprima-2.4.1/esprima.js"></script>
     <script src="escodegen-1.6.1/escodegen.browser.js"></script>
-    <!-- <script src="estraverse-4.1.0/estraverse.js"></script> -->
-    <script src="ast-traverse-master/ast-traverse.js"></script>
     <script type="text/javascript">
-    window.onload = function() {
-        var ast = esprima.parse('fd(100); rt(50);');
-        var yield = esprima.parse('a.update();').body[0];
-        //document.getElementById('hoge').innerHTML = JSON.stringify(ast, null, 2);
-        console.log(JSON.stringify(ast, null, 2));
-        // estraverse.traverse(ast, {
-        //     enter: function(node) {},
+    function convert() {
+        var source = document.getElementById('source').value;
+        var ast = esprima.parse(source);
+        var yield = esprima.parse('th.join();').body[0];
 
-        //     // Iterating the child **nodes** of unknown nodes.
-        //     fallback: 'iteration'
-        // });
+        //for debug       
+        document.getElementById('ast').value = JSON.stringify(ast, null, 4);
 
-        var indent = 0;
-        traverse(ast, {
-            pre: function(node) {
-                console.log(Array(indent + 1).join(" ") + node.type);
-                indent += 4;
-            },
-            post: function() {
-                indent -= 4;
+        var processStatement = function(stmt) {
+            if (stmt.type === 'BlockStatement') {
+                stmt.body = processStatements(stmt.body);
             }
-        });
-        var body = ast.body;
-        var newBody = [];
-        body.forEach(function(each) {
-            newBody.push(each);
-            newBody.push(yield);
-        });
+            if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'CallExpression') {
+                console.log('here');
+                var block = esprima.parse('{}').body[0];
+                block.body.push(stmt);
+                block.body.push(yield);
+                return block;
+            }
+            return stmt;
+        };
+
+        var processStatements = function(stmts) {
+            var newStmts = [];
+            stmts.forEach(function(each) {
+                if (each.type === 'IfStatement') {
+                    each.consequent = processStatement(each.consequent);
+                    each.alternate = processStatement(each.alternate);
+                }
+                if (each.body) { //while series
+                    each.body = processStatement(each.body);
+                };
+                newStmts.push(each);
+                if (each.type === 'ExpressionStatement' && each.expression.type === 'CallExpression') {
+                    newStmts.push(yield);
+                }
+            });
+            return newStmts;
+        };
+
+        var newBody = processStatements(ast.body);
         ast.body = newBody;
         var translated = escodegen.generate(ast);
-        document.getElementById('hoge').innerHTML = translated;
+        document.getElementById('result').value = translated;
     }
     </script>
 </head>
 
 <body>
     <h1>Test2</h1>
-    <p id="hoge">hoge</p>
+    <textarea id="source" cols="45" rows="20">
+        fd(100);
+    </textarea>
+    <button type="button" onclick="convert()">press me</button>
+    </br>
+    <textarea id="result" cols="45" rows="20">
+    </textarea>
+    <textarea id="ast" cols="45" rows="20">
+    </textarea>
 </body>
 
 </html>
