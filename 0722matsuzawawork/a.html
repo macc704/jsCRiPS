@@ -5,6 +5,7 @@
     <script src="esprima-2.4.1/esprima.js"></script>
     <script src="escodegen-1.6.1/escodegen.browser.js"></script>
     <!-- <script src="estraverse-4.1.0/estraverse.js"></script> -->
+    <script src="ast-traverse-master/ast-traverse.js"></script>
     <script type="text/javascript">
     window.onload = function() {
         var ast = esprima.parse('fd(100); rt(50);');
@@ -17,9 +18,20 @@
         //     // Iterating the child **nodes** of unknown nodes.
         //     fallback: 'iteration'
         // });
+
+        var indent = 0;
+        traverse(ast, {
+            pre: function(node) {
+                console.log(Array(indent + 1).join(" ") + node.type);
+                indent += 4;
+            },
+            post: function() {
+                indent -= 4;
+            }
+        });
         var body = ast.body;
         var newBody = [];
-        body.forEach(function(each){
+        body.forEach(function(each) {
             newBody.push(each);
             newBody.push(yield);
         });
