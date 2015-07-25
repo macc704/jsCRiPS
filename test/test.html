@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <html>
-
 <head>
     <script src="../lib/esprima-2.4.1/esprima.js"></script>
     <script src="../lib/escodegen-1.6.1/escodegen.browser.js"></script>
     <script src="../lib/ConcurrentThread.js"></script>
     <script src="../src/jscrips.js"></script>
+    <link rel="stylesheet" href="../lib/Slidebars-0.10.3/dist/slidebars.min.css">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script>
 
         function main() {
@@ -25,26 +27,8 @@
             left: 340px;
         }
 
-        #restart {
-            position: absolute;
-            top: 24px;
-            left: 340px;
-        }
-
-        #in {
-            position: absolute;
-            top: 50px;
-            left: 340px;
-        }
-
         textarea {
             position: absolute;
-        }
-
-        #sldiv {
-            position: absolute;
-            top: 20px;
-            left: 440px;
         }
 
         textarea#result {
@@ -62,11 +46,95 @@
             position: absolute;
             bottom: 10px;
         }
+
+        nav {
+            background-color: #2c3e50;
+            color: #95a5a6;
+            height: 40px;
+            line-height: 40px;
+            padding: 0 10px 0 10px;
+        }
+
+        nav div {
+            display: inline;
+        }
+
+        #slidebarb {
+            border-style: none;
+            background-color: #8e44ad;
+            color: #95a5a6;
+            font-size: 1.2em;
+        }
+
+        #leftb {
+            top: 40px;
+        }
+
+        ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            color: #95a5a6;
+
+        }
+
+        ul li {
+            margin: 4px;
+        }
+
+        ul li ul li {
+            padding: 3px;
+        }
+
+        ul li ul li:hover {
+            background-color: #2c3e50;
+            font-weight: bold;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            background-color: #bdc3c7;
+            height: 5px;
+            border-radius: 5px;
+            margin: 0 8px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            background-color: #e74c3c;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid white;
+            cursor: pointer;
+            transition: .3s ease-in-out;
+        }
+
     </style>
 </head>
 
 <body>
-<h1>Test2</h1>
+<nav>
+    <div>
+        <button type="button" class="sb-toggle-left" id="slidebarb">≡</button>
+    </div>
+    <div>
+        <button type="button" id="restart" onclick="restart()">press me</button>
+    </div>
+
+    <div>
+        <input id="in" type="text" onkeypress="entered(event.keyCode,this.id);" placeholder="input()入力欄" title="in"/>
+    </div>
+
+    <div id="sldiv">
+        速<input type="range" name="moveSpeed" min="0" max="12" step="2"
+                value="6" onchange="changeSpeed(this.value)" title="moveSpeed">遅
+    </div>
+
+</nav>
+
+<div id="sb-site">
+    <h1>Test2</h1>
 <textarea id="source" cols="45" rows="20" title="source">
 var t = createTurtle();
 for(var i=0;i<12;i++){
@@ -75,25 +143,59 @@ for(var i=0;i<12;i++){
 }    
 </textarea>
 
-<div id="sldiv">
-    速<input type="range" name="moveSpeed" min="0" max="12" step="2"
-            value="6" onchange="changeSpeed(this.value)" title="moveSpeed">遅
-</div>
-<input id="in" type="text" onkeypress="entered(event.keyCode,this.id);" placeholder="input()入力欄" title="in"/>
 
-<button type="button" id="restart" onclick="restart()">press me</button>
-
-<canvas id="locusCanvas" width="200" height="200"></canvas>
-<canvas id="turtleCanvas" width="200" height="200"></canvas>
+    <canvas id="locusCanvas" width="200" height="200"></canvas>
+    <canvas id="turtleCanvas" width="200" height="200"></canvas>
     <textarea id="result" cols="45" rows="20">
     </textarea>
     <textarea id="ast" cols="45" rows="20">
     </textarea>
-<textarea id="console" rows="6" cols="80" title="msgArea" readonly></textarea>
-</body>
+    <textarea id="console" rows="6" cols="80" title="msgArea" readonly></textarea>
+</div>
+
+<div class="sb-slidebar sb-left sb-width-custom" data-sb-width="160px" id="leftb">
+    <ul id="examples">
+        <li>1</li>
+        <li>
+            2
+            <ul>
+                <li class="srcli">2.2.1.1_House</li>
+                <li class="srcli">2.5.1.1_Curve</li>
+            </ul>
+        </li>
+        <li>3</li>
+        <li>4</li>
+    </ul>
+</div>
+<!-- jQuery -->
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="../lib/Slidebars-0.10.3/dist/slidebars.min.js"></script>
+<script>
+    // ドロワーメニューの設定
+    (function ($) {
+        $(document).ready(function () {
+            $.slidebars();
+        });
+    })(jQuery);
+    (function ($) {
+        $(document).ready(function () {
+            $(".srcli").click(function () {
+                var path = "./examples/" + $(this).text() + ".js";
+                $('#source').load(path,
+                        function (response) {
+                            $("#source").val(response);
+                        });
+            });
+        });
+    })(jQuery);
+
+</script>
 <script>
     // 余計なアンチエイリアスの解除
     var c = document.getElementById('locusCanvas');
     c.getContext('2d').translate(0.5, 0.5);
 </script>
+</body>
+
+
 </html>
