@@ -110,6 +110,11 @@
             transition: .3s ease-in-out;
         }
 
+        h1{
+            font-size: 2em;
+            margin: 8px;
+        }
+
     </style>
 </head>
 
@@ -134,7 +139,8 @@
 </nav>
 
 <div id="sb-site">
-    <h1>Test2</h1>
+    <h1 id="ptitle">Test3 </h1>
+
 <textarea id="source" cols="45" rows="20" title="source">
 var t = createTurtle();
 for(var i=0;i<12;i++){
@@ -181,6 +187,7 @@ for(var i=0;i<12;i++){
         $(document).ready(function () {
             $(".srcli").click(function () {
                 var path = "./examples/" + $(this).text() + ".js";
+                $('#ptitle').html($(this).text());
                 $('#source').load(path,
                         function (response) {
                             $("#source").val(response);
