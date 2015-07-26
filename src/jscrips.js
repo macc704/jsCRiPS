@@ -86,13 +86,15 @@ function createTurtle() {
     t.penDown = true;
     t.penColor = "black";
 
+    t.kameType = 0;
     t.kameColor = "green";
 
     t._looks = null;
 
-    t.size = 10;
+    t.kameScale = 0.4;
     t.width = 0;
     t.height = 0;
+
 
     t.fd = function (d) {
         if (d < 0) {
@@ -339,26 +341,34 @@ function drawTurtle(t) {
     }
     var ctx = canvas.getContext('2d');
     if (t._looks === null) {
-        drawKame();
+        var kt = parseInt(t.kameType / 2) % 4;
+        drawKame(t, kameMotions[parseInt(kt % 2 + kt / 3)]);
+        t.kameType++;
     } else {
         drawImg();
     }
-    // TODO x,yを左上として描画しているので直す必要あり
-    function drawKame() {
-        // 胴体
-        ctx.beginPath();
-        ctx.arc(t.x, t.y, 10, 0, Math.PI * 2, true);
-        ctx.fillStyle = t.kameColor;
-        ctx.fill();
-        ctx.closePath();
 
-        // 頭部分
-        ctx.beginPath();
-        ctx.arc(t.x + 5 * Math.cos(deg2rad(t.angle)),
-            t.y + 5 * Math.sin(deg2rad(t.angle)), 3, 0, Math.PI * 2, true);
-        ctx.fillStyle = "red";
-        ctx.fill();
-        ctx.closePath();
+    function drawKame(t, data) {
+        var dx = Math.cos(deg2rad(t.angle)), dy = Math.sin(deg2rad(t.angle));
+        var ix = t.x, iy = t.y;
+        ctx.strokeStyle = t.kameColor;
+        for (var i = 0; i < data.length; i++) {
+            var px = 0, py = 0;
+            for (var j = 0; j < data[i].length; j += 2) {
+                var kx = data[i][j], ky = data[i][j + 1];
+                var nx = (kx * (-dy) + ky * (-dx)) * t.kameScale;
+                var ny = (kx * dx + ky * (-dy)) * t.kameScale;
+                if (j > 0) {
+                    ctx.beginPath();
+                    ctx.moveTo(ix + px, iy + py);
+                    ctx.lineTo(ix + nx, iy + ny);
+                    ctx.closePath();
+                    ctx.stroke();
+                }
+                px = nx;
+                py = ny;
+            }
+        }
     }
 
     // x,yを中心座標として描画している
@@ -575,3 +585,48 @@ function input() {
         inputted = false;
     });
 }
+
+
+// 亀描画用データ
+var kameMotions = [
+    // Front
+    [[-12, -6, -12, 6, 0, 18, 12, 6, 12, -6, 0, -18, -12, -6],
+        [-18, -12, -12, -6],
+        [-6, -24, 0, -18, 6, -24],
+        [12, -6, 18, -12],
+        [12, 6, 18, 12],
+        [-6, 24, 0, 18, 6, 24],
+        [-18, 12, -12, 6],
+        [-18, 12, -18, -12, -6, -24, 6, -24, 18, -12, 18, 12, 6, 24, -6,
+            24, -18, 12], [-15, -15, -18, -24, -9, -21],
+        [9, -21, 18, -24, 15, -15], [15, 15, 18, 24, 9, 21],
+        [-9, 21, -18, 24, -15, 15], [-3, 24, 0, 30, 3, 24],
+        [-6, -24, -12, -36, -6, -48, 6, -48, 12, -36, 6, -24]],
+    // Left
+    [[-12, -6, -12, 6, 0, 18, 12, 6, 12, -6, 0, -18, -12, -6],
+        [-18, -12, -12, -6],
+        [-6, -24, 0, -18, 6, -24],
+        [12, -6, 18, -12],
+        [12, 6, 18, 12],
+        [-6, 24, 0, 18, 6, 24],
+        [-18, 12, -12, 6],
+        [-18, 12, -18, -12, -6, -24, 6, -24, 18, -12, 18, 12, 6, 24, -6,
+            24, -18, 12], [-15, -15, -24, -18, -9, -21],
+        [-9, 21, -24, 18, -15, 15], [-3, 24, -3, 30, 3, 24],
+        [-6, -24, -6, -36, 0, -48, 12, -48, 18, -36, 6, -24],
+        [9, -21, 18, -30, 15, -15], [15, 15, 18, 30, 9, 21]],
+    // Right
+    [
+        [-12, -6, -12, 6, 0, 18, 12, 6, 12, -6, 0, -18, -12, -6],
+        [-18, -12, -12, -6],
+        [-6, -24, 0, -18, 6, -24],
+        [12, -6, 18, -12],
+        [12, 6, 18, 12],
+        [-6, 24, 0, 18, 6, 24],
+        [-18, 12, -12, 6],
+        [-18, 12, -18, -12, -6, -24, 6, -24, 18, -12, 18, 12, 6, 24, -6,
+            24, -18, 12], [-15, -15, -18, -30, -9, -21],
+        [-9, 21, -18, 30, -15, 15], [-3, 24, 3, 30, 3, 24],
+        [-6, -24, -18, -36, -12, -48, 0, -48, 6, -36, 6, -24],
+        [9, -21, 24, -18, 15, -15], [15, 15, 24, 18, 9, 21]]
+];
