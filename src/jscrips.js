@@ -330,7 +330,7 @@ function draw(t) {
     }
 
     if (t && t.penDown) {
-        drawLine(t);
+        drawLocus(t);
     }
 }
 
@@ -359,11 +359,7 @@ function drawTurtle(t) {
                 var nx = (kx * (-dy) + ky * (-dx)) * t.kameScale;
                 var ny = (kx * dx + ky * (-dy)) * t.kameScale;
                 if (j > 0) {
-                    ctx.beginPath();
-                    ctx.moveTo(ix + px, iy + py);
-                    ctx.lineTo(ix + nx, iy + ny);
-                    ctx.closePath();
-                    ctx.stroke();
+                    drawLine(ctx, ix + px, iy + py, ix + nx, iy + ny);
                 }
                 px = nx;
                 py = ny;
@@ -371,7 +367,6 @@ function drawTurtle(t) {
         }
     }
 
-    // x,yを中心座標として描画している
     function drawImg() {
         ctx.save();
         ctx.translate(t.x, t.y);
@@ -381,21 +376,25 @@ function drawTurtle(t) {
         ctx.restore();
     }
 
+
 }
 
+function drawLine(ctx, x, y, dx, dy) {
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(dx, dy);
+    ctx.closePath();
+    ctx.stroke();
+}
 
-function drawLine(t) {
+function drawLocus(t) {
     var canvas = document.getElementById('locusCanvas');
     if (!canvas.getContext) {
         return;
     }
     var ctx = canvas.getContext('2d');
-    ctx.beginPath();
-    ctx.moveTo(t.rx, t.ry);
-    ctx.lineTo(t.x, t.y);
-    ctx.closePath();
     ctx.strokeStyle = t.penColor;
-    ctx.stroke();
+    drawLine(ctx, t.rx, t.ry, t.x, t.y);
 }
 
 function clearTurtleCanvas() {
