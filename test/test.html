@@ -21,6 +21,7 @@
 
     </script>
     <style type="text/css">
+
         canvas {
             border: 1px solid #999;
             position: absolute;
@@ -80,10 +81,12 @@
 
         ul li {
             margin: 4px;
+
         }
 
         ul li ul li {
             padding: 3px;
+            border-bottom: 1px solid #84b2e0;
         }
 
         ul li ul li:hover {
@@ -110,7 +113,7 @@
             transition: .3s ease-in-out;
         }
 
-        h1{
+        h1 {
             font-size: 2em;
             margin: 8px;
         }
@@ -149,9 +152,9 @@ for(var i=0;i<12;i++){
 }    
 </textarea>
 
-
-    <canvas id="locusCanvas" width="200" height="200"></canvas>
-    <canvas id="turtleCanvas" width="200" height="200"></canvas>
+    <!--TODO Canvasを一つに統一？ -->
+    <canvas id="locusCanvas" width="240" height="240"></canvas>
+    <canvas id="turtleCanvas" width="240" height="240"></canvas>
     <textarea id="result" cols="45" rows="20">
     </textarea>
     <textarea id="ast" cols="45" rows="20">
@@ -159,7 +162,7 @@ for(var i=0;i<12;i++){
     <textarea id="console" rows="6" cols="80" title="msgArea" readonly></textarea>
 </div>
 
-<div class="sb-slidebar sb-left sb-width-custom" data-sb-width="160px" id="leftb">
+<div class="sb-slidebar sb-left sb-width-custom" data-sb-width="200px" id="leftb">
     <ul id="examples">
         <li>1</li>
         <li>
@@ -169,8 +172,36 @@ for(var i=0;i<12;i++){
                 <li class="srcli">2.5.1.1_Curve</li>
             </ul>
         </li>
-        <li>3</li>
-        <li>4</li>
+        <li>3
+            <ul>
+                <li class="srcli">3.2.1.1_VariableHouse</li>
+                <li class="srcli">3.2.3.1.1_MultiVariableHouse</li>
+                <li class="srcli">3.3.1.1_DoubleHouse</li>
+                <li class="srcli">3.4.1.1_InputHouse</li>
+                <li class="srcli">3.4.2.1_PromptHouse</li>
+                <li class="srcli">3.5.1.1_RandomHouse</li>
+            </ul>
+        </li>
+        <li>4
+            <ul>
+                <li class="srcli"></li>
+            </ul>
+        </li>
+        <li>4
+            <ul>
+                <li class="srcli"></li>
+            </ul>
+        </li>
+        <li>4
+            <ul>
+                <li class="srcli"></li>
+            </ul>
+        </li>
+        <li>4
+            <ul>
+                <li class="srcli"></li>
+            </ul>
+        </li>
     </ul>
 </div>
 <!-- jQuery -->

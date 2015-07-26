@@ -50,7 +50,8 @@ converter.convert = function (source) {
 };
 
 var mth = {};// メインスレッド
-var th = {}; // スレッド制御用
+var th = Concurrent.Thread.create(function () {
+}); // スレッド制御用
 var ttls = []; // タートルを管理するリスト
 var imgs = {}; // 画像を管理するマップ
 var inputText = ""; // 入力されたテキスト
@@ -66,7 +67,7 @@ var rotateStep = DEFAULT_ROTATE_STEP;
 var KEY_ENTER = 13;
 
 function createTurtle() {
-    var t = {};
+    var t = {}
 
     t.x = 100.0; // (x,y)は対象の中心を示す
     t.y = 100.0;
@@ -429,6 +430,10 @@ function update() {
 
 function start(f) {
     mth = Thread.create(f);
+}
+
+function random(n){
+    return parseInt(Math.random()*n);
 }
 
 /*global main*/
