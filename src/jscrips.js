@@ -67,7 +67,7 @@ var rotateStep = DEFAULT_ROTATE_STEP;
 var KEY_ENTER = 13;
 
 function createTurtle() {
-    var t = {}
+    var t = {};
 
     t.x = 100.0; // (x,y)は対象の中心を示す
     t.y = 100.0;
@@ -432,8 +432,17 @@ function start(f) {
     mth = Thread.create(f);
 }
 
-function random(n){
-    return parseInt(Math.random()*n);
+function random(n) {
+    return parseInt(Math.random() * n);
+}
+
+function canvasSize(w, h) {
+    var tc = document.getElementById('turtleCanvas');
+    var lc = document.getElementById('locusCanvas');
+    tc.width =  w;
+    tc.height =  h;
+    lc.width =  w;
+    lc.height =  h;
 }
 
 /*global main*/

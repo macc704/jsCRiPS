@@ -118,6 +118,7 @@
             margin: 8px;
         }
 
+
     </style>
 </head>
 
@@ -204,9 +205,10 @@ for(var i=0;i<12;i++){
         </li>
     </ul>
 </div>
-<!-- jQuery -->
+<!-- JQuery -->
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 <script src="../lib/Slidebars-0.10.3/dist/slidebars.min.js"></script>
+<script src="../lib/autosize-master/dist/autosize.min.js"></script>
 <script>
     // ドロワーメニューの設定
     (function ($) {
@@ -218,14 +220,22 @@ for(var i=0;i<12;i++){
         $(document).ready(function () {
             $(".srcli").click(function () {
                 var path = "./examples/" + $(this).text() + ".js";
+                var srcdom = $('#source');
                 $('#ptitle').html($(this).text());
-                $('#source').load(path,
-                        function (response) {
-                            $("#source").val(response);
+                srcdom.load(path,
+                        function (response, status) {
+                            if (status === 'error') {
+                                println("ERROR ファイル["+path+"]が見つかりません")
+                            } else {
+                                srcdom.val(response);
+                                autosize.update(srcdom);
+                            }
                         });
             });
         });
     })(jQuery);
+    // テキストエリアの大きさ調整
+    autosize($('#source'));
 
 </script>
 <script>
