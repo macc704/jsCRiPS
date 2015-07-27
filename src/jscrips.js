@@ -14,11 +14,25 @@ converter.convert = function (source) {
             stmt.body = processStatements(stmt.body);
         }
         if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'CallExpression') {
-            console.log('here');
             var block = esprima.parse('{}').body[0];
             block.body.push(stmt);
             block.body.push(yieldAST);
             return block;
+        }
+        if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'AssignmentExpression' &&
+            stmt.expression.right.type === 'CallExpression' && stmt.expression.right.callee.name === 'input') {
+            var block = esprima.parse('{}').body[0];
+            block.body.push(stmt);
+            block.body.push(yieldAST);
+            block.body.push(esprima.parse(stmt.expression.left.name + ' = $inputText;').body[0]);
+            return block;
+        }
+        if (stmt.type === 'VariableDeclaration' && stmt.declarations[0].init &&
+            stmt.declarations[0].init.type === 'CallExpression' && stmt.declarations[0].init.callee.name === 'input') {
+            var block = esprima.parse('{}').body[0];
+            block.body.push(stmt);
+            block.body.push(yieldAST);
+            block.body.push(esprima.parse(stmt.declarations[0].id.name + ' = $inputText;').body[0]);
         }
         return stmt;
     };
@@ -41,6 +55,17 @@ converter.convert = function (source) {
             if (each.type === 'ExpressionStatement' && each.expression.type === 'CallExpression') {
                 newStmts.push(yieldAST);
             }
+            // var x=input(),y=input() や f(input()) や if(input()=='abc')などには未対応
+            if (each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
+                each.expression.right.type === 'CallExpression' && each.expression.right.callee.name === 'input') {
+                newStmts.push(yieldAST);
+                newStmts.push(esprima.parse(each.expression.left.name + ' = $inputText;').body[0]);
+            }
+            if (each.type === 'VariableDeclaration' && each.declarations[0].init &&
+                each.declarations[0].init.type === 'CallExpression' && each.declarations[0].init.callee.name === 'input') {
+                newStmts.push(yieldAST);
+                newStmts.push(esprima.parse(each.declarations[0].id.name + ' = $inputText;').body[0]);
+            }
         });
         return newStmts;
     };
@@ -48,13 +73,16 @@ converter.convert = function (source) {
     ast.body = processStatements(ast.body);
     return escodegen.generate(ast);
 };
-
-var mth = {};// メインスレッド
+// 開始時に例外が出ないために予めスレッドを生成しておく、例外を無視する仕様にした場合いらなくなるかも
+var mth = Concurrent.Thread.create(function () {
+    Thread.stop();
+});// メインスレッド
 var th = Concurrent.Thread.create(function () {
-}); // スレッド制御用
+    Thread.stop();
+});// スレッド制御用
 var ttls = []; // タートルを管理するリスト
 var imgs = {}; // 画像を管理するマップ
-var inputText = ""; // 入力されたテキスト
+var $inputText = ""; // 入力されたテキスト
 var inputted = false; // 入力制御用
 
 /*global Concurrent*/
@@ -72,12 +100,7 @@ function createTurtle() {
     t.x = 100.0; // (x,y)は対象の中心を示す
     t.y = 100.0;
 
-    //  dx = sin(angle), dy = -cos(angle) メンバ変数にする必要なし？
-    //t.dx = 0.0;
-    //t.dy = 0.0;
-
-    // (x,y)から(rx,ry)まで線を引く
-    t.rx = t.x;
+    t.rx = t.x; // (x,y)から(rx,ry)まで線を引く
     t.ry = t.y;
 
     t.angle = -90;
@@ -289,6 +312,7 @@ function createImageTurtle(imgName) {
     return t;
 }
 
+// 現在使っていない、デフォルトタートル用のものたち
 //var defaultTurtle = createTurtle();
 //
 //function fd(d) {
@@ -342,8 +366,7 @@ function drawTurtle(t) {
     }
     var ctx = canvas.getContext('2d');
     if (t._looks === null) {
-        var kt = parseInt(t.kameType / 2) % 4;
-        drawKame(t, kameMotions[parseInt(kt % 2 + kt / 3)]);
+        drawKame(t, kameMotions[getMotion()]);
         t.kameType++;
     } else {
         drawImg();
@@ -377,6 +400,11 @@ function drawTurtle(t) {
         ctx.restore();
     }
 
+    // (int)n / 2 % 4 => 0->0 , 1->1 , 2->0 , 3->2
+    function getMotion() {
+        var tmp = parseInt(t.kameType / 2) % 4;
+        return parseInt(tmp % 2 + tmp / 3);
+    }
 
 }
 
@@ -439,10 +467,10 @@ function random(n) {
 function canvasSize(w, h) {
     var tc = document.getElementById('turtleCanvas');
     var lc = document.getElementById('locusCanvas');
-    tc.width =  w;
-    tc.height =  h;
-    lc.width =  w;
-    lc.height =  h;
+    tc.width = w;
+    tc.height = h;
+    lc.width = w;
+    lc.height = h;
 }
 
 /*global main*/
@@ -579,24 +607,46 @@ function mouseDoubleClick(e) {
     wclick = true;
 }
 
-// TODO 標準入力はこの方法でいいのか…？
-function entered(k, id) {
-    if (k === KEY_ENTER) {
-        var text = document.getElementById(id);
-        inputText = text.value;
-        println("INPUT [" + inputText + "]");
-        text.value = "";
-        inputted = true;
-    }
-}
-
+// 最初に実装していたinputの方式
+//function entered(k, id) {
+//    if (k === KEY_ENTER) {
+//        var text = document.getElementById(id);
+//        $inputText = text.value;
+//        println("INPUT [" + $inputText + "]");
+//        text.value = "";
+//        inputted = true;
+//    }
+//}
+/* global swal*/
 function input() {
+
     th = Thread.create(function () {
         while (!inputted) {
             sleep(1);
         }
+        sleep(200); // Input用ウィンドウが消えるのを待つ
         inputted = false;
     });
+    swal({
+            title: "An input!",
+            type: "input",
+            allowEscapeKey: false,
+            closeOnConfirm: false
+
+        },
+        function (inputValue) {
+            if (inputValue === "") {
+                swal.showInputError("You need to write something!");
+                return false;
+            }
+            $inputText = inputValue;
+            println("INPUT [" + $inputText + "]");
+            // th.kill(); 本当はこうしたい
+            inputted = true;
+            swal.close();
+        }
+    );
+
 }
 
 
