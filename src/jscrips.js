@@ -617,9 +617,11 @@ function mouseDoubleClick(e) {
 //        inputted = true;
 //    }
 //}
-/* global swal*/
-function input() {
 
+/* global swal*/
+// TODO input("1辺の長さを入力してください")で入力用のメッセージ表示はどうか
+function input() {
+    //  入力待ち用にスレッドを生成
     th = Thread.create(function () {
         while (!inputted) {
             sleep(1);
@@ -627,12 +629,12 @@ function input() {
         sleep(200); // Input用ウィンドウが消えるのを待つ
         inputted = false;
     });
+
     swal({
             title: "An input!",
             type: "input",
             allowEscapeKey: false,
             closeOnConfirm: false
-
         },
         function (inputValue) {
             if (inputValue === "") {
@@ -641,14 +643,12 @@ function input() {
             }
             $inputText = inputValue;
             println("INPUT [" + $inputText + "]");
-            // th.kill(); 本当はこうしたい
-            inputted = true;
+            inputted = true;             // th.kill(); 本当はこうしたい
             swal.close();
         }
     );
 
 }
-
 
 // 亀描画用データ
 var kameMotions = [
