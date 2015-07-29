@@ -14,7 +14,8 @@
     <script>
 
         function main() {
-            var source = document.getElementById('source').value;
+//            var source = document.getElementById('source').value;
+            var source = document.getElementById('editorFrame').contentWindow.getSource();
             var converted = converter.convert(source);
             document.getElementById('result').value = converted;
             eval('var func = function(){' + converted + '}');
@@ -119,9 +120,15 @@
             font-size: 2em;
             margin: 8px;
         }
+        
+        iframe{
+            position: absolute;
+        }
 
 
     </style>
+
+
 </head>
 
 <body>
@@ -133,10 +140,6 @@
         <button type="button" id="restart" onclick="restart()">press me</button>
     </div>
 
-    <div>
-        <input id="in" type="text" onkeypress="entered(event.keyCode,this.id);" placeholder="input()入力欄" title="in"/>
-    </div>
-
     <div id="sldiv">
         速<input type="range" name="moveSpeed" min="0" max="12" step="2"
                 value="6" onchange="changeSpeed(this.value)" title="moveSpeed">遅
@@ -144,16 +147,17 @@
 
 </nav>
 
+
 <div id="sb-site">
     <h1 id="ptitle">Test3 </h1>
 
-<textarea id="source" cols="45" rows="20" title="source">
-var t = createTurtle();
-for(var i=0;i<12;i++){
-    t.fd(10);
-    t.rt(30);
-}    
-</textarea>
+     <!--シンタックスハイライトとかのためにTextAreaからAceっていうのを使ってみた-->
+     <!--が、ConcurrentThread.jsがArrayのプロトタイプをいじってるせいで-->
+     <!--Aceが汚染されて動かなかったから、iframeで呼び出してみてる、どうしようか-->
+     <!--動作として特に問題はないが、少し気持ち悪い？-->
+    <!--また、Aceの仕様でエラーチェックをしてくれるが、Firefoxだと動かない？-->
+    <!--チェックしてくれる場合、Windowで定義されてるlengthやnameで警告がでる、うざい-->
+    <iframe id="editorFrame" src="editor.html" width="400px" frameborder="0"></iframe>
 
     <!--TODO Canvasを一つに統一？ -->
     <canvas id="locusCanvas" width="240" height="240"></canvas>
@@ -210,7 +214,6 @@ for(var i=0;i<12;i++){
 <!-- JQuery -->
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 <script src="../lib/Slidebars-0.10.3/dist/slidebars.min.js"></script>
-<script src="../lib/autosize-master/dist/autosize.min.js"></script>
 <script>
     // ドロワーメニューの設定
     (function ($) {
@@ -218,32 +221,31 @@ for(var i=0;i<12;i++){
             $.slidebars();
         });
     })(jQuery);
+
+    // 課題読み込む時の設定
     (function ($) {
         $(document).ready(function () {
             $(".srcli").click(function () {
                 var path = "./examples/" + $(this).text() + ".js";
-                var srcdom = $('#source');
                 $('#ptitle').html($(this).text());
-                srcdom.load(path,
+                $('#editorFrame').contents().find("#dummy").load(path,
                         function (response, status) {
                             if (status === 'error') {
-                                println("ERROR ファイル["+path+"]が見つかりません")
+                                println("ERROR ファイル[" + path + "]が見つかりません")
                             } else {
-                                srcdom.val(response);
-                                autosize.update(srcdom);
+                                document.getElementById('editorFrame').contentWindow.paste(response);
                             }
                         });
             });
         });
     })(jQuery);
-    // テキストエリアの大きさ調整
-    autosize($('#source'));
 </script>
 
 <script>
     // 余計なアンチエイリアスの解除
     var c = document.getElementById('locusCanvas');
     c.getContext('2d').translate(0.5, 0.5);
+
 </script>
 </body>
 
