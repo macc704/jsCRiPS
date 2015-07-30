@@ -23,10 +23,10 @@
 </head>
 <body>
 <div id="editor">var t = createTurtle();
-    for(var i=0;i<12;i++){
+for(var i=0;i<12;i++){
     t.fd(10);
     t.rt(30);
-    }
+}
 </div>
 
 <div id="dummy" style="display: none">dummy</div>
@@ -37,35 +37,25 @@
     editor.setTheme("ace/theme/monokai");
     editor.getSession().setMode("ace/mode/javascript");
     editor.$blockScrolling = Infinity;
-    // The following code snippet is released under the MIT license,
-    // -or- FreeBSD license, -or- an unrestrictive license of your
-    // choice including CC-ZERO or public domain.
-    //
-    // (those are GPL and Apache compatible, in any case)
-    //
-    // http://en.wikipedia.org/wiki/MIT_License
-    // http://en.wikipedia.org/wiki/BSD_licenses
 
-    $(document).ready(function () {
-        var heightUpdateFunction = function () {
-            // http://stackoverflow.com/questions/11584061/
-            var newHeight = editor.getSession().getScreenLength()
-                    * editor.renderer.lineHeight + 20;
-            window.parent.$('#editorFrame').height(newHeight.toString() + "px");
-            //  いらない？  $('#editor-section').height(newHeight.toString() + "px");
+    function heightUpdateFunction() {
+        // http://stackoverflow.com/questions/11584061/
+        var newHeight = editor.getSession().getScreenLength()
+                * editor.renderer.lineHeight + 20;
+        window.parent.$('#editorFrame').height(newHeight.toString() + "px");
+        //  いらない？  $('#editor-section').height(newHeight.toString() + "px");
 
-            // This call is required for the editor to fix all of
-            // its inner structure for adapting to a change in size
-            editor.resize();
-        };
+        // This call is required for the editor to fix all of
+        // its inner structure for adapting to a change in size
+        editor.resize();
+    }
 
-        // Set initial size to match initial content
-        heightUpdateFunction();
+    // Set initial size to match initial content
+    heightUpdateFunction();
+    // Whenever a change happens inside the ACE editor, update
+    // the size again
+    editor.getSession().on('change', heightUpdateFunction);
 
-        // Whenever a change happens inside the ACE editor, update
-        // the size again
-        editor.getSession().on('change', heightUpdateFunction);
-    });
 
     function getSource() {
         return editor.getValue();
@@ -75,6 +65,14 @@
         editor.getSession().setValue(str);
     }
 
+    function setFontSize(n) {
+        editor.setFontSize(n);
+        heightUpdateFunction();
+    }
+
+    function setTheme(theme) {
+        editor.setTheme(theme);
+    }
     // TODO いいライブラリが見つからない
     function format() {
 //        var input = editor.getValue();

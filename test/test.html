@@ -120,8 +120,8 @@
             font-size: 2em;
             margin: 8px;
         }
-        
-        iframe{
+
+        iframe {
             position: absolute;
         }
 
@@ -139,7 +139,61 @@
     <div>
         <button type="button" id="restart" onclick="restart()">press me</button>
     </div>
-
+    <div>
+        <select id="fontsize" size="1" title="fontsize" onchange="setFontSize(this.value)">
+            <option value="10px">10px</option>
+            <option value="11px">11px</option>
+            <option value="12px" selected="selected">12px</option>
+            <option value="13px">13px</option>
+            <option value="14px">14px</option>
+            <option value="16px">16px</option>
+            <option value="18px">18px</option>
+            <option value="20px">20px</option>
+            <option value="24px">24px</option>
+        </select>
+    </div>
+    <div>
+        <select id="theme" size="1" title="themes" onchange="setTheme(this.value)">
+            <optgroup label="Bright">
+                <option value="ace/theme/chrome">Chrome</option>
+                <option value="ace/theme/clouds">Clouds</option>
+                <option value="ace/theme/crimson_editor">Crimson Editor</option>
+                <option value="ace/theme/dawn">Dawn</option>
+                <option value="ace/theme/dreamweaver">Dreamweaver</option>
+                <option value="ace/theme/eclipse">Eclipse</option>
+                <option value="ace/theme/github">GitHub</option>
+                <option value="ace/theme/iplastic">IPlastic</option>
+                <option value="ace/theme/solarized_light">Solarized Light</option>
+                <option value="ace/theme/textmate">TextMate</option>
+                <option value="ace/theme/tomorrow">Tomorrow</option>
+                <option value="ace/theme/xcode">XCode</option>
+                <option value="ace/theme/kuroir">Kuroir</option>
+                <option value="ace/theme/katzenmilch">KatzenMilch</option>
+                <option value="ace/theme/sqlserver">SQL Server</option>
+            </optgroup>
+            <optgroup label="Dark">
+                <option value="ace/theme/ambiance">Ambiance</option>
+                <option value="ace/theme/chaos">Chaos</option>
+                <option value="ace/theme/clouds_midnight">Clouds Midnight</option>
+                <option value="ace/theme/cobalt">Cobalt</option>
+                <option value="ace/theme/idle_fingers">idle Fingers</option>
+                <option value="ace/theme/kr_theme">krTheme</option>
+                <option value="ace/theme/merbivore">Merbivore</option>
+                <option value="ace/theme/merbivore_soft">Merbivore Soft</option>
+                <option value="ace/theme/mono_industrial">Mono Industrial</option>
+                <option value="ace/theme/monokai" selected="selected">Monokai</option>
+                <option value="ace/theme/pastel_on_dark">Pastel on dark</option>
+                <option value="ace/theme/solarized_dark">Solarized Dark</option>
+                <option value="ace/theme/terminal">Terminal</option>
+                <option value="ace/theme/tomorrow_night">Tomorrow Night</option>
+                <option value="ace/theme/tomorrow_night_blue">Tomorrow Night Blue</option>
+                <option value="ace/theme/tomorrow_night_bright">Tomorrow Night Bright</option>
+                <option value="ace/theme/tomorrow_night_eighties">Tomorrow Night 80s</option>
+                <option value="ace/theme/twilight">Twilight</option>
+                <option value="ace/theme/vibrant_ink">Vibrant Ink</option>
+            </optgroup>
+        </select>
+    </div>
     <div id="sldiv">
         速<input type="range" name="moveSpeed" min="0" max="12" step="2"
                 value="6" onchange="changeSpeed(this.value)" title="moveSpeed">遅
@@ -151,10 +205,10 @@
 <div id="sb-site">
     <h1 id="ptitle">Test3 </h1>
 
-     <!--シンタックスハイライトとかのためにTextAreaからAceっていうのを使ってみた-->
-     <!--が、ConcurrentThread.jsがArrayのプロトタイプをいじってるせいで-->
-     <!--Aceが汚染されて動かなかったから、iframeで呼び出してみてる、どうしようか-->
-     <!--動作として特に問題はないが、少し気持ち悪い？-->
+    <!--TODO シンタックスハイライトとかのためにTextAreaからAceっていうのを使ってみた-->
+    <!--が、ConcurrentThread.jsがArrayのプロトタイプをいじってるせいで-->
+    <!--Aceが汚染されて動かなかったから、iframeで呼び出してみてる、どうしようか-->
+    <!--動作として特に問題はないが、少し気持ち悪い？-->
     <!--また、Aceの仕様でエラーチェックをしてくれるが、Firefoxだと動かない？-->
     <!--チェックしてくれる場合、Windowで定義されてるlengthやnameで警告がでる、うざい-->
     <iframe id="editorFrame" src="editor.html" width="400px" frameborder="0"></iframe>
@@ -239,13 +293,22 @@
             });
         });
     })(jQuery);
+
+    // フォントサイズ、テーマ変更した時の設定
+    function setFontSize(n) {
+        document.getElementById('editorFrame').contentWindow.setFontSize(n);
+    }
+
+    function setTheme(theme) {
+        document.getElementById('editorFrame').contentWindow.setTheme(theme);
+    }
+
 </script>
 
 <script>
     // 余計なアンチエイリアスの解除
     var c = document.getElementById('locusCanvas');
     c.getContext('2d').translate(0.5, 0.5);
-
 </script>
 </body>
 
