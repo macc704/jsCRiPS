@@ -1,10 +1,10 @@
 'use strict';
 
 /*global esprima,console,escodegen*/
-var converter = {};
-converter.convert = function (source) {
+var _converter = {};
+_converter.convert = function (source) {
     var ast = esprima.parse(source);
-    var yieldAST = esprima.parse('th.join();').body[0];
+    var yieldAST = esprima.parse('_th.join();').body[0];
 
     //for debug       
     document.getElementById('ast').value = JSON.stringify(ast, null, 4);
@@ -24,7 +24,7 @@ converter.convert = function (source) {
             var block = esprima.parse('{}').body[0];
             block.body.push(stmt);
             block.body.push(yieldAST);
-            block.body.push(esprima.parse(stmt.expression.left.name + ' = $inputText;').body[0]);
+            block.body.push(esprima.parse(stmt.expression.left.name + ' = _inputText;').body[0]);
             return block;
         }
         if (stmt.type === 'VariableDeclaration' && stmt.declarations[0].init &&
@@ -32,7 +32,7 @@ converter.convert = function (source) {
             var block = esprima.parse('{}').body[0];
             block.body.push(stmt);
             block.body.push(yieldAST);
-            block.body.push(esprima.parse(stmt.declarations[0].id.name + ' = $inputText;').body[0]);
+            block.body.push(esprima.parse(stmt.declarations[0].id.name + ' = _inputText;').body[0]);
         }
         return stmt;
     };
@@ -59,12 +59,12 @@ converter.convert = function (source) {
             if (each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
                 each.expression.right.type === 'CallExpression' && each.expression.right.callee.name === 'input') {
                 newStmts.push(yieldAST);
-                newStmts.push(esprima.parse(each.expression.left.name + ' = $inputText;').body[0]);
+                newStmts.push(esprima.parse(each.expression.left.name + ' = _inputText;').body[0]);
             }
             if (each.type === 'VariableDeclaration' && each.declarations[0].init &&
                 each.declarations[0].init.type === 'CallExpression' && each.declarations[0].init.callee.name === 'input') {
                 newStmts.push(yieldAST);
-                newStmts.push(esprima.parse(each.declarations[0].id.name + ' = $inputText;').body[0]);
+                newStmts.push(esprima.parse(each.declarations[0].id.name + ' = _inputText;').body[0]);
             }
         });
         return newStmts;
@@ -74,24 +74,24 @@ converter.convert = function (source) {
     return escodegen.generate(ast);
 };
 // 開始時に例外が出ないために予めスレッドを生成しておく、例外を無視する仕様にした場合いらなくなるかも
-var mth = Concurrent.Thread.create(function () {
+var _mth = Concurrent.Thread.create(function () {
     Thread.stop();
 });// メインスレッド
-var th = Concurrent.Thread.create(function () {
+var _th = Concurrent.Thread.create(function () {
     Thread.stop();
 });// スレッド制御用
-var ttls = []; // タートルを管理するリスト
-var imgs = {}; // 画像を管理するマップ
-var $inputText = ""; // 入力されたテキスト
-var inputted = false; // 入力制御用
+var _ttls = []; // タートルを管理するリスト
+var _imgs = {}; // 画像を管理するマップ
+var _inputText = ""; // 入力されたテキスト
+var _inputted = false; // 入力制御用
 
 /*global Concurrent*/
 var Thread = Concurrent.Thread;
 var DEFAULT_MOVE_STEP = 2;
 var DEFAULT_ROTATE_STEP = 5;
-var sleepTime = 10;
-var moveStep = DEFAULT_MOVE_STEP;
-var rotateStep = DEFAULT_ROTATE_STEP;
+var _sleepTime = 10;
+var _moveStep = DEFAULT_MOVE_STEP;
+var _rotateStep = DEFAULT_ROTATE_STEP;
 var KEY_ENTER = 13;
 
 function createTurtle() {
@@ -124,18 +124,18 @@ function createTurtle() {
         if (d < 0) {
             t.bk(-d);
         } else {
-            th = Thread.create(function (d, t) {
+            _th = Thread.create(function (d, t) {
                 var xx = t.x,
                     yy = t.y;
                 var dx = Math.cos(deg2rad(t.angle));
                 var dy = Math.sin(deg2rad(t.angle));
                 t.setRxRy();
-                for (var i = moveStep; i < d; i += moveStep) {
+                for (var i = _moveStep; i < d; i += _moveStep) {
                     t.x = xx + dx * i;
                     t.y = yy + dy * i;
                     draw(t);
                     t.setRxRy();
-                    sleep(sleepTime);
+                    sleep(_sleepTime);
                 }
                 t.x = xx + dx * d;
                 t.y = yy + dy * d;
@@ -148,18 +148,18 @@ function createTurtle() {
         if (d < 0) {
             t.fd(-d);
         } else {
-            th = Thread.create(function (d, t) {
+            _th = Thread.create(function (d, t) {
                 var xx = t.x,
                     yy = t.y;
                 var dx = Math.cos(deg2rad(t.angle));
                 var dy = Math.sin(deg2rad(t.angle));
                 t.setRxRy();
-                for (var i = moveStep; i < d; i += moveStep) {
+                for (var i = _moveStep; i < d; i += _moveStep) {
                     t.x = xx - dx * i;
                     t.y = yy - dy * i;
                     draw(t);
                     t.setRxRy();
-                    sleep(sleepTime);
+                    sleep(_sleepTime);
                 }
                 t.x = xx - dx * d;
                 t.y = yy - dy * d;
@@ -172,14 +172,14 @@ function createTurtle() {
         if (deg < 0) {
             t.lt(-deg);
         } else {
-            th = Thread.create(function (deg, t) {
+            _th = Thread.create(function (deg, t) {
                 var tmpAngle = t.angle;
                 var tmpPendown = t.penDown;
                 t.up();
-                for (var i = rotateStep; i < deg; i += rotateStep) {
+                for (var i = _rotateStep; i < deg; i += _rotateStep) {
                     draw(t);
-                    t.angle += rotateStep;
-                    sleep(sleepTime);
+                    t.angle += _rotateStep;
+                    sleep(_sleepTime);
                 }
                 t.angle = tmpAngle + deg;
                 draw(t);
@@ -192,14 +192,14 @@ function createTurtle() {
         if (deg < 0) {
             t.rt(-deg);
         } else {
-            th = Thread.create(function (deg, t) {
+            _th = Thread.create(function (deg, t) {
                 var tmpAngle = t.angle;
                 var tmpPendown = t.penDown;
                 t.up();
-                for (var i = rotateStep; i < deg; i += rotateStep) {
+                for (var i = _rotateStep; i < deg; i += _rotateStep) {
                     draw(t);
-                    t.angle -= rotateStep;
-                    sleep(sleepTime);
+                    t.angle -= _rotateStep;
+                    sleep(_sleepTime);
                 }
                 t.angle = tmpAngle - deg;
                 draw(t);
@@ -290,23 +290,23 @@ function createTurtle() {
         );
     };
 
-    ttls.push(t);
+    _ttls.push(t);
     return t;
 }
 
 function createImageTurtle(imgName) {
     var t = createTurtle(); // 先頭に書かないとなんかおかしくなる？
-    if (imgs[imgName] === undefined) {
+    if (_imgs[imgName] === undefined) {
         var img = new Image();
         img.src = imgName;
-        imgs[imgName] = img;
+        _imgs[imgName] = img;
         img.onerror = function () {
             document.getElementById('console').value +=
                 document.getElementById('console').value + "画像[" + imgName + "]が見つかりません\n";
         };
     }
     t.penDown = false;
-    t._looks = imgs[imgName];
+    t._looks = _imgs[imgName];
     t.width = t._looks.width;
     t.height = t._looks.height;
     return t;
@@ -348,9 +348,9 @@ function createImageTurtle(imgName) {
 /* 描画関連 */
 function draw(t) {
     clearTurtleCanvas();
-    for (var i = 0; i < ttls.size(); i++) {
-        if (ttls[i].isShow) {
-            drawTurtle(ttls[i]);
+    for (var i = 0; i < _ttls.size(); i++) {
+        if (_ttls[i].isShow) {
+            drawTurtle(_ttls[i]);
         }
     }
 
@@ -457,13 +457,14 @@ function update() {
 }
 
 function start(f) {
-    mth = Thread.create(f);
+    _mth = Thread.create(f);
 }
 
 function random(n) {
     return parseInt(Math.random() * n);
 }
 
+// windows.size -> canvasSize
 function canvasSize(w, h) {
     var tc = document.getElementById('turtleCanvas');
     var lc = document.getElementById('locusCanvas');
@@ -474,30 +475,30 @@ function canvasSize(w, h) {
 }
 
 /*global main*/
-function restart(f) {
+function restart() {
     clearTurtleCanvas();
     clearLocusCanvas();
     document.getElementById('console').value = "";
     try {
-        mth.kill();
-        th.kill();
+        _mth.kill();
+        _th.kill();
     } catch (e) {
         // TODO mth,thが終了時に例外が出る、無視でok?
         println("ERROR [" + e + "]");
     }
-    ttls = [];
+    _ttls = [];
     main();
 }
 
 // TODO MAXスピードが遅い、関数呼び出しのオーバーヘッド？
 function changeSpeed(x) {
-    sleepTime = Number(x);
+    _sleepTime = Number(x);
     if (Number(x) === 0) {
-        moveStep = 1000;
-        rotateStep = 1000;
+        _moveStep = 1000;
+        _rotateStep = 1000;
     } else {
-        moveStep = DEFAULT_MOVE_STEP;
-        rotateStep = DEFAULT_ROTATE_STEP;
+        _moveStep = DEFAULT_MOVE_STEP;
+        _rotateStep = DEFAULT_ROTATE_STEP;
     }
 }
 
@@ -525,96 +526,97 @@ function println() {
 }
 
 /* イベント関係 */
-var keys = {};
-var recentPressKey = -1;
+
+var _keys = {};
+var _recentPressKey = -1;
 document.addEventListener("keydown", keyDown);
 document.addEventListener("keyup", keyUp);
 
-var mx = -1,
-    my = -1;
+var _mx = -1,
+    _my = -1;
 var MOUSE_LEFT = 0;
 var MOUSE_RIGHT = 2;
-var mouseLeftDown = false;
-var mouseRightDown = false;
-var wclick = false;
+var _mouseLeftDown = false;
+var _mouseRightDown = false;
+var _wclick = false;
 document.addEventListener('mousemove', mouseMove);
 document.addEventListener('mousedown', _mouseDown);
 document.addEventListener('mouseup', mouseUp);
 document.addEventListener('dblclick', mouseDoubleClick);
 
 function key() {
-    return recentPressKey;
+    return _recentPressKey;
 }
 
 function keyDown(e) {
-    keys[e.keyCode] = true;
-    recentPressKey = e.keyCode;
+    _keys[e.keyCode] = true;
+    _recentPressKey = e.keyCode;
 }
 
 function keyUp(e) {
-    keys[e.keyCode] = false;
-    if (recentPressKey === e.keyCode) {
-        recentPressKey = -1;
+    _keys[e.keyCode] = false;
+    if (_recentPressKey === e.keyCode) {
+        _recentPressKey = -1;
     }
 }
 
 function isPressing(keyCode) {
-    return keys[keyCode] ? keys[keyCode] : false;
+    return _keys[keyCode] ? _keys[keyCode] : false;
 }
 // TODO 座標のずれをどうするか
 function mouseMove(e) {
-    mx = document.body.scrollLeft + e.clientX - 332;
-    my = document.body.scrollTop + e.clientY - 76;
+    _mx = document.body.scrollLeft + e.clientX - 332;
+    _my = document.body.scrollTop + e.clientY - 76;
 }
 
 function mouseX() {
-    return mx;
+    return _mx;
 }
 
 function mouseY() {
-    return my;
+    return _my;
 }
 
 function _mouseDown(e) {
-    mouseLeftDown = (mouseLeftDown || (e.button === MOUSE_LEFT));
-    mouseRightDown = (mouseRightDown || (e.button === MOUSE_RIGHT));
+    _mouseLeftDown = (_mouseLeftDown || (e.button === MOUSE_LEFT));
+    _mouseRightDown = (_mouseRightDown || (e.button === MOUSE_RIGHT));
 }
 
 function mouseUp(e) {
-    mouseLeftDown = (mouseLeftDown && (e.button !== MOUSE_LEFT));
-    mouseRightDown = (mouseRightDown && (e.button !== MOUSE_RIGHT));
+    _mouseLeftDown = (_mouseLeftDown && (e.button !== MOUSE_LEFT));
+    _mouseRightDown = (_mouseRightDown && (e.button !== MOUSE_RIGHT));
 }
 
 function mouseDown() {
-    return (mouseLeftDown || mouseRightDown);
+    return (_mouseLeftDown || _mouseRightDown);
 }
 
 function leftMouseDown() {
-    return (mouseDown() && mouseLeftDown);
+    return (mouseDown() && _mouseLeftDown);
 }
 
 function rightMouseDown() {
-    return (mouseDown() && mouseRightDown);
+    return (mouseDown() && _mouseRightDown);
 }
 
 function doubleClick() {
-    var tmp = wclick;
-    wclick = false;
+    var tmp = _wclick;
+    _wclick = false;
     return tmp;
 }
 
 function mouseDoubleClick(e) {
-    wclick = true;
+    _wclick = true;
 }
 
 // 最初に実装していたinputの方式
 //function entered(k, id) {
 //    if (k === KEY_ENTER) {
 //        var text = document.getElementById(id);
-//        $inputText = text.value;
-//        println("INPUT [" + $inputText + "]");
+//        _inputText = text.value;
+//        println("INPUT [" + _inputText + "]");
 //        text.value = "";
-//        inputted = true;
+//        _inputted = true;
 //    }
 //}
 
@@ -622,12 +624,12 @@ function mouseDoubleClick(e) {
 // TODO input("1辺の長さを入力してください")で入力用のメッセージ表示はどうか
 function input() {
     //  入力待ち用にスレッドを生成
-    th = Thread.create(function () {
-        while (!inputted) {
+    _th = Thread.create(function () {
+        while (!_inputted) {
             sleep(1);
         }
         sleep(200); // Input用ウィンドウが消えるのを待つ
-        inputted = false;
+        _inputted = false;
     });
 
     swal({
@@ -641,9 +643,9 @@ function input() {
                 swal.showInputError("You need to write something!");
                 return false;
             }
-            $inputText = inputValue;
-            println("INPUT [" + $inputText + "]");
-            inputted = true;             // th.kill(); 本当はこうしたい
+            _inputText = inputValue;
+            println("INPUT [" + _inputText + "]");
+            _inputted = true;             // th.kill(); 本当はこうしたい
             swal.close();
         }
     );

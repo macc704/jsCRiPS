@@ -16,7 +16,7 @@
         function main() {
 //            var source = document.getElementById('source').value;
             var source = document.getElementById('editorFrame').contentWindow.getSource();
-            var converted = converter.convert(source);
+            var converted = _converter.convert(source);
             document.getElementById('result').value = converted;
             eval('var func = function(){' + converted + '}');
             start(func);
