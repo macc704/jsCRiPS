@@ -13,6 +13,14 @@ _converter.convert = function (source) {
         if (stmt.type === 'BlockStatement') {
             stmt.body = processStatements(stmt.body);
         }
+        if (stmt.type === 'IfStatement') {  // else if
+            if (stmt.consequent) {
+                stmt.consequent = processStatement(stmt.consequent);
+            }
+            if (stmt.alternate) {
+                stmt.alternate = processStatement(stmt.alternate);
+            }
+        }
         if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'CallExpression') {
             var block = esprima.parse('{}').body[0];
             block.body.push(stmt);
@@ -514,6 +522,7 @@ function print() {
         msgArea.value = msgArea.value.split('\n').slice(1).join('\n');
     }
     msgArea.scrollTop = msgArea.scrollHeight;
+    _th = Thread.create(function () {});    // これが無いとjoinし続ける？
 }
 
 function println() {
