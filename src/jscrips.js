@@ -359,6 +359,7 @@ function createImageTurtle(imgName) {
 /* 描画関連 */
 function draw(t) {
     clearTurtleCanvas();
+    t.kameType++;
     for (var i = 0; i < _ttls.size(); i++) {
         if (_ttls[i].isShow) {
             drawTurtle(_ttls[i]);
@@ -378,7 +379,6 @@ function drawTurtle(t) {
     var ctx = canvas.getContext('2d');
     if (t._looks === null) {
         drawKame(t, kameMotions[getMotion()]);
-        t.kameType++;
     } else {
         drawImg();
     }
