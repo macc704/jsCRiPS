@@ -48,6 +48,9 @@ _converter.convert = function (source) {
     var processStatements = function (stmts) {
         var newStmts = [];
         stmts.forEach(function (each) {
+            if (each.type === 'BlockStatement') {
+                each.body = processStatements(each.body);
+            }
             if (each.type === 'IfStatement') {
                 if (each.consequent) {
                     each.consequent = processStatement(each.consequent);
