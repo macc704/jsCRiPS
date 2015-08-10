@@ -66,7 +66,7 @@ _converter.convert = function (source) {
             if (each.type === 'ExpressionStatement' && each.expression.type === 'CallExpression') {
                 newStmts.push(yieldAST);
             }
-            // var x=input(),y=input() や f(input()) や if(input()=='abc')などには未対応
+            // TODO var x=input(),y=input() や f(input()) や if(input()=='abc')などには未対応
             if (each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
                 each.expression.right.type === 'CallExpression' && each.expression.right.callee.name === 'input') {
                 newStmts.push(yieldAST);
@@ -359,13 +359,14 @@ function createImageTurtle(imgName) {
 /* 描画関連 */
 function draw(t) {
     clearTurtleCanvas();
-    t.kameType++;
+    if(t) {
+        t.kameType++;
+    }
     for (var i = 0; i < _ttls.size(); i++) {
         if (_ttls[i].isShow) {
             drawTurtle(_ttls[i]);
         }
     }
-
     if (t && t.penDown) {
         drawLocus(t);
     }
@@ -633,8 +634,7 @@ function mouseDoubleClick(e) {
 //}
 
 /* global swal*/
-// TODO input("1辺の長さを入力してください")で入力用のメッセージ表示はどうか
-function input() {
+function input(msg) {
     //  入力待ち用にスレッドを生成
     _th = Thread.create(function () {
         while (!_inputted) {
@@ -645,7 +645,7 @@ function input() {
     });
 
     swal({
-            title: "An input!",
+            title: msg ? msg : 'An input!',
             type: "input",
             allowEscapeKey: false,
             closeOnConfirm: false
