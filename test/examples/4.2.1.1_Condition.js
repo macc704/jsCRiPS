@@ -2,9 +2,7 @@ var t = createTurtle();
 
 var pictureNumber;// 絵の番号
 
-println("書きたい絵の番号を入力してください。(1.家, 2.星)");
-
-pictureNumber = input();
+pictureNumber = input("書きたい絵の番号を入力してください。(1.家, 2.星)");
 
 if (pictureNumber == 1) {   // 入力された番号が1ならば家を書く
 

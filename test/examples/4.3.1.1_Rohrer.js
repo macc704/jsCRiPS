@@ -2,10 +2,8 @@ var height; // 身長
 var weight; // 体重
 var rohrer; // ローレル指数
 
-println("身長を入力してください");
-height = input();
-println("体重を入力してください");
-weight = input();
+height = input("身長を入力してください");
+weight = input("体重を入力してください");
 
 // ローレル指数を求める
 rohrer = weight * 10000000 / height / height / height;

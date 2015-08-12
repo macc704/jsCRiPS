@@ -3,8 +3,7 @@ var t = createTurtle(); // タートルを生成する
 var length; // 1辺の長さ
 var rightAngle; // 直角
 
-println("1辺の長さを入力してください");
-length = input();   // 1辺の長さを入力値に設定する
+length = input("1辺の長さを入力してください");   // 1辺の長さを入力値に設定する
 rightAngle = 90;    // 直角を90度に設定する
 
 // 屋根を書く

@@ -12,37 +12,34 @@ _converter.convert = function (source) {
     var processStatement = function (stmt) {
         if (stmt.type === 'BlockStatement') {
             stmt.body = processStatements(stmt.body);
-        }
-        if (stmt.type === 'IfStatement') {  // else if
+        } else if (stmt.type === 'IfStatement') {  // else if
             if (stmt.consequent) {
                 stmt.consequent = processStatement(stmt.consequent);
             }
             if (stmt.alternate) {
                 stmt.alternate = processStatement(stmt.alternate);
             }
-        }
-        if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'CallExpression') {
-            var block = esprima.parse('{}').body[0];
-            block.body.push(stmt);
-            block.body.push(yieldAST);
-            return block;
-        }
-        if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'AssignmentExpression' &&
+        } else if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'CallExpression') {
+            return newBlock();
+        } else if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'AssignmentExpression' &&
             stmt.expression.right.type === 'CallExpression' && stmt.expression.right.callee.name === 'input') {
-            var block = esprima.parse('{}').body[0];
-            block.body.push(stmt);
-            block.body.push(yieldAST);
-            block.body.push(esprima.parse(stmt.expression.left.name + ' = _inputText;').body[0]);
-            return block;
-        }
-        if (stmt.type === 'VariableDeclaration' && stmt.declarations[0].init &&
+            return newBlock(stmt.expression.left.name);
+        } else if (stmt.type === 'VariableDeclaration' && stmt.declarations[0].init &&
             stmt.declarations[0].init.type === 'CallExpression' && stmt.declarations[0].init.callee.name === 'input') {
-            var block = esprima.parse('{}').body[0];
-            block.body.push(stmt);
-            block.body.push(yieldAST);
-            block.body.push(esprima.parse(stmt.declarations[0].id.name + ' = _inputText;').body[0]);
+            return newBlock(stmt.declarations[0].id.name);
         }
         return stmt;
+
+        function newBlock(inputName){
+            var block = esprima.parse('{}').body[0];
+            block.body.push(stmt);
+            block.body.push(yieldAST);
+            if(inputName){
+                block.body.push(esprima.parse(inputName + ' = _inputText;').body[0]);
+            }
+            return block;
+        }
+
     };
 
     var processStatements = function (stmts) {
@@ -50,8 +47,7 @@ _converter.convert = function (source) {
         stmts.forEach(function (each) {
             if (each.type === 'BlockStatement') {
                 each.body = processStatements(each.body);
-            }
-            if (each.type === 'IfStatement') {
+            }else if (each.type === 'IfStatement') {
                 if (each.consequent) {
                     each.consequent = processStatement(each.consequent);
                 }
@@ -65,14 +61,12 @@ _converter.convert = function (source) {
             newStmts.push(each);
             if (each.type === 'ExpressionStatement' && each.expression.type === 'CallExpression') {
                 newStmts.push(yieldAST);
-            }
-            // TODO var x=input(),y=input() や f(input()) や if(input()=='abc')などには未対応
-            if (each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
+            }else if (each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
+                // TODO var x=input(),y=input() や f(input()) や if(input()=='abc')などには未対応
                 each.expression.right.type === 'CallExpression' && each.expression.right.callee.name === 'input') {
                 newStmts.push(yieldAST);
                 newStmts.push(esprima.parse(each.expression.left.name + ' = _inputText;').body[0]);
-            }
-            if (each.type === 'VariableDeclaration' && each.declarations[0].init &&
+            }else if (each.type === 'VariableDeclaration' && each.declarations[0].init &&
                 each.declarations[0].init.type === 'CallExpression' && each.declarations[0].init.callee.name === 'input') {
                 newStmts.push(yieldAST);
                 newStmts.push(esprima.parse(each.declarations[0].id.name + ' = _inputText;').body[0]);
@@ -498,6 +492,9 @@ function restart() {
         // TODO mth,thが終了時に例外が出る、無視でok?
         println("ERROR [" + e + "]");
     }
+    _mth = Thread.create(function () {}); // これらが無いと最初のprint系でjoinし続ける？
+    _th = Thread.create(function () {});    
+
     _ttls = [];
     main();
 }
@@ -526,7 +523,6 @@ function print() {
         msgArea.value = msgArea.value.split('\n').slice(1).join('\n');
     }
     msgArea.scrollTop = msgArea.scrollHeight;
-    _th = Thread.create(function () {});    // これが無いとjoinし続ける？
 }
 
 function println() {

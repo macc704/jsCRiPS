@@ -210,11 +210,8 @@
     <h1 id="ptitle">Test3 </h1>
 
     <!--TODO シンタックスハイライトとかのためにTextAreaからAceっていうのを使ってみた-->
-    <!--が、ConcurrentThread.jsがArrayのプロトタイプをいじってるせいで-->
-    <!--Aceが汚染されて動かなかったから、iframeで呼び出してみてる、どうしようか-->
-    <!--動作として特に問題はないが、少し気持ち悪い？-->
-    <!--また、Aceの仕様でエラーチェックをしてくれるが、Firefoxだと動かない？-->
-    <!--チェックしてくれる場合、Windowで定義されてるlengthやnameで警告がでる、うざい-->
+    <!--そのためにConcurrentThread.jsの914をコメントアウト-->
+    <!--エラーチェックしてくれる場合、Windowで定義されてるlengthやnameで警告がでる-->
     <iframe id="editorFrame" src="editor.html" width="400px" frameborder="0"></iframe>
 
     <!--TODO Canvasを一つに統一？ -->
