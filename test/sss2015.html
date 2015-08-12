@@ -2,12 +2,16 @@
 <meta charset="utf-8">
 <html>
 <head>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
     <script src="../lib/esprima-2.4.1/esprima.js"></script>
     <script src="../lib/escodegen-1.6.1/escodegen.browser.js"></script>
     <script src="../lib/ConcurrentThread.js"></script>
+    <script src="../lib/bootstrap-3.3.5-dist/js/bootstrap.min.js"></script>
     <script src="../src/jscrips.js"></script>
     <link rel="stylesheet" href="../lib/Slidebars-0.10.3/dist/slidebars.min.css">
     <link rel="stylesheet" href="../lib/sweetalert-master/dist/sweetalert.css">
+  <!--  <link rel="stylesheet" href="../lib/bootstrap-3.3.5-dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../lib/bootstrap-3.3.5-dist/css/bootstrap-theme.css"> -->
     <script src="../lib/sweetalert-master/dist/sweetalert.min.js"></script>
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -28,27 +32,19 @@
         canvas {
             border: 1px solid #999;
             position: absolute;
-            left: 400px;
         }
 
         textarea {
-            position: absolute;
         }
 
         textarea#result {
-            position: absolute;
-            top: 300px;
         }
 
         textarea#ast {
-            position: absolute;
             left: 340px;
-            top: 300px;
         }
 
         textarea#console {
-            position: absolute;
-            bottom: 48px;
         }
 
         nav {
@@ -81,6 +77,14 @@
 
         #sb-site{
             height: 100%;
+        }
+
+        #editorFrame{
+            height: 240px;
+            display: block;
+        }
+        iframe{
+          height: 240px;   
         }
 
         ul {
@@ -130,9 +134,6 @@
             padding:2px;
         }
 
-        iframe {
-            position: absolute;
-        }
 
 
     </style>
@@ -145,9 +146,7 @@
     <div>
         <button type="button" class="sb-toggle-left" id="slidebarb">≡</button>
     </div>
-    <div>
-        <button type="button" id="restart" onclick="restart()">press me</button>
-    </div>
+
     <div>
         <select id="fontsize" size="1" title="fontsize" onchange="setFontSize(this.value)">
             <option value="10px">10px</option>
@@ -203,6 +202,9 @@
             </optgroup>
         </select>
     </div>
+    <div>
+    <button type="button" id="restart" onclick="restart()">Run</button>
+    </div>
     <div id="sldiv">
         速<input type="range" name="moveSpeed" min="0" max="12" step="2"
                 value="6" onchange="changeSpeed(this.value)" title="moveSpeed">遅
@@ -212,21 +214,37 @@
 
 
 <div id="sb-site">
-    <h1 id="ptitle">Test3 </h1>
+    <h1 id="ptitle">No title</h1>
 
     <!--TODO シンタックスハイライトとかのためにTextAreaからAceっていうのを使ってみた-->
     <!--が、ConcurrentThread.jsに関数が汚染されているためiframeで実装中-->
     <!--エラーチェックしてくれる場合、Windowで定義されてるlengthやnameで警告がでる-->
-    <iframe id="editorFrame" src="editor.html" width="400px" frameborder="0"></iframe>
+    <iframe id="editorFrame" src="editor.html" width="400px" frameborder="0" style="float:left"></iframe>
 
     <!--TODO Canvasを一つに統一？ -->
+    <div style="float:left;background-color:red;">
     <canvas id="locusCanvas" width="240" height="240"></canvas>
     <canvas id="turtleCanvas" width="240" height="240"></canvas>
-    <textarea id="result" cols="45" rows="20">
+</div>
+<div style="clear:both">
+    <br>Console<br>
+    </div>
+    <textarea id="console" rows="6" cols="80" title="msgArea" readonly></textarea>
+    <br>
+<button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#debugConsole" aria-expanded="false" aria-controls="debugConsole">
+  Open Debug Console
+</button>
+    <br>
+    <div class="collapse" id="debugConsole">
+  <div class="well">
+        <textarea id="result" cols="45" rows="20">
     </textarea>
     <textarea id="ast" cols="45" rows="20">
     </textarea>
-    <textarea id="console" rows="6" cols="80" title="msgArea" readonly></textarea>
+  </div>
+</div>
+
+   
 </div>
 
 <div class="sb-slidebar sb-left sb-width-custom" data-sb-width="200px" id="leftb">
@@ -291,8 +309,6 @@
         </li>
     </ul>
 </div>
-<!-- JQuery -->
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 <script src="../lib/Slidebars-0.10.3/dist/slidebars.js"></script>
 <script>
     // ドロワーメニューの設定

@@ -35,25 +35,25 @@ for(var i=0;i<12;i++){
     var editor = ace.edit("editor");
     editor.setTheme("ace/theme/monokai");
     editor.getSession().setMode("ace/mode/javascript");
-    editor.$blockScrolling = Infinity;
+   // editor.$blockScrolling = Infinity;
 
-    function heightUpdateFunction() {
-        // http://stackoverflow.com/questions/11584061/
-        var newHeight = editor.getSession().getScreenLength()
-                * editor.renderer.lineHeight + 20;
-        window.parent.$('#editorFrame').height(newHeight.toString() + "px");
-        //  いらない？  $('#editor-section').height(newHeight.toString() + "px");
+    // function heightUpdateFunction() {
+    //     // http://stackoverflow.com/questions/11584061/
+    //     var newHeight = editor.getSession().getScreenLength()
+    //             * editor.renderer.lineHeight + 20;
+    //     window.parent.$('#editorFrame').height(newHeight.toString() + "px");
+    //     //  いらない？  $('#editor-section').height(newHeight.toString() + "px");
 
-        // This call is required for the editor to fix all of
-        // its inner structure for adapting to a change in size
-        editor.resize();
-    }
+    //     // This call is required for the editor to fix all of
+    //     // its inner structure for adapting to a change in size
+    //     editor.resize();
+    // }
 
     // Set initial size to match initial content
-    heightUpdateFunction();
+  //  heightUpdateFunction();
     // Whenever a change happens inside the ACE editor, update
     // the size again
-    editor.getSession().on('change', heightUpdateFunction);
+    //editor.getSession().on('change', heightUpdateFunction);
 
 
     function getSource() {
