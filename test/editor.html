@@ -35,8 +35,23 @@ for(var i=0;i<12;i++){
     var editor = ace.edit("editor");
     editor.setTheme("ace/theme/monokai");
     editor.getSession().setMode("ace/mode/javascript");
-   // editor.$blockScrolling = Infinity;
+    editor.$blockScrolling = Infinity;
 
+    $(document).ready(function () {
+        var loadfile = function(path){
+            $("#dummy").load(path,
+                function (response, status) {
+                    if (status === 'error') {
+                        println("ERROR ファイル[" + path + "]が見つかりません")
+                    } else {
+                        paste(response);
+                    }
+                });
+        }
+        loadfile('file:///C:/Users/cs11054/Documents/jsCRiPS/test/examples/2.2.1.1_House.js');
+    });
+
+    // 自動でリサイズする設定だったもの
     // function heightUpdateFunction() {
     //     // http://stackoverflow.com/questions/11584061/
     //     var newHeight = editor.getSession().getScreenLength()
