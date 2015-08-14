@@ -17,12 +17,26 @@
           content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script>
 
+        var dt;
+        function fd(x){
+            dt.fd(x);
+        }
+        function bk(x){
+            dt.bk(x);
+        }
+        function lt(x){
+            dt.lt(x);
+        }
+        function rt(x){
+            dt.rt(x);
+        }
+
         function main() {
 //            var source = document.getElementById('source').value;
             var source = document.getElementById('editorFrame').contentWindow.getSource();
             var converted = _converter.convert(source);
             document.getElementById('result').value = converted;
-            eval('var func = function(){' + converted + '}');
+            eval('dt = createTurtle(); var func = function(){' + converted + '}');
             start(func);
         }
 
