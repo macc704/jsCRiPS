@@ -1,4 +1,4 @@
-var t = createTurtle();
+var t = createTurtle(); //　タートルを生成する
 
 var length;
 var angle;
