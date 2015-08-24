@@ -34,7 +34,7 @@
         function main() {
 //            var source = document.getElementById('source').value;
             var source = document.getElementById('editorFrame').contentWindow.getSource();
-            var converted = _converter.convert(source);
+            var converted = jsCRiPS.converter.convert(source);
             document.getElementById('result').value = converted;
             eval('dt = createTurtle(); var func = function(){' + converted + '}');
             start(func);
