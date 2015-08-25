@@ -313,8 +313,78 @@ function createTurtle() {
     return t;
 }
 
+// アニメーションを必要としないタートルの親
+function createObjectTurtle() {
+    var t = createTurtle();
+    // override アニメーションなし
+    t.fd = function (d) {
+        if (d < 0) {
+            t.bk(-d);
+        } else {
+            jsCRiPS.th = Thread.create(function (d, t) {
+                var xx = t.x,
+                    yy = t.y;
+                var dx = Math.cos(deg2rad(t.angle));
+                var dy = Math.sin(deg2rad(t.angle));
+                t.setRxRy();
+                t.x = xx + dx * d;
+                t.y = yy + dy * d;
+            }, d, t);
+        }
+    };
+
+    t.bk = function (d) {
+        if (d < 0) {
+            t.fd(-d);
+        } else {
+            jsCRiPS.th = Thread.create(function (d, t) {
+                var xx = t.x,
+                    yy = t.y;
+                var dx = Math.cos(deg2rad(t.angle));
+                var dy = Math.sin(deg2rad(t.angle));
+                t.setRxRy();
+                t.x = xx - dx * d;
+                t.y = yy - dy * d;
+            }, d, t);
+        }
+    };
+
+    t.rt = function (deg) {
+        if (deg < 0) {
+            t.lt(-deg);
+        } else {
+            jsCRiPS.th = Thread.create(function (deg, t) {
+                var tmpAngle = t.angle;
+                var tmpPendown = t.penDown;
+                t.up();
+                t.angle = tmpAngle + deg;
+                t.penDown = tmpPendown;
+            }, deg, t);
+        }
+    };
+
+    t.lt = function (deg) {
+        if (deg < 0) {
+            t.rt(-deg);
+        } else {
+            jsCRiPS.th = Thread.create(function (deg, t) {
+                var tmpAngle = t.angle;
+                var tmpPendown = t.penDown;
+                t.up();
+                t.angle = tmpAngle - deg;
+                t.penDown = tmpPendown;
+            }, deg, t);
+        }
+    };
+
+    t.penDown = false;
+    t.angle = 0;
+    return t;
+}
+
+
 function createImageTurtle(imgName) {
-    var t = createTurtle(); // 先頭に書かないとなんかおかしくなる？
+    var t = createObjectTurtle(); // 先頭に書かないとなんかおかしくなる？
     if (jsCRiPS.imgs[imgName] === undefined) {
         var img = new Image();
         img.src = imgName;
@@ -324,13 +394,44 @@ function createImageTurtle(imgName) {
                 document.getElementById('console').value + "画像[" + imgName + "]が見つかりません\n";
         };
     }
-    t.penDown = false;
     t._looks = jsCRiPS.imgs[imgName];
     t.width = t._looks.width;
     t.height = t._looks.height;
-    t.angle = 0;
+
     return t;
 }
+
+function createTextTurtle(str) {
+    var t = createObjectTurtle();
+    t.str = str;
+    t.DEFAULT_FONT = "MS Gothic";
+    t._fontsize = 16;
+
+    t.fontsize = function (fs) {
+        t._fontsize = fs;
+        resize();
+    };
+
+    t.text = function (newStr) {
+        t.str = newStr;
+        resize();
+    };
+
+    resize();
+    function resize() {
+        var canvas = document.getElementById('turtleCanvas');
+        if (!canvas.getContext) {
+            return;
+        }
+        var ctx = canvas.getContext('2d');
+        ctx.font = t._fontsize + "px \'" + t.DEFAULT_FONT + "\'";
+        t.width = ctx.measureText(str).width;
+        t.height = t._fontsize;
+    }
+
+    return t;
+}
+
 
 // 現在使っていない、デフォルトタートル用のものたち
 //var defaultTurtle = createTurtle();
@@ -387,10 +488,12 @@ function drawTurtle(t) {
         return;
     }
     var ctx = canvas.getContext('2d');
-    if (t._looks === null) {
-        drawKame(t, kameMotions[getMotion()]);
-    } else {
+    if (t._looks !== null) {
         drawImg();
+    } else if (typeof t.str !== 'undefined') {
+        drawText();
+    } else {
+        drawKame(t, kameMotions[getMotion()]);
     }
 
     function drawKame(t, data) {
@@ -413,11 +516,23 @@ function drawTurtle(t) {
     }
 
     function drawImg() {
+        drawObject(function(){ctx.drawImage(t._looks, t.x - t.width / 2, t.y - t.height / 2, t.width, t.height);});
+    }
+
+    function drawText() {
+        ctx.font = t._fontsize + "px \'" + t.DEFAULT_FONT + "\'";
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = t.penColor;
+        drawObject(function(){ctx.fillText(t.str, t.x, t.y);});
+    }
+
+    function drawObject(f){
         ctx.save();
         ctx.translate(t.x, t.y);
         ctx.rotate(deg2rad(t.angle));
         ctx.translate(-t.x, -t.y);
-        ctx.drawImage(t._looks, t.x - t.width / 2, t.y - t.height / 2, t.width, t.height);
+        f();
         ctx.restore();
     }
 
@@ -473,7 +588,7 @@ function deg2rad(deg) {
 // TODO 外部から呼ばれない問題、別の何かが呼ばれてる？
 function sleep(s) {
     println(s);
-    Thread.sleep(s*1000);
+    Thread.sleep(s * 1000);
 }
 
 function update() {
