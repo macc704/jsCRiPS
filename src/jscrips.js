@@ -114,7 +114,7 @@ function createTurtle() {
 
     t.angle = -90;
 
-    t.isShow = true;
+    t._isShow = true;
 
     t.penDown = true;
     t.penColor = "black";
@@ -248,12 +248,22 @@ function createTurtle() {
         }
     };
 
-    t.show = function () {
-        t.isShow = true;
+    t.show = function (b) {
+        if (typeof b === 'undefined') {
+            t._isShow = true;
+        } else if (typeof b === 'boolean') {
+            t._isShow = b;
+        } else {
+            println("引数の型が間違っています");
+        }
     };
 
     t.hide = function () {
-        t.isShow = false;
+        t._isShow = false;
+    };
+
+    t.isShow = function () {
+        return t._isShow;
     };
 
     t.setWidth = function (w) {
@@ -361,7 +371,7 @@ function draw(t) {
         t.kameType++;
     }
     for (var i = 0; i < jsCRiPS.ttls.size(); i++) {
-        if (jsCRiPS.ttls[i].isShow) {
+        if (jsCRiPS.ttls[i]._isShow) {
             drawTurtle(jsCRiPS.ttls[i]);
         }
     }
@@ -482,8 +492,8 @@ function canvasSize(w, h) {
     tc.height = h;
     lc.width = w;
     lc.height = h;
-    tc.parentNode.style.width = w +"px";
-    tc.parentNode.style.height = h +"px";
+    tc.parentNode.style.width = w + "px";
+    tc.parentNode.style.height = h + "px";
 }
 
 /*global main*/
