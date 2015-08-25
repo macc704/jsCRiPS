@@ -19,7 +19,6 @@
     <script>
 
         function main() {
-//            var source = document.getElementById('source').value;
             var source = document.getElementById('editorFrame').contentWindow.getSource();
             var converted = jsCRiPS.converter.convert(source);
             document.getElementById('result').value = converted;
@@ -310,8 +309,15 @@
         <li>9
             <ul>
                 <li class="srcli">9.2.1_RotateCar</li>
-                <li class="srcli">7.3.1_FourTurtles</li>
-                <li class="srcli">7.3.2_FourTurtles2</li>
+                <li class="srcli">9.3.1_OnAndOffCar</li>
+                <li class="srcli">未実装9.4.1.1_JankenCharacters</li>
+                <li class="srcli">未実装9.4.1.2_JankenAnimation</li>
+                <li class="srcli">9.4.2.1_WalkingMan</li>
+                <li class="srcli">未実装9.5.1.1_RotateText</li>
+                <li class="srcli">未実装9.5.2.1_Countern</li>
+                <li class="srcli">未実装9.5.2.2_Counter2</li>
+                <li class="srcli">未実装9.6.1.1.1_AnimationSample</li>
+
             </ul>
         </li>
         <li>14
@@ -344,7 +350,7 @@
                                 document.getElementById('editorFrame').contentWindow.paste(response);
                             }
                         });
-            }
+            };
             var x = function () {
                 loadfile("./examples/" + $(this).text() + ".js");
             };
@@ -360,7 +366,6 @@
     function setTheme(theme) {
         document.getElementById('editorFrame').contentWindow.setTheme(theme);
     }
-
 </script>
 
 <script>

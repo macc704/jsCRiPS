@@ -144,7 +144,7 @@ function createTurtle() {
                     t.y = yy + dy * i;
                     draw(t);
                     t.setRxRy();
-                    sleep(jsCRiPS.sleepTime);
+                    Thread.sleep(jsCRiPS.sleepTime);
                 }
                 t.x = xx + dx * d;
                 t.y = yy + dy * d;
@@ -168,7 +168,7 @@ function createTurtle() {
                     t.y = yy - dy * i;
                     draw(t);
                     t.setRxRy();
-                    sleep(jsCRiPS.sleepTime);
+                    Thread.sleep(jsCRiPS.sleepTime);
                 }
                 t.x = xx - dx * d;
                 t.y = yy - dy * d;
@@ -188,7 +188,7 @@ function createTurtle() {
                 for (var i = jsCRiPS.rotateStep; i < deg; i += jsCRiPS.rotateStep) {
                     draw(t);
                     t.angle += jsCRiPS.rotateStep;
-                    sleep(jsCRiPS.sleepTime);
+                    Thread.sleep(jsCRiPS.sleepTime);
                 }
                 t.angle = tmpAngle + deg;
                 draw(t);
@@ -208,7 +208,7 @@ function createTurtle() {
                 for (var i = jsCRiPS.rotateStep; i < deg; i += jsCRiPS.rotateStep) {
                     draw(t);
                     t.angle -= jsCRiPS.rotateStep;
-                    sleep(jsCRiPS.sleepTime);
+                    Thread.sleep(jsCRiPS.sleepTime);
                 }
                 t.angle = tmpAngle - deg;
                 draw(t);
@@ -328,6 +328,7 @@ function createImageTurtle(imgName) {
     t._looks = jsCRiPS.imgs[imgName];
     t.width = t._looks.width;
     t.height = t._looks.height;
+    t.angle = 0;
     return t;
 }
 
@@ -468,8 +469,11 @@ function deg2rad(deg) {
     return deg * Math.PI / 180;
 }
 
-function sleep(t) {
-    Thread.sleep(t);
+// ユーザー用、秒単位で指定
+// TODO 外部から呼ばれない問題、別の何かが呼ばれてる？
+function sleep(s) {
+    println(s);
+    Thread.sleep(s*1000);
 }
 
 function update() {
@@ -639,9 +643,9 @@ function mouseDoubleClick(e) {
 function input(msg) {
     jsCRiPS.th = Thread.create(function () {    //  入力待ち用にスレッドを生成
         while (!jsCRiPS.inputted) {
-            sleep(1);
+            Thread.sleep(1);
         }
-        sleep(200); // Input用ウィンドウが消えるのを待つ
+        Thread.sleep(200); // Input用ウィンドウが消えるのを待つ
         jsCRiPS.inputted = false;
     });
 
