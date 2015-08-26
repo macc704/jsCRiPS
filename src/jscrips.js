@@ -233,6 +233,7 @@ function createTurtle() {
         var tmpPendown = t.penDown;
         t.up();
         t.x = x;
+        t.x = x;
         t.y = y;
         t.setRxRy();
         t.penDown = tmpPendown;
@@ -266,12 +267,64 @@ function createTurtle() {
         return t._isShow;
     };
 
+    t.size = function (w, h) {
+        t.setWidth(w);
+        t.setHeight(h);
+    };
+
+    t.getWidth = function () {
+        return t.width;
+    };
+
+    t.getHeight = function () {
+        return t.height;
+    };
+
+    t.scale = function (n) {
+        t.setWidth(t.width * n);
+        t.setHeight(t.height * n);
+    };
+
+    t.large = function (n) {
+        t.setWidth(t.width + n);
+        t.setHeight(t.height + n);
+    };
+
+    t.small = function (n) {
+        t.setWidth(t.width - n);
+        t.setHeight(t.height - n);
+    };
+
+    t.wide = function (n) {
+        t.setWidth(t.width + n);
+    };
+
+    t.narrow = function (n) {
+        t.setWidth(t.width - n);
+    };
+
+    t.tall = function (n) {
+        t.setHeight(t.height + n);
+    };
+
+    t.little = function (n) {
+        t.setHeight(t.height - n);
+    };
+
     t.setWidth = function (w) {
-        t.width = w;
+        if (w < 0) {
+            t.width = 0;
+        } else {
+            t.width = w;
+        }
     };
 
     t.setHeight = function (h) {
-        t.height = h;
+        if (h < 0) {
+            t.height = 0;
+        } else {
+            t.height = h;
+        }
     };
 
     // 参考：http://mclass13.web.fc2.com/hsplecture/nanamekukei.htm
@@ -283,17 +336,24 @@ function createTurtle() {
         var r2 = Math.atan((ty - cy) / (tx - cx)) - deg2rad(t.angle);
         var tx2 = l * Math.cos(r2) + cx;
         var ty2 = l * Math.sin(r2) + cy;
-        println(xx, yy);
         return xx <= tx2 && tx2 <= xx + t.width &&
             yy <= ty2 && ty2 <= yy + t.height;
     };
 
-    t.centerX = function () {
-        return t.x + t.width / 2;
+    t.intersects = function (trg) {
+        // TODO 未実装
+        if (!trg.x || !trg.y) {
+            return false;
+        }
+        return t.contains(trg.x, trg.y);
     };
 
-    t.centerY = function () {
-        return t.y + t.height / 2;
+    t.getX = function () {
+        return t.x;
+    };
+
+    t.getY = function () {
+        return t.y;
     };
 
     t.setRxRy = function () {
@@ -516,7 +576,9 @@ function drawTurtle(t) {
     }
 
     function drawImg() {
-        drawObject(function(){ctx.drawImage(t._looks, t.x - t.width / 2, t.y - t.height / 2, t.width, t.height);});
+        drawObject(function () {
+            ctx.drawImage(t._looks, t.x - t.width / 2, t.y - t.height / 2, t.width, t.height);
+        });
     }
 
     function drawText() {
@@ -524,10 +586,12 @@ function drawTurtle(t) {
         ctx.textBaseline = 'middle';
         ctx.textAlign = 'center';
         ctx.fillStyle = t.penColor;
-        drawObject(function(){ctx.fillText(t.str, t.x, t.y);});
+        drawObject(function () {
+            ctx.fillText(t.str, t.x, t.y);
+        });
     }
 
-    function drawObject(f){
+    function drawObject(f) {
         ctx.save();
         ctx.translate(t.x, t.y);
         ctx.rotate(deg2rad(t.angle));
@@ -671,11 +735,50 @@ function println() {
     print(str + '\n');
 }
 
-/* イベント関係 */
+/* -----イベント関係----- */
+
+// リスナー登録より上で宣言する必要あり
+jsCRiPS.keyDown = function (e) {
+    jsCRiPS.keys[e.keyCode] = true;
+    jsCRiPS.recentPressKey = e.keyCode;
+};
+
+jsCRiPS.keyUp = function (e) {
+    jsCRiPS.keys[e.keyCode] = false;
+    if (jsCRiPS.recentPressKey === e.keyCode) {
+        jsCRiPS.recentPressKey = -1;
+    }
+};
+
+// TODO 座標のずれをどうするか
+jsCRiPS.mouseMove = function (e) {
+    jsCRiPS.mx = document.body.scrollLeft + e.clientX - 400;
+    jsCRiPS.my = document.body.scrollTop + e.clientY - 76;
+};
+
+jsCRiPS.mouseDown = function (e) {
+    jsCRiPS.mouseLeftDown = (jsCRiPS.mouseLeftDown || (e.button === jsCRiPS.MOUSE_LEFT));
+    jsCRiPS.mouseRightDown = (jsCRiPS.mouseRightDown || (e.button === jsCRiPS.MOUSE_RIGHT));
+};
+
+jsCRiPS.mouseUp = function (e) {
+    jsCRiPS.mouseLeftDown = (jsCRiPS.mouseLeftDown && (e.button !== jsCRiPS.MOUSE_LEFT));
+    jsCRiPS.mouseRightDown = (jsCRiPS.mouseRightDown && (e.button !== jsCRiPS.MOUSE_RIGHT));
+};
+// TODO ダブルクリックをクリックと認識していいか？
+jsCRiPS.mouseClick = function (e) {
+    jsCRiPS.leftClick = (jsCRiPS.leftClick || (e.button === jsCRiPS.MOUSE_LEFT));
+    jsCRiPS.rightClick = (jsCRiPS.rightClick || (e.button === jsCRiPS.MOUSE_RIGHT));
+};
+
+jsCRiPS.mouseDoubleClick = function (e) {
+    jsCRiPS.wclick = true;
+};
+
 jsCRiPS.keys = {};
 jsCRiPS.recentPressKey = -1;
-document.addEventListener("keydown", keyDown);
-document.addEventListener("keyup", keyUp);
+document.addEventListener("keydown", jsCRiPS.keyDown);
+document.addEventListener("keyup", jsCRiPS.keyUp);
 
 jsCRiPS.mx = -1;
 jsCRiPS.my = -1;
@@ -683,35 +786,25 @@ jsCRiPS.MOUSE_LEFT = 0;
 jsCRiPS.MOUSE_RIGHT = 2;
 jsCRiPS.mouseLeftDown = false;
 jsCRiPS.mouseRightDown = false;
+jsCRiPS.leftClick = false;
+jsCRiPS.rightClick = false;
 jsCRiPS.wclick = false;
-document.addEventListener('mousemove', mouseMove);
+document.addEventListener('mousemove', jsCRiPS.mouseMove);
 document.addEventListener('mousedown', jsCRiPS.mouseDown);
-document.addEventListener('mouseup', mouseUp);
-document.addEventListener('dblclick', mouseDoubleClick);
+document.addEventListener('mouseup', jsCRiPS.mouseUp);
+document.addEventListener('click', jsCRiPS.mouseClick);
+document.addEventListener('dblclick', jsCRiPS.mouseDoubleClick);
 
 function key() {
     return jsCRiPS.recentPressKey;
 }
 
-function keyDown(e) {
-    jsCRiPS.keys[e.keyCode] = true;
-    jsCRiPS.recentPressKey = e.keyCode;
-}
-
-function keyUp(e) {
-    jsCRiPS.keys[e.keyCode] = false;
-    if (jsCRiPS.recentPressKey === e.keyCode) {
-        jsCRiPS.recentPressKey = -1;
-    }
+function keyDown(keyCode) {
+    return isPressing(keyCode);
 }
 
 function isPressing(keyCode) {
     return jsCRiPS.keys[keyCode] ? jsCRiPS.keys[keyCode] : false;
-}
-// TODO 座標のずれをどうするか
-function mouseMove(e) {
-    jsCRiPS.mx = document.body.scrollLeft + e.clientX - 332;
-    jsCRiPS.my = document.body.scrollTop + e.clientY - 76;
 }
 
 function mouseX() {
@@ -722,14 +815,28 @@ function mouseY() {
     return jsCRiPS.my;
 }
 
-function mouseDown(e) {
-    jsCRiPS.mouseLeftDown = (jsCRiPS.mouseLeftDown || (e.button === jsCRiPS.MOUSE_LEFT));
-    jsCRiPS.mouseRightDown = (jsCRiPS.mouseRightDown || (e.button === jsCRiPS.MOUSE_RIGHT));
+function mouseClicked() {
+    var ret = (jsCRiPS.leftClick || jsCRiPS.rightClick);
+    jsCRiPS.leftClick = jsCRiPS.rightClick = false;
+    return ret;
 }
 
-function mouseUp(e) {
-    jsCRiPS.mouseLeftDown = (jsCRiPS.mouseLeftDown && (e.button !== jsCRiPS.MOUSE_LEFT));
-    jsCRiPS.mouseRightDown = (jsCRiPS.mouseRightDown && (e.button !== jsCRiPS.MOUSE_RIGHT));
+function leftMouseClicked() {
+    var ret = jsCRiPS.leftClick;
+    jsCRiPS.leftClick = false;
+    return ret;
+}
+
+function rightMouseClicked() {
+    var ret = jsCRiPS.rightClick;
+    jsCRiPS.rightClick = false;
+    return ret;
+}
+
+function doubleClick() {
+    var ret = jsCRiPS.wclick;
+    jsCRiPS.wclick = false;
+    return ret;
 }
 
 function mouseDown() {
@@ -744,15 +851,6 @@ function rightMouseDown() {
     return (mouseDown() && jsCRiPS.mouseRightDown);
 }
 
-function doubleClick() {
-    var tmp = jsCRiPS.wclick;
-    jsCRiPS.wclick = false;
-    return tmp;
-}
-
-function mouseDoubleClick(e) {
-    jsCRiPS.wclick = true;
-}
 
 /* global swal*/
 function input(msg) {
