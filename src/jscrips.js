@@ -328,6 +328,7 @@ function createTurtle() {
     };
 
     // 参考：http://mclass13.web.fc2.com/hsplecture/nanamekukei.htm
+    //  isPointInPath()を使う方法も考えられる
     t.contains = function (tx, ty) {
         var xx = t.x - t.width / 2, yy = t.y - t.height / 2;
         var cx = t.x,
@@ -750,10 +751,10 @@ jsCRiPS.keyUp = function (e) {
     }
 };
 
-// TODO 座標のずれをどうするか
 jsCRiPS.mouseMove = function (e) {
-    jsCRiPS.mx = document.body.scrollLeft + e.clientX - 400;
-    jsCRiPS.my = document.body.scrollTop + e.clientY - 76;
+    var r = e.target.getBoundingClientRect();
+    jsCRiPS.mx = e.clientX - r.left;
+    jsCRiPS.my = e.clientY - r.top;
 };
 
 jsCRiPS.mouseDown = function (e) {

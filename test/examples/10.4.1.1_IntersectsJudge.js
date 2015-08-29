@@ -16,8 +16,7 @@ car.warp(200, 200);// 車を移動
             }
             { // どらえもんが車に当たっていた時の処理
                 if (man.intersects(car)) {
-                    println("a");
-//                    man.small(5);// ドラえもんを小さくする
+                    man.small(5);// 男を小さくする
                 }
             }
         }
