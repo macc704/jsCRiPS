@@ -239,6 +239,11 @@ function createTurtle() {
         t.penDown = tmpPendown;
     };
 
+
+    t.warpByTopLeft = function (x, y) {
+        t.warp(x + t.width() / 2, y + t.height() / 2);
+    };
+
     t.looks = function (tt) {
         if (tt && tt._looks) {
             t._looks = tt._looks;
@@ -493,6 +498,33 @@ function createTextTurtle(str) {
     return t;
 }
 
+function createListTurtle(autoHide, name) {
+    var t = createObjectTurtle();
+    t.name = name;
+    t.show(!autoHide);
+
+    t.list = [];
+    t.cursor = 0;
+
+    t.add = function (item) {
+        t.list.push(item);
+    };
+
+    t.get = function (idx) {
+        return t.list[idx];
+    };
+
+    t.moveCursorToNext = function () {
+        t.cursor = (t.cursor + 1) % t.list.size();
+    };
+
+    t.getObjectAtCursor = function () {
+        return t.list[t.cursor];
+    };
+
+    return t;
+}
+
 
 // 現在使っていない、デフォルトタートル用のものたち
 //var defaultTurtle = createTurtle();
@@ -549,11 +581,13 @@ function drawTurtle(t) {
         return;
     }
     var ctx = canvas.getContext('2d');
-    if (t._looks !== null) {
+    if (t._looks !== null) {    // ImageTurtle
         drawImg();
-    } else if (typeof t.str !== 'undefined') {
+    } else if (typeof t.str !== 'undefined') {  // TextTurtle
         drawText();
-    } else {
+    } else if (typeof t.list !== 'undefined') { // ListTurtle
+        drawList();
+    } else {    // Turtle
         drawKame(t, kameMotions[getMotion()]);
     }
 
@@ -590,6 +624,12 @@ function drawTurtle(t) {
         drawObject(function () {
             ctx.fillText(t.str, t.x, t.y);
         });
+    }
+
+    function drawList(){
+        var MARGIN = 12;
+        // 外枠
+        // Cursorのあたっている要素の枠
     }
 
     function drawObject(f) {
