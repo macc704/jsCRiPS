@@ -64,8 +64,8 @@ jsCRiPS.converter.convert = function (source) {
             if (each.type === 'ExpressionStatement' && each.expression.type === 'CallExpression') {
                 newStmts.push(yieldAST);
             } else if (each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
-                    // TODO var x=input(),y=input() や f(input()) や if(input()=='abc')などには未対応
                 each.expression.right.type === 'CallExpression' && each.expression.right.callee.name === 'input') {
+                // TODO var x=input(),y=input() や f(input()) や if(input()=='abc')などには未対応
                 newStmts.push(yieldAST);
                 newStmts.push(esprima.parse(each.expression.left.name + ' = jsCRiPS.inputText;').body[0]);
             } else if (each.type === 'VariableDeclaration' && each.declarations[0].init &&
@@ -101,8 +101,12 @@ jsCRiPS.DEFAULT_ROTATE_STEP = 5;
 jsCRiPS.sleepTime = 10;
 jsCRiPS.moveStep = jsCRiPS.DEFAULT_MOVE_STEP;
 jsCRiPS.rotateStep = jsCRiPS.DEFAULT_ROTATE_STEP;
+
 jsCRiPS.KEY_ENTER = 13;
+
+jsCRiPS.DEFAULT_FONT = "MS Gothic";
 jsCRiPS.FONT_SIZE = 16;
+
 jsCRiPS.LIST_MARGIN = 12;
 
 function createTurtle() {
@@ -516,7 +520,6 @@ function createImageTurtle(imgName) {
 function createTextTurtle(str) {
     var t = createObjectTurtle();
     t.str = str;
-    t.DEFAULT_FONT = "MS Gothic";
     t._fontsize = jsCRiPS.FONT_SIZE;
 
     t.fontsize = function (fs) {
@@ -536,14 +539,14 @@ function createTextTurtle(str) {
             return;
         }
         var ctx = canvas.getContext('2d');
-        ctx.font = t._fontsize + "px \'" + t.DEFAULT_FONT + "\'";
+        ctx.font = t._fontsize + "px \'" + jsCRiPS.DEFAULT_FONT + "\'";
         t.width = ctx.measureText(str).width;
         t.height = t._fontsize;
     }
 
     // override
     t.draw = function (ctx) {
-        ctx.font = t._fontsize + "px \'" + t.DEFAULT_FONT + "\'";
+        ctx.font = t._fontsize + "px \'" + jsCRiPS.DEFAULT_FONT + "\'";
         ctx.textBaseline = 'middle';
         ctx.textAlign = 'center';
         ctx.fillStyle = t.penColor;
@@ -595,6 +598,16 @@ function createListTurtle(autoHide, name) {
             t.height = 30;
         }
         if (typeof name !== "undefined") {
+            var canvas = document.getElementById('turtleCanvas');
+            if (!canvas.getContext) {
+                return;
+            }
+            var ctx = canvas.getContext('2d');
+            ctx.font = jsCRiPS.FONT_SIZE + "px \'" + jsCRiPS.DEFAULT_FONT + "\'";
+            var len = ctx.measureText(t.name).width;
+            if (len > t.width) {
+                t.width = len + jsCRiPS.LIST_MARGIN * 2;
+            }
             t.height += jsCRiPS.FONT_SIZE + jsCRiPS.LIST_MARGIN;
         }
     };
@@ -602,44 +615,58 @@ function createListTurtle(autoHide, name) {
     // override
     t.draw = function (ctx) {
         t.resize();
+        var x = t.x - t.width / 2;
+        var y = t.y - t.height / 2;
         // 外枠
         t.drawObject(ctx, function () {
             ctx.lineWidth = 1;
             ctx.strokeStyle = "black";
-            ctx.rect(t.x, t.y, t.width, t.height);
-            ctx.stroke();
+            ctx.strokeRect(x, y, t.width, t.height);
         });
+        x += jsCRiPS.LIST_MARGIN;
+        y += jsCRiPS.LIST_MARGIN;
 
-
-        var x = jsCRiPS.LIST_MARGIN;
-        var y = jsCRiPS.LIST_MARGIN;
         // ListTurtleの名前
         if (typeof t.name !== "undefined") {
-            ctx.font = t._fontsize + "px \'" + t.DEFAULT_FONT + "\'";
+            ctx.font = jsCRiPS.FONT_SIZE + "px \'" + jsCRiPS.DEFAULT_FONT + "\'";
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'center';
             ctx.fillStyle = "black";
             t.drawObject(ctx, function () {
-                ctx.fillText(t.name, x, y - t._fontsize / 2);
+                ctx.fillText(t.name, x + ctx.measureText(t.name).width / 2, y);
             });
-            y += t._fontsize;
+            y += jsCRiPS.FONT_SIZE + jsCRiPS.LIST_MARGIN;
         }
 
         // 各要素
         for (var i = 0; i < t.list.length; i++) {
             var obj = t.list[i];
-            var tx = obj.x;
-            var ty = obj.y;
-            var tangle = obj.angle;
-            obj.x = x;
-            obj.y = y;
+            var tx = obj.x, ty = obj.y, tangle = obj.angle;
+            obj.warp(x + obj.width / 2, y + obj.height / 2);
             if (obj.isObject) {
                 obj.angle = 0;
             }
-            obj.draw(ctx);
-            obj.x = tx;
-            obj.y = ty;
-            x = jsCRiPS.LIST_MARGIN + obj.width;
+            drawObject(ctx, t, obj);
+            obj.warp(tx, ty);
+            obj.angle = tangle;
+            if (t.cursor === i) { // cursorのあたっている要素の場合赤い枠で囲む
+                drawCursorRect(x, y, t.angle);
+            }
+            x += jsCRiPS.LIST_MARGIN + obj.width;
+        }
+
+        function drawObject(ctx, t, obj) {
+            t.drawObject(ctx, function () {
+                obj.draw(ctx);
+            });
+        }
+
+        function drawCursorRect(x, y) {
+            t.drawObject(ctx, function () {
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = "red";
+                ctx.strokeRect(x, y, obj.width, obj.height);
+            });
         }
     };
 
