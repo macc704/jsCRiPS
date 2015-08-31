@@ -377,6 +377,31 @@ function createTurtle() {
         );
     };
 
+    t.draw = function (ctx) {
+        var data = jsCRiPS.kameMotions[getMotion()];
+        var dx = Math.cos(deg2rad(t.angle)), dy = Math.sin(deg2rad(t.angle));
+        var ix = t.x, iy = t.y;
+        ctx.strokeStyle = t.kameColor;
+        for (var i = 0; i < data.length; i++) {
+            var px = 0, py = 0;
+            for (var j = 0; j < data[i].length; j += 2) {
+                var kx = data[i][j], ky = data[i][j + 1];
+                var nx = (kx * (-dy) + ky * (-dx)) * t.kameScale;
+                var ny = (kx * dx + ky * (-dy)) * t.kameScale;
+                if (j > 0) {
+                    drawLine(ctx, ix + px, iy + py, ix + nx, iy + ny);
+                }
+                px = nx;
+                py = ny;
+            }
+        }
+        // (int)n / 2 % 4 => 0->0 , 1->1 , 2->0 , 3->2
+        function getMotion() {
+            var tmp = parseInt(t.kameType / 2) % 4;
+            return parseInt(tmp % 2 + tmp / 3);
+        }
+    };
+
     jsCRiPS.ttls.push(t);
     return t;
 }
@@ -384,6 +409,9 @@ function createTurtle() {
 // アニメーションを必要としないタートルの親
 function createObjectTurtle() {
     var t = createTurtle();
+
+    t.isObject = true;
+
     // override アニメーションなし
     t.fd = function (d) {
         if (d < 0) {
@@ -445,6 +473,15 @@ function createObjectTurtle() {
         }
     };
 
+    t.drawObject = function (ctx, f) {
+        ctx.save();
+        ctx.translate(t.x, t.y);
+        ctx.rotate(deg2rad(t.angle));
+        ctx.translate(-t.x, -t.y);
+        f();
+        ctx.restore();
+    };
+
     t.penDown = false;
     t.angle = 0;
     return t;
@@ -465,6 +502,13 @@ function createImageTurtle(imgName) {
     t._looks = jsCRiPS.imgs[imgName];
     t.width = t._looks.width;
     t.height = t._looks.height;
+
+    // override
+    t.draw = function (ctx) {
+        t.drawObject(ctx, function () {
+            ctx.drawImage(t._looks, t.x - t.width / 2, t.y - t.height / 2, t.width, t.height);
+        });
+    };
 
     return t;
 }
@@ -496,6 +540,17 @@ function createTextTurtle(str) {
         t.width = ctx.measureText(str).width;
         t.height = t._fontsize;
     }
+
+    // override
+    t.draw = function (ctx) {
+        ctx.font = t._fontsize + "px \'" + t.DEFAULT_FONT + "\'";
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = t.penColor;
+        t.drawObject(ctx, function () {
+            ctx.fillText(t.str, t.x, t.y);
+        });
+    };
 
     return t;
 }
@@ -539,11 +594,55 @@ function createListTurtle(autoHide, name) {
             t.width = 60;
             t.height = 30;
         }
-        if(typeof name !== "undefined" ){
+        if (typeof name !== "undefined") {
             t.height += jsCRiPS.FONT_SIZE + jsCRiPS.LIST_MARGIN;
         }
-
     };
+
+    // override
+    t.draw = function (ctx) {
+        t.resize();
+        // 外枠
+        t.drawObject(ctx, function () {
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = "black";
+            ctx.rect(t.x, t.y, t.width, t.height);
+            ctx.stroke();
+        });
+
+
+        var x = jsCRiPS.LIST_MARGIN;
+        var y = jsCRiPS.LIST_MARGIN;
+        // ListTurtleの名前
+        if (typeof t.name !== "undefined") {
+            ctx.font = t._fontsize + "px \'" + t.DEFAULT_FONT + "\'";
+            ctx.textBaseline = 'middle';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = "black";
+            t.drawObject(ctx, function () {
+                ctx.fillText(t.name, x, y - t._fontsize / 2);
+            });
+            y += t._fontsize;
+        }
+
+        // 各要素
+        for (var i = 0; i < t.list.length; i++) {
+            var obj = t.list[i];
+            var tx = obj.x;
+            var ty = obj.y;
+            var tangle = obj.angle;
+            obj.x = x;
+            obj.y = y;
+            if (obj.isObject) {
+                obj.angle = 0;
+            }
+            obj.draw(ctx);
+            obj.x = tx;
+            obj.y = ty;
+            x = jsCRiPS.LIST_MARGIN + obj.width;
+        }
+    };
+
 
     return t;
 }
@@ -585,7 +684,7 @@ function createListTurtle(autoHide, name) {
 /* 描画関連 */
 function draw(t) {
     clearTurtleCanvas();
-    if (t) {
+    if (t) {    // t == Turtle
         t.kameType++;
     }
     for (var i = 0; i < jsCRiPS.ttls.size(); i++) {
@@ -604,96 +703,7 @@ function drawTurtle(t) {
         return;
     }
     var ctx = canvas.getContext('2d');
-    if (t._looks !== null) {    // ImageTurtle
-        drawImg();
-    } else if (typeof t.str !== 'undefined') {  // TextTurtle
-        drawText();
-    } else if (typeof t.list !== 'undefined') { // ListTurtle
-        drawList();
-    } else {    // Turtle
-        drawKame(t, kameMotions[getMotion(t)]);
-    }
-
-    function drawKame(t, data) {
-        var dx = Math.cos(deg2rad(t.angle)), dy = Math.sin(deg2rad(t.angle));
-        var ix = t.x, iy = t.y;
-        ctx.strokeStyle = t.kameColor;
-        for (var i = 0; i < data.length; i++) {
-            var px = 0, py = 0;
-            for (var j = 0; j < data[i].length; j += 2) {
-                var kx = data[i][j], ky = data[i][j + 1];
-                var nx = (kx * (-dy) + ky * (-dx)) * t.kameScale;
-                var ny = (kx * dx + ky * (-dy)) * t.kameScale;
-                if (j > 0) {
-                    drawLine(ctx, ix + px, iy + py, ix + nx, iy + ny);
-                }
-                px = nx;
-                py = ny;
-            }
-        }
-    }
-
-    function drawImg() {
-        drawObject(function () {
-            ctx.drawImage(t._looks, t.x - t.width / 2, t.y - t.height / 2, t.width, t.height);
-        });
-    }
-
-    function drawText() {
-        ctx.font = t._fontsize + "px \'" + t.DEFAULT_FONT + "\'";
-        ctx.textBaseline = 'middle';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = t.penColor;
-        drawObject(function () {
-            ctx.fillText(t.str, t.x, t.y);
-        });
-    }
-
-    function drawList() {
-        t.resize();
-        // 外枠
-        drawObject(function () {
-            ctx.lineWidth=1;
-            ctx.strokeStyle="black";
-            ctx.rect(t.x, t.y, t.width, t.height);
-            ctx.stroke();
-        });
-
-        // 各要素
-        for (var i = 0; i < t.list.length; i++) {
-            var obj = t.list[i];
-            var x = jsCRiPS.LIST_MARGIN;
-            var y = jsCRiPS.LIST_MARGIN;
-            if (t._looks !== null) {    // ImageTurtle
-                ctx.drawImage(t._looks, x - obj.width / 2, y - ovj.height / 2, obj.width, obj.height);
-            } else if (typeof t.str !== 'undefined') {  // TextTurtle
-                ctx.fillText(t.str, x, y);
-            } else if (typeof t.list !== 'undefined') { // ListTurtle
-                drawList();
-            } else {    // Turtle
-                drawKame(t, kameMotions[getMotion(t)]);
-            }
-
-        }
-
-
-    }
-
-    function drawObject(f) {
-        ctx.save();
-        ctx.translate(t.x, t.y);
-        ctx.rotate(deg2rad(t.angle));
-        ctx.translate(-t.x, -t.y);
-        f();
-        ctx.restore();
-    }
-
-    // (int)n / 2 % 4 => 0->0 , 1->1 , 2->0 , 3->2
-    function getMotion(t) {
-        var tmp = parseInt(t.kameType / 2) % 4;
-        return parseInt(tmp % 2 + tmp / 3);
-    }
-
+    t.draw(ctx);
 }
 
 function drawLine(ctx, x, y, dx, dy) {
@@ -971,7 +981,7 @@ function input(msg) {
 }
 
 // 亀描画用データ
-var kameMotions = [
+jsCRiPS.kameMotions = [
     // Front
     [[-12, -6, -12, 6, 0, 18, 12, 6, 12, -6, 0, -18, -12, -6],
         [-18, -12, -12, -6],
