@@ -102,6 +102,8 @@ jsCRiPS.sleepTime = 10;
 jsCRiPS.moveStep = jsCRiPS.DEFAULT_MOVE_STEP;
 jsCRiPS.rotateStep = jsCRiPS.DEFAULT_ROTATE_STEP;
 jsCRiPS.KEY_ENTER = 13;
+jsCRiPS.FONT_SIZE = 16;
+jsCRiPS.LIST_MARGIN = 12;
 
 function createTurtle() {
     var t = {};
@@ -125,8 +127,8 @@ function createTurtle() {
     t._looks = null;
 
     t.kameScale = 0.4;
-    t.width = 0;
-    t.height = 0;
+    t.width = 30;
+    t.height = 50;
 
 
     t.fd = function (d) {
@@ -471,7 +473,7 @@ function createTextTurtle(str) {
     var t = createObjectTurtle();
     t.str = str;
     t.DEFAULT_FONT = "MS Gothic";
-    t._fontsize = 16;
+    t._fontsize = jsCRiPS.FONT_SIZE;
 
     t.fontsize = function (fs) {
         t._fontsize = fs;
@@ -520,6 +522,27 @@ function createListTurtle(autoHide, name) {
 
     t.getObjectAtCursor = function () {
         return t.list[t.cursor];
+    };
+
+    t.resize = function () {
+        var width = jsCRiPS.LIST_MARGIN;
+        var maxHeight = 0;
+        if (t.list.length !== 0) {
+            for (var i = 0; i < t.list.length; i++) {
+                var obj = t.list[i];
+                width += obj.width + jsCRiPS.LIST_MARGIN;
+                maxHeight = (maxHeight < obj.height) ? obj.height : maxHeight;
+            }
+            t.width = width;
+            t.height = maxHeight + jsCRiPS.LIST_MARGIN * 2;
+        } else {
+            t.width = 60;
+            t.height = 30;
+        }
+        if(typeof name !== "undefined" ){
+            t.height += jsCRiPS.FONT_SIZE + jsCRiPS.LIST_MARGIN;
+        }
+
     };
 
     return t;
@@ -588,7 +611,7 @@ function drawTurtle(t) {
     } else if (typeof t.list !== 'undefined') { // ListTurtle
         drawList();
     } else {    // Turtle
-        drawKame(t, kameMotions[getMotion()]);
+        drawKame(t, kameMotions[getMotion(t)]);
     }
 
     function drawKame(t, data) {
@@ -626,10 +649,34 @@ function drawTurtle(t) {
         });
     }
 
-    function drawList(){
-        var MARGIN = 12;
+    function drawList() {
+        t.resize();
         // 外枠
-        // Cursorのあたっている要素の枠
+        drawObject(function () {
+            ctx.lineWidth=1;
+            ctx.strokeStyle="black";
+            ctx.rect(t.x, t.y, t.width, t.height);
+            ctx.stroke();
+        });
+
+        // 各要素
+        for (var i = 0; i < t.list.length; i++) {
+            var obj = t.list[i];
+            var x = jsCRiPS.LIST_MARGIN;
+            var y = jsCRiPS.LIST_MARGIN;
+            if (t._looks !== null) {    // ImageTurtle
+                ctx.drawImage(t._looks, x - obj.width / 2, y - ovj.height / 2, obj.width, obj.height);
+            } else if (typeof t.str !== 'undefined') {  // TextTurtle
+                ctx.fillText(t.str, x, y);
+            } else if (typeof t.list !== 'undefined') { // ListTurtle
+                drawList();
+            } else {    // Turtle
+                drawKame(t, kameMotions[getMotion(t)]);
+            }
+
+        }
+
+
     }
 
     function drawObject(f) {
@@ -642,7 +689,7 @@ function drawTurtle(t) {
     }
 
     // (int)n / 2 % 4 => 0->0 , 1->1 , 2->0 , 3->2
-    function getMotion() {
+    function getMotion(t) {
         var tmp = parseInt(t.kameType / 2) % 4;
         return parseInt(tmp % 2 + tmp / 3);
     }
