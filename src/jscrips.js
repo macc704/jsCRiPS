@@ -91,7 +91,7 @@ jsCRiPS.th = Concurrent.Thread.create(function () {
 });
 jsCRiPS.ttls = []; // タートルを管理するリスト
 jsCRiPS.imgs = {}; // 画像を管理するマップ
-jsCRiPS.inputText = ""; // 入力されたテキスト
+jsCRiPS.inputText = ''; // 入力されたテキスト
 jsCRiPS.inputted = false; // 入力制御用
 
 /*global Concurrent*/
@@ -104,7 +104,7 @@ jsCRiPS.rotateStep = jsCRiPS.DEFAULT_ROTATE_STEP;
 
 jsCRiPS.KEY_ENTER = 13;
 
-jsCRiPS.DEFAULT_FONT = "MS Gothic";
+jsCRiPS.DEFAULT_FONT = 'MS Gothic';
 jsCRiPS.FONT_SIZE = 16;
 
 jsCRiPS.LIST_MARGIN = 12;
@@ -123,17 +123,58 @@ function createTurtle() {
     t._isShow = true;
 
     t.penDown = true;
-    t.penColor = "black";
+    t.penColor = 'black';
 
     t.kameType = 0;
-    t.kameColor = "green";
+    t.kameColor = 'green';
 
     t._looks = null;
+    t.str = null;
 
     t.kameScale = 0.4;
     t.width = 30;
     t.height = 50;
 
+    // 基本的な命令
+    t.rt = function (deg) {
+        if (deg < 0) {
+            t.lt(-deg);
+        } else {
+            jsCRiPS.th = Thread.create(function (deg, t) {
+                var tmpAngle = t.angle;
+                var tmpPendown = t.penDown;
+                t.up();
+                for (var i = jsCRiPS.rotateStep; i < deg; i += jsCRiPS.rotateStep) {
+                    draw(t);
+                    t.angle += jsCRiPS.rotateStep;
+                    Thread.sleep(jsCRiPS.sleepTime);
+                }
+                t.angle = tmpAngle + deg;
+                draw(t);
+                t.penDown = tmpPendown;
+            }, deg, t);
+        }
+    };
+
+    t.lt = function (deg) {
+        if (deg < 0) {
+            t.rt(-deg);
+        } else {
+            jsCRiPS.th = Thread.create(function (deg, t) {
+                var tmpAngle = t.angle;
+                var tmpPendown = t.penDown;
+                t.up();
+                for (var i = jsCRiPS.rotateStep; i < deg; i += jsCRiPS.rotateStep) {
+                    draw(t);
+                    t.angle -= jsCRiPS.rotateStep;
+                    Thread.sleep(jsCRiPS.sleepTime);
+                }
+                t.angle = tmpAngle - deg;
+                draw(t);
+                t.penDown = tmpPendown;
+            }, deg, t);
+        }
+    };
 
     t.fd = function (d) {
         if (d < 0) {
@@ -183,46 +224,6 @@ function createTurtle() {
         }
     };
 
-    t.rt = function (deg) {
-        if (deg < 0) {
-            t.lt(-deg);
-        } else {
-            jsCRiPS.th = Thread.create(function (deg, t) {
-                var tmpAngle = t.angle;
-                var tmpPendown = t.penDown;
-                t.up();
-                for (var i = jsCRiPS.rotateStep; i < deg; i += jsCRiPS.rotateStep) {
-                    draw(t);
-                    t.angle += jsCRiPS.rotateStep;
-                    Thread.sleep(jsCRiPS.sleepTime);
-                }
-                t.angle = tmpAngle + deg;
-                draw(t);
-                t.penDown = tmpPendown;
-            }, deg, t);
-        }
-    };
-
-    t.lt = function (deg) {
-        if (deg < 0) {
-            t.rt(-deg);
-        } else {
-            jsCRiPS.th = Thread.create(function (deg, t) {
-                var tmpAngle = t.angle;
-                var tmpPendown = t.penDown;
-                t.up();
-                for (var i = jsCRiPS.rotateStep; i < deg; i += jsCRiPS.rotateStep) {
-                    draw(t);
-                    t.angle -= jsCRiPS.rotateStep;
-                    Thread.sleep(jsCRiPS.sleepTime);
-                }
-                t.angle = tmpAngle - deg;
-                draw(t);
-                t.penDown = tmpPendown;
-            }, deg, t);
-        }
-    };
-
     t.up = function () {
         t.penDown = false;
     };
@@ -235,6 +236,8 @@ function createTurtle() {
         t.penColor = c;
     };
 
+
+    // 座標に関する命令
     t.warp = function (x, y) {
         var tmpPendown = t.penDown;
         t.up();
@@ -245,39 +248,20 @@ function createTurtle() {
         t.penDown = tmpPendown;
     };
 
-
     t.warpByTopLeft = function (x, y) {
-        t.warp(x + t.width() / 2, y + t.height() / 2);
+        t.warp(x + t.width / 2, y + t.height / 2);
     };
 
-    t.looks = function (tt) {
-        if (tt && tt._looks) {
-            t._looks = tt._looks;
-            t.width = tt.width;
-            t.height = tt.height;
-        } else {
-            println("looks対象が間違っています[" + tt + "]");
-        }
+    t.getX = function () {
+        return t.x;
     };
 
-    t.show = function (b) {
-        if (typeof b === 'undefined') {
-            t._isShow = true;
-        } else if (typeof b === 'boolean') {
-            t._isShow = b;
-        } else {
-            println("引数の型が間違っています");
-        }
+    t.getY = function () {
+        return t.y;
     };
 
-    t.hide = function () {
-        t._isShow = false;
-    };
 
-    t.isShow = function () {
-        return t._isShow;
-    };
-
+    // 大きさに関する命令
     t.size = function (w, h) {
         t.setWidth(w);
         t.setHeight(h);
@@ -338,6 +322,42 @@ function createTurtle() {
         }
     };
 
+
+    // オブジェクトを出現/隠す命令
+    t.show = function (b) {
+        if (typeof b === 'undefined') {
+            t._isShow = true;
+        } else if (typeof b === 'boolean') {
+            t._isShow = b;
+        } else {
+            println('引数の型が間違っています');
+        }
+    };
+
+    t.hide = function () {
+        t._isShow = false;
+    };
+
+    t.isShow = function () {
+        return t._isShow;
+    };
+
+    //  オブジェクトの見た目を変える命令
+    t.looks = function (tt) {
+        if (typeof tt._looks !== 'undefined') {  // tt extends Turtle
+            t._looks = tt._looks;
+            t.str = tt.str;
+            t.width = tt.width;
+            t.height = tt.height;
+            t.angle = tt.angle;
+            t.draw = tt.draw;
+        } else {
+            println('looks対象が間違っています[' + tt + ']');
+        }
+    };
+
+
+    // オブジェクトの接触に関する命令
     // 参考：http://mclass13.web.fc2.com/hsplecture/nanamekukei.htm
     //  isPointInPath()を使う方法も考えられる
     t.contains = function (tx, ty) {
@@ -360,14 +380,8 @@ function createTurtle() {
         return t.contains(trg.x, trg.y);
     };
 
-    t.getX = function () {
-        return t.x;
-    };
 
-    t.getY = function () {
-        return t.y;
-    };
-
+    // 補助
     t.setRxRy = function () {
         t.rx = t.x;
         t.ry = t.y;
@@ -375,16 +389,19 @@ function createTurtle() {
 
     t.printState = function () {
         println(
-            "(x,y) = (" + parseInt(t.x) + "," + parseInt(t.y) + ")\n" +
-            "angle = " + t.angle + "\n" +
-            "(width,height) = (" + t.width + "," + t.height + ")"
+            '(x,y) = (' + parseInt(t.x) + ',' + parseInt(t.y) + ')\n' +
+            'angle = ' + t.angle + '\n' +
+            '(width,height) = (' + t.width + ',' + t.height + ')'
         );
     };
 
+
+    //　描画関係
     t.draw = function (ctx) {
+        var self = this;
         var data = jsCRiPS.kameMotions[getMotion()];
-        var dx = Math.cos(deg2rad(t.angle)), dy = Math.sin(deg2rad(t.angle));
-        var ix = t.x, iy = t.y;
+        var dx = Math.cos(deg2rad(self.angle)), dy = Math.sin(deg2rad(self.angle));
+        var ix = self.x, iy = self.y;
         ctx.strokeStyle = t.kameColor;
         for (var i = 0; i < data.length; i++) {
             var px = 0, py = 0;
@@ -477,11 +494,11 @@ function createObjectTurtle() {
         }
     };
 
-    t.drawObject = function (ctx, f) {
+    t.drawObject = function (ctx, self, f) {
         ctx.save();
-        ctx.translate(t.x, t.y);
-        ctx.rotate(deg2rad(t.angle));
-        ctx.translate(-t.x, -t.y);
+        ctx.translate(self.x, self.y);
+        ctx.rotate(deg2rad(self.angle));
+        ctx.translate(-self.x, -self.y);
         f();
         ctx.restore();
     };
@@ -500,7 +517,7 @@ function createImageTurtle(imgName) {
         jsCRiPS.imgs[imgName] = img;
         img.onerror = function () {
             document.getElementById('console').value +=
-                document.getElementById('console').value + "画像[" + imgName + "]が見つかりません\n";
+                document.getElementById('console').value + '画像[' + imgName + ']が見つかりません\n';
         };
     }
     t._looks = jsCRiPS.imgs[imgName];
@@ -509,8 +526,9 @@ function createImageTurtle(imgName) {
 
     // override
     t.draw = function (ctx) {
-        t.drawObject(ctx, function () {
-            ctx.drawImage(t._looks, t.x - t.width / 2, t.y - t.height / 2, t.width, t.height);
+        var self = this;
+        t.drawObject(ctx, self, function () {
+            ctx.drawImage(self._looks, self.x - self.width / 2, self.y - self.height / 2, self.width, self.height);
         });
     };
 
@@ -522,16 +540,19 @@ function createTextTurtle(str) {
     t.str = str;
     t._fontsize = jsCRiPS.FONT_SIZE;
 
-    t.fontsize = function (fs) {
-        t._fontsize = fs;
-        resize();
-    };
-
+    // テキストの中身を変える命令
     t.text = function (newStr) {
         t.str = newStr;
         resize();
     };
 
+    t.fontsize = function (fs) {
+        t._fontsize = fs;
+        resize();
+    };
+
+
+    // 描画関係
     resize();
     function resize() {
         var canvas = document.getElementById('turtleCanvas');
@@ -539,19 +560,20 @@ function createTextTurtle(str) {
             return;
         }
         var ctx = canvas.getContext('2d');
-        ctx.font = t._fontsize + "px \'" + jsCRiPS.DEFAULT_FONT + "\'";
+        ctx.font = t._fontsize + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
         t.width = ctx.measureText(str).width;
         t.height = t._fontsize;
     }
 
     // override
     t.draw = function (ctx) {
-        ctx.font = t._fontsize + "px \'" + jsCRiPS.DEFAULT_FONT + "\'";
+        var self = this;
+        ctx.font = t._fontsize + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
         ctx.textBaseline = 'middle';
         ctx.textAlign = 'center';
         ctx.fillStyle = t.penColor;
-        t.drawObject(ctx, function () {
-            ctx.fillText(t.str, t.x, t.y);
+        t.drawObject(ctx, self, function () {
+            ctx.fillText(self.str, self.x, self.y);
         });
     };
 
@@ -565,23 +587,176 @@ function createListTurtle(autoHide, name) {
 
     t.list = [];
     t.cursor = 0;
+    t.bgColor = "white";
 
-    t.add = function (item) {
-        t.list.push(item);
+    t.nameWidth = 0;
+    if (typeof name !== 'undefined') {
+        var canvas = document.getElementById('turtleCanvas');
+        if (!canvas.getContext) {
+            return;
+        }
+        var ctx = canvas.getContext('2d');
+        ctx.font = jsCRiPS.FONT_SIZE + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
+        t.nameWidth = ctx.measureText(t.name).width;
+    }
+
+
+    // 追加と削除
+    t.add = function (x, obj) {
+        if (typeof obj !== 'undefined') { // add(n,obj)の場合
+            if (x < 0 || t.list.length < x) {
+                println("[ add(" + x + "," + obj + ") ]挿入位置が不適切なので末尾に追加しました。");
+                t.list.push(obj);
+            } else {
+                t.list.splice(x, 0, obj);
+            }
+        } else {    // add(obj)の場合
+            t.list.push(x);
+        }
     };
 
+    t.addLast = function (obj) {
+        t.add(obj);
+    };
+
+    t.addFirst = function (obj) {
+        t.list.unshift(obj);
+    };
+
+    t.addAll = function (that) {
+        t.list = t.list.concat(that.list);
+    };
+
+    t.moveAllTo = function (that) {
+        that.addAll(t);
+    };
+
+    t.remove = function (x) {
+        var trgIdx = -1;
+        if (typeof x === 'number') {  // xがIndexの場合
+            trgIdx = x;
+        } else {  // xがオブジェクトだと思われる場合
+            for (var i = 0; i < t.list.length; i++) {
+                if (x === t.list[i]) {
+                    trgIdx = i;
+                }
+            }
+            if (trgIdx === -1) {
+                println("remove対象が存在しません。");
+                return;
+            }
+        }
+        return t.list.splice(trgIdx, 1);
+    };
+
+    t.removeFirst = function () {
+        return t.list.shift();
+    };
+
+    t.removeLast = function () {
+        return t.list.pop();
+    };
+
+    t.removeAll = function () {
+        t.list.length = 0;
+    };
+
+
+    // 取得関係
     t.get = function (idx) {
         return t.list[idx];
     };
 
+    t.getSize = function () {
+        return t.list.length;
+    };
+
+
+    // カーソル関係
+    t.getCursor = function () {
+        return t.cursor;
+    };
+
+    t.setCursor = function (newCursor) {
+        if (newCursor < 0) {
+            t.cursor = 0;
+        } else if (newCursor <= t.list.length) {
+            t.cursor = newCursor % t.list.length;
+        } else {
+            t.cursor = newCursor;
+        }
+    };
+
     t.moveCursorToNext = function () {
-        t.cursor = (t.cursor + 1) % t.list.size();
+        if (t.list.length === 0) {
+            t.cursor = 0;
+        } else {
+            t.cursor = (t.cursor + 1) % t.list.length;
+        }
+    };
+
+    t.moveCursorToPrevious = function () {
+        if (t.list.length === 0) {
+            t.cursor = 0;
+        } else {
+            t.cursor = (t.cursor === 0) ? t.list.length - 1 : t.cursor - 1;
+        }
     };
 
     t.getObjectAtCursor = function () {
         return t.list[t.cursor];
     };
 
+    t.addToCursor = function (obj) {
+        t.add(t.cursor, obj);
+    };
+
+    t.addToBeforeCursor = function (obj) {
+        t.addToCursor(obj);
+    };
+
+    t.addToAfterCursor = function (obj) {
+        t.add(t.cursor + 1, obj);
+    };
+
+    t.removeAtCursor = function () {
+        t.remove(t.cursor);
+    };
+
+    // 型がないし、そもそもいらない？
+    t.getNumberAtCursor = function () {
+        return t.getObjectAtCursor();
+    };
+
+    // 型がないし、そもそもいらない？
+    t.getStringAtCursor = function () {
+        return t.getObjectAtCursor();
+    };
+
+
+    // その他の命令
+    // アルゴリズム：http://qiita.com/minodisk/items/94b6287468d0e165f6d9,https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
+    t.shuffle = function () {
+        var i, j, temp;
+        var arr = t.list.slice();
+        i = arr.length;
+        if (i === 0) {
+            return arr;
+        }
+        while (--i) {
+            j = Math.floor(Math.random() * (i + 1));
+            temp = arr[i];
+            arr[i] = arr[j];
+            arr[j] = temp;
+        }
+        t.list = arr;
+    };
+
+    t.setBgColor = function (color) {
+        t.bgColor = color;
+    };
+
+    // 内部で呼ばれる描画関係
     t.resize = function () {
         var width = jsCRiPS.LIST_MARGIN;
         var maxHeight = 0;
@@ -597,16 +772,9 @@ function createListTurtle(autoHide, name) {
             t.width = 60;
             t.height = 30;
         }
-        if (typeof name !== "undefined") {
-            var canvas = document.getElementById('turtleCanvas');
-            if (!canvas.getContext) {
-                return;
-            }
-            var ctx = canvas.getContext('2d');
-            ctx.font = jsCRiPS.FONT_SIZE + "px \'" + jsCRiPS.DEFAULT_FONT + "\'";
-            var len = ctx.measureText(t.name).width;
-            if (len > t.width) {
-                t.width = len + jsCRiPS.LIST_MARGIN * 2;
+        if (typeof name !== 'undefined') {
+            if (t.nameWidth > t.width) {
+                t.width = t.nameWidth + jsCRiPS.LIST_MARGIN * 2;
             }
             t.height += jsCRiPS.FONT_SIZE + jsCRiPS.LIST_MARGIN;
         }
@@ -614,25 +782,29 @@ function createListTurtle(autoHide, name) {
 
     // override
     t.draw = function (ctx) {
+        var self = this;
         t.resize();
         var x = t.x - t.width / 2;
         var y = t.y - t.height / 2;
-        // 外枠
-        t.drawObject(ctx, function () {
+
+        // 背景と外枠
+        t.drawObject(ctx, self, function () {
+            ctx.fillStyle = t.bgColor;
+            ctx.fillRect(x, y, t.width, t.height);
             ctx.lineWidth = 1;
-            ctx.strokeStyle = "black";
+            ctx.strokeStyle = 'black';
             ctx.strokeRect(x, y, t.width, t.height);
         });
         x += jsCRiPS.LIST_MARGIN;
         y += jsCRiPS.LIST_MARGIN;
 
         // ListTurtleの名前
-        if (typeof t.name !== "undefined") {
-            ctx.font = jsCRiPS.FONT_SIZE + "px \'" + jsCRiPS.DEFAULT_FONT + "\'";
+        if (typeof t.name !== 'undefined') {
+            ctx.font = jsCRiPS.FONT_SIZE + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'center';
-            ctx.fillStyle = "black";
-            t.drawObject(ctx, function () {
+            ctx.fillStyle = 'black';
+            t.drawObject(ctx, self, function () {
                 ctx.fillText(t.name, x + ctx.measureText(t.name).width / 2, y);
             });
             y += jsCRiPS.FONT_SIZE + jsCRiPS.LIST_MARGIN;
@@ -646,7 +818,7 @@ function createListTurtle(autoHide, name) {
             if (obj.isObject) {
                 obj.angle = 0;
             }
-            drawObject(ctx, t, obj);
+            drawListElem(ctx, t, obj);
             obj.warp(tx, ty);
             obj.angle = tangle;
             if (t.cursor === i) { // cursorのあたっている要素の場合赤い枠で囲む
@@ -655,21 +827,20 @@ function createListTurtle(autoHide, name) {
             x += jsCRiPS.LIST_MARGIN + obj.width;
         }
 
-        function drawObject(ctx, t, obj) {
-            t.drawObject(ctx, function () {
+        function drawListElem(ctx, t, obj) {
+            t.drawObject(ctx, self, function () {
                 obj.draw(ctx);
             });
         }
 
         function drawCursorRect(x, y) {
-            t.drawObject(ctx, function () {
+            t.drawObject(ctx, self, function () {
                 ctx.lineWidth = 1;
-                ctx.strokeStyle = "red";
+                ctx.strokeStyle = 'red';
                 ctx.strokeRect(x, y, obj.width, obj.height);
             });
         }
     };
-
 
     return t;
 }
@@ -714,7 +885,7 @@ function draw(t) {
     if (t) {    // t == Turtle
         t.kameType++;
     }
-    for (var i = 0; i < jsCRiPS.ttls.size(); i++) {
+    for (var i = 0; i < jsCRiPS.ttls.length; i++) {
         if (jsCRiPS.ttls[i]._isShow) {
             drawTurtle(jsCRiPS.ttls[i]);
         }
@@ -800,21 +971,21 @@ function canvasSize(w, h) {
     tc.height = h;
     lc.width = w;
     lc.height = h;
-    tc.parentNode.style.width = w + "px";
-    tc.parentNode.style.height = h + "px";
+    tc.parentNode.style.width = w + 'px';
+    tc.parentNode.style.height = h + 'px';
 }
 
 /*global main*/
 function restart() {
     clearTurtleCanvas();
     clearLocusCanvas();
-    document.getElementById('console').value = "";
+    document.getElementById('console').value = '';
     try {
         jsCRiPS.mth.kill();
         jsCRiPS.th.kill();
     } catch (e) {
         // TODO mth,thが終了時に例外が出る、無視でok?
-        println("ERROR [" + e + "]");
+        println('ERROR [' + e + ']');
     }
     jsCRiPS.mth = Thread.create(function () {
     }); // これらが無いと最初のprint系でjoinし続ける？
@@ -838,7 +1009,7 @@ function changeSpeed(x) {
 }
 
 function print() {
-    var str = "";
+    var str = '';
     for (var i = 0; i < arguments.length - 1; i++) {
         str += arguments[i] + ',';
     }
@@ -852,7 +1023,7 @@ function print() {
 }
 
 function println() {
-    var str = "";
+    var str = '';
     for (var i = 0; i < arguments.length - 1; i++) {
         str += arguments[i] + ',';
     }
@@ -902,8 +1073,8 @@ jsCRiPS.mouseDoubleClick = function (e) {
 
 jsCRiPS.keys = {};
 jsCRiPS.recentPressKey = -1;
-document.addEventListener("keydown", jsCRiPS.keyDown);
-document.addEventListener("keyup", jsCRiPS.keyUp);
+document.addEventListener('keydown', jsCRiPS.keyDown);
+document.addEventListener('keyup', jsCRiPS.keyUp);
 
 jsCRiPS.mx = -1;
 jsCRiPS.my = -1;
@@ -920,6 +1091,7 @@ document.addEventListener('mouseup', jsCRiPS.mouseUp);
 document.addEventListener('click', jsCRiPS.mouseClick);
 document.addEventListener('dblclick', jsCRiPS.mouseDoubleClick);
 
+// キー・マウス入力に関する命令
 function key() {
     return jsCRiPS.recentPressKey;
 }
@@ -989,17 +1161,17 @@ function input(msg) {
 
     swal({
             title: msg ? msg : 'An input!',
-            type: "input",
+            type: 'input',
             allowEscapeKey: false,
             closeOnConfirm: false
         },
         function (inputValue) {
-            if (inputValue === "") {
-                swal.showInputError("You need to write something!");
+            if (inputValue === '') {
+                swal.showInputError('You need to write something!');
                 return false;
             }
             jsCRiPS.inputText = inputValue;
-            println("INPUT [" + jsCRiPS.inputText + "]");
+            println('INPUT [' + jsCRiPS.inputText + ']');
             jsCRiPS.inputted = true;             // th.kill(); 本当はこうしたい
             swal.close();
         }
