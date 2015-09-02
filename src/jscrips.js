@@ -350,13 +350,18 @@ function createTurtle() {
 
     //  オブジェクトの見た目を変える命令
     t.looks = function (tt) {
-        if (typeof tt._looks === 'undefined') {  // tt don't extends Turtle
+        if (typeof tt._looks !== 'undefined') {  // tt extends Turtle
+            t._looks = tt._looks;
+            t.str = tt.str;
+            t._fontsize = tt._fontsize;
+            t.penColor = tt.penColor;
+            t.width = tt.width;
+            t.height = tt.height;
+            t.angle = tt.angle;
+            t.draw = tt.draw;
+        } else {
             println('looks対象が間違っています[' + tt + ']');
-            return;
         }
-        var ctx = jsCRiPS.tCanvas.getContext('2d');
-
-
     };
 
 
@@ -1028,8 +1033,8 @@ function random(n) {
 
 // CRiPS#windows.size -> jsCRiPS#canvasSize
 function canvasSize(w, h) {
-    var tc = jsCRiPS.tCanvas.getContext('2d');
-    var lc = jsCRiPS.lCanvas.getContext('2d');
+    var tc = jsCRiPS.tCanvas;
+    var lc = jsCRiPS.lCanvas;
     tc.width = w;
     tc.height = h;
     lc.width = w;
