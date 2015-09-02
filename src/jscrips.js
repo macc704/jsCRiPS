@@ -93,6 +93,9 @@ jsCRiPS.ttls = []; // タートルを管理するリスト
 jsCRiPS.imgs = {}; // 画像を管理するマップ
 jsCRiPS.inputText = ''; // 入力されたテキスト
 jsCRiPS.inputted = false; // 入力制御用
+jsCRiPS.tCanvas = {};    // Turtle描画用Canvas
+jsCRiPS.lCanvas = {};   // 軌跡描画用Canvas
+
 
 /*global Concurrent*/
 var Thread = Concurrent.Thread;
@@ -347,18 +350,13 @@ function createTurtle() {
 
     //  オブジェクトの見た目を変える命令
     t.looks = function (tt) {
-        if (typeof tt._looks !== 'undefined') {  // tt extends Turtle
-            t._looks = tt._looks;
-            t.str = tt.str;
-            t._fontsize = tt._fontsize;
-            t.penColor = tt.penColor;
-            t.width = tt.width;
-            t.height = tt.height;
-            t.angle = tt.angle;
-            t.draw = tt.draw;
-        } else {
+        if (typeof tt._looks === 'undefined') {  // tt don't extends Turtle
             println('looks対象が間違っています[' + tt + ']');
+            return;
         }
+        var ctx = jsCRiPS.tCanvas.getContext('2d');
+
+
     };
 
 
@@ -579,11 +577,7 @@ function createTextTurtle(str) {
     // 描画関係
     resize();
     function resize() {
-        var canvas = document.getElementById('turtleCanvas');
-        if (!canvas.getContext) {
-            return;
-        }
-        var ctx = canvas.getContext('2d');
+        var ctx = jsCRiPS.tCanvas.getContext('2d');
         ctx.font = t._fontsize + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
         t.width = ctx.measureText(str).width;
         t.height = t._fontsize;
@@ -622,11 +616,7 @@ function createListTurtle(autoHide, name) {
 
     t.nameWidth = 0;
     if (typeof name !== 'undefined') {
-        var canvas = document.getElementById('turtleCanvas');
-        if (!canvas.getContext) {
-            return;
-        }
-        var ctx = canvas.getContext('2d');
+        var ctx = jsCRiPS.tCanvas.getContext('2d');
         ctx.font = jsCRiPS.FONT_SIZE + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
         t.nameWidth = ctx.measureText(t.name).width;
     }
@@ -901,11 +891,7 @@ function createCardTurtle(str) {
     resize();
     // override
     function resize() {
-        var canvas = document.getElementById('turtleCanvas');
-        if (!canvas.getContext) {
-            return;
-        }
-        var ctx = canvas.getContext('2d');
+        var ctx = jsCRiPS.tCanvas.getContext('2d');
         ctx.font = t._fontsize + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
         t.width = ctx.measureText(str).width + jsCRiPS.CARD_MARGIN * 2;
         t.height = t._fontsize + jsCRiPS.CARD_MARGIN * 2;
@@ -984,11 +970,7 @@ function draw(t) {
 }
 
 function drawTurtle(t) {
-    var canvas = document.getElementById('turtleCanvas');
-    if (!canvas.getContext) {
-        return;
-    }
-    var ctx = canvas.getContext('2d');
+    var ctx = jsCRiPS.tCanvas.getContext('2d');
     t.draw(ctx);
 }
 
@@ -1001,11 +983,7 @@ function drawLine(ctx, x, y, dx, dy) {
 }
 
 function drawLocus(t) {
-    var canvas = document.getElementById('locusCanvas');
-    if (!canvas.getContext) {
-        return;
-    }
-    var ctx = canvas.getContext('2d');
+    var ctx = jsCRiPS.lCanvas.getContext('2d');
     ctx.strokeStyle = t.penColor;
     drawLine(ctx, t.rx, t.ry, t.x, t.y);
 }
@@ -1020,9 +998,6 @@ function clearLocusCanvas() {
 
 function clearCanvas(name) {
     var canvas = document.getElementById(name);
-    if (!canvas.getContext) {
-        return;
-    }
     var ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
@@ -1053,8 +1028,8 @@ function random(n) {
 
 // CRiPS#windows.size -> jsCRiPS#canvasSize
 function canvasSize(w, h) {
-    var tc = document.getElementById('turtleCanvas');
-    var lc = document.getElementById('locusCanvas');
+    var tc = jsCRiPS.tCanvas.getContext('2d');
+    var lc = jsCRiPS.lCanvas.getContext('2d');
     tc.width = w;
     tc.height = h;
     lc.width = w;
@@ -1073,12 +1048,19 @@ function restart() {
         jsCRiPS.th.kill();
     } catch (e) {
         // TODO mth,thが終了時に例外が出る、無視でok?
-        println('ERROR [' + e + ']');
+        println('ERROR [ ' + e + ' ]');
     }
     jsCRiPS.mth = Thread.create(function () {
     }); // これらが無いと最初のprint系でjoinし続ける？
     jsCRiPS.th = Thread.create(function () {
     });
+
+    jsCRiPS.tCanvas = document.getElementById('turtleCanvas');
+    jsCRiPS.lCanvas = document.getElementById('locusCanvas');
+    if (!jsCRiPS.tCanvas.getContext || !jsCRiPS.lCanvas.getContext) { // 毎回チェックするのは面倒なのでここで一度だけチェックする
+        println('ERROR [ 必要なCanvasがありません ]');
+        return;
+    }
 
     jsCRiPS.ttls = [];
     main();
