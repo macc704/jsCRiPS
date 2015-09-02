@@ -105,7 +105,7 @@ jsCRiPS.rotateStep = jsCRiPS.DEFAULT_ROTATE_STEP;
 jsCRiPS.KEY_ENTER = 13;
 
 jsCRiPS.DEFAULT_FONT = 'MS Gothic';
-jsCRiPS.FONT_SIZE = 16; // TODO Firefoxの場合 MS Gothic 16px で'a'の文字がおかしくなる？
+jsCRiPS.FONT_SIZE = 16;
 
 jsCRiPS.LIST_MARGIN = 12;
 
@@ -500,9 +500,14 @@ function createObjectTurtle() {
     };
 
     t.drawObject = function (ctx, self, f) {
+        t.drawScalableObject(ctx, self, 1, 1, f);
+    };
+
+    t.drawScalableObject = function (ctx, self, xr, yr, f) {
         ctx.save();
         ctx.translate(self.x, self.y);
         ctx.rotate(deg2rad(self.angle));
+        ctx.scale(xr, yr);
         ctx.translate(-self.x, -self.y);
         f();
         ctx.restore();
@@ -563,7 +568,7 @@ function createTextTurtle(str) {
     };
 
     t.getNumber = function () {
-        return (typeof t.str === 'number') ? Number(t.str) : -1;
+        return (Number.isNaN(Number(t.str)) || Number.isNaN(parseInt(t.str, 10))) ? -1 : Number(t.str);
     };
 
     t.getText = function () {
@@ -599,16 +604,6 @@ function createTextTurtle(str) {
         });
     };
 
-    t.drawScalableObject = function (ctx, self, xr, yr, f) {
-        ctx.save();
-        ctx.translate(self.x, self.y);
-        ctx.rotate(deg2rad(self.angle));
-        ctx.scale(xr, yr);
-        ctx.translate(-self.x, -self.y);
-        f();
-        ctx.restore();
-    };
-
     return t;
 }
 
@@ -621,6 +616,10 @@ function createListTurtle(autoHide, name) {
     t.cursor = 0;
     t.bgColor = "white";
 
+    t.actualWidth = 0;
+    t.actualHeight = 0;
+    t.width = t.height = 0; // ListTurtleではwidthとheightを追加幅として扱う
+
     t.nameWidth = 0;
     if (typeof name !== 'undefined') {
         var canvas = document.getElementById('turtleCanvas');
@@ -631,6 +630,22 @@ function createListTurtle(autoHide, name) {
         ctx.font = jsCRiPS.FONT_SIZE + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
         t.nameWidth = ctx.measureText(t.name).width;
     }
+
+    // override
+    t.getWidth = function () {
+        var self = this;
+        return self.width + t.actualWidth;
+    };
+
+    t.getHeight = function () {
+        var self = this;
+        return self.height + t.actualHeight;
+    };
+
+    t.scale = function (n) {
+        t.width = t.actualWidth * n - t.actualWidth;
+        t.height = t.actualHeight * n - t.actualHeight;
+    };
 
 
     // 追加と削除
@@ -790,25 +805,26 @@ function createListTurtle(autoHide, name) {
 
     // 内部で呼ばれる描画関係
     t.resize = function () {
+        var self = this;
         var width = jsCRiPS.LIST_MARGIN;
         var maxHeight = 0;
-        if (t.list.length !== 0) {
-            for (var i = 0; i < t.list.length; i++) {
-                var obj = t.list[i];
+        if (self.list.length !== 0) {
+            for (var i = 0; i < self.list.length; i++) {
+                var obj = self.list[i];
                 width += obj.width + jsCRiPS.LIST_MARGIN;
                 maxHeight = (maxHeight < obj.height) ? obj.height : maxHeight;
             }
-            t.width = width;
-            t.height = maxHeight + jsCRiPS.LIST_MARGIN * 2;
+            t.actualWidth = width;
+            t.actualHeight = maxHeight + jsCRiPS.LIST_MARGIN * 2;
         } else {
-            t.width = 60;
-            t.height = 30;
+            t.actualWidth = 60;
+            t.actualHeight = 30;
         }
         if (typeof name !== 'undefined') {
-            if (t.nameWidth > t.width) {
-                t.width = t.nameWidth + jsCRiPS.LIST_MARGIN * 2;
+            if (t.nameWidth > t.actualWidth) {
+                t.actualWidth = t.nameWidth + jsCRiPS.LIST_MARGIN * 2;
             }
-            t.height += jsCRiPS.FONT_SIZE + jsCRiPS.LIST_MARGIN;
+            t.actualHeight += jsCRiPS.FONT_SIZE + jsCRiPS.LIST_MARGIN;
         }
     };
 
@@ -816,16 +832,17 @@ function createListTurtle(autoHide, name) {
     t.draw = function (ctx) {
         var self = this;
         t.resize();
-        var x = t.x - t.width / 2;
-        var y = t.y - t.height / 2;
-
+        var w = t.getWidth(), h = t.getHeight();
+        var x = t.x - t.width, y = t.y - t.height;
+        var wr = w / t.actualWidth, hr = h / t.actualHeight;
+        println(t.actualWidth, t.actualHeight, w, h, wr, hr);
         // 背景と外枠
-        t.drawObject(ctx, self, function () {
+        t.drawScalableObject(ctx, self, wr, hr, function () {
             ctx.fillStyle = t.bgColor;
-            ctx.fillRect(x, y, t.width, t.height);
+            ctx.fillRect(x, y, w, h);
             ctx.lineWidth = 1;
             ctx.strokeStyle = 'black';
-            ctx.strokeRect(x, y, t.width, t.height);
+            ctx.strokeRect(x, y, w, h);
         });
         x += jsCRiPS.LIST_MARGIN;
         y += jsCRiPS.LIST_MARGIN;
@@ -836,8 +853,8 @@ function createListTurtle(autoHide, name) {
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'center';
             ctx.fillStyle = 'black';
-            t.drawObject(ctx, self, function () {
-                ctx.fillText(t.name, x + ctx.measureText(t.name).width / 2, y);
+            t.drawScalableObject(ctx, self, wr, hr, function () {
+                ctx.fillText(self.name, x + ctx.measureText(t.name).width / 2, y);
             });
             y += jsCRiPS.FONT_SIZE + jsCRiPS.LIST_MARGIN;
         }
@@ -854,19 +871,19 @@ function createListTurtle(autoHide, name) {
             obj.warp(tx, ty);
             obj.angle = tangle;
             if (t.cursor === i) { // cursorのあたっている要素の場合赤い枠で囲む
-                drawCursorRect(x, y, t.angle);
+                drawCursorRect(x, y, self.angle);
             }
             x += jsCRiPS.LIST_MARGIN + obj.width;
         }
 
         function drawListElem(ctx, t, obj) {
-            t.drawObject(ctx, self, function () {
+            t.drawScalableObject(ctx, self, wr, hr, function () {
                 obj.draw(ctx);
             });
         }
 
         function drawCursorRect(x, y) {
-            t.drawObject(ctx, self, function () {
+            t.drawScalableObject(ctx, self, wr, hr, function () {
                 ctx.lineWidth = 1;
                 ctx.strokeStyle = 'red';
                 ctx.strokeRect(x, y, obj.width, obj.height);
@@ -880,6 +897,9 @@ function createListTurtle(autoHide, name) {
 function createCardTurtle(str) {
     var t = createTextTurtle(str);   // CRiPSではImageTurtleを継承していたがTextTurtleに変更
 
+    // 描画関係
+    resize();
+    // override
     function resize() {
         var canvas = document.getElementById('turtleCanvas');
         if (!canvas.getContext) {
@@ -897,10 +917,16 @@ function createCardTurtle(str) {
         ctx.font = t._fontsize + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
         ctx.textBaseline = 'middle';
         ctx.textAlign = 'center';
-        ctx.fillStyle = t.penColor;
-        t.drawObject(ctx, self, function () {
-            ctx.strokeRect(self.x, self.y, self.width, self.height);
+        ctx.fillStyle = self.penColor;
+        ctx.strokeStyle = self.penColor;
+        var defaultWidth = ctx.measureText(str).width;
+        var defaultHeight = self._fontsize;
+
+        t.drawScalableObject(ctx, self, self.width / defaultWidth, self.height / defaultHeight, function () {
             ctx.fillText(self.str, self.x, self.y);
+        });
+        t.drawObject(ctx, self, function () {
+            ctx.strokeRect(self.x - self.width / 2, self.y - self.height / 2, self.width, self.height);
         });
     };
 
