@@ -105,9 +105,11 @@ jsCRiPS.rotateStep = jsCRiPS.DEFAULT_ROTATE_STEP;
 jsCRiPS.KEY_ENTER = 13;
 
 jsCRiPS.DEFAULT_FONT = 'MS Gothic';
-jsCRiPS.FONT_SIZE = 16;
+jsCRiPS.FONT_SIZE = 16; // TODO Firefoxの場合 MS Gothic 16px で'a'の文字がおかしくなる？
 
 jsCRiPS.LIST_MARGIN = 12;
+
+jsCRiPS.CARD_MARGIN = 5;
 
 function createTurtle() {
     var t = {};
@@ -124,6 +126,7 @@ function createTurtle() {
 
     t.penDown = true;
     t.penColor = 'black';
+    t._fontsize = jsCRiPS.FONT_SIZE;
 
     t.kameType = 0;
     t.kameColor = 'green';
@@ -347,6 +350,8 @@ function createTurtle() {
         if (typeof tt._looks !== 'undefined') {  // tt extends Turtle
             t._looks = tt._looks;
             t.str = tt.str;
+            t._fontsize = tt._fontsize;
+            t.penColor = tt.penColor;
             t.width = tt.width;
             t.height = tt.height;
             t.angle = tt.angle;
@@ -508,7 +513,6 @@ function createObjectTurtle() {
     return t;
 }
 
-
 function createImageTurtle(imgName) {
     var t = createObjectTurtle(); // 先頭に書かないとなんかおかしくなる？
     if (jsCRiPS.imgs[imgName] === undefined) {
@@ -538,17 +542,32 @@ function createImageTurtle(imgName) {
 function createTextTurtle(str) {
     var t = createObjectTurtle();
     t.str = str;
-    t._fontsize = jsCRiPS.FONT_SIZE;
 
     // テキストの中身を変える命令
     t.text = function (newStr) {
+        if (typeof newStr === 'undefined') {
+            return t.text;
+        }
         t.str = newStr;
         resize();
     };
 
+
+    // TurtleCafeのマニュアルにはないがCRiPSで実装されていた関数、どうせCardTurtleで使う
     t.fontsize = function (fs) {
+        if (typeof fs === 'undefined') {
+            return t._fontsize;
+        }
         t._fontsize = fs;
         resize();
+    };
+
+    t.getNumber = function () {
+        return (typeof t.str === 'number') ? Number(t.str) : -1;
+    };
+
+    t.getText = function () {
+        return t.str;
     };
 
 
@@ -571,10 +590,23 @@ function createTextTurtle(str) {
         ctx.font = t._fontsize + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
         ctx.textBaseline = 'middle';
         ctx.textAlign = 'center';
-        ctx.fillStyle = t.penColor;
-        t.drawObject(ctx, self, function () {
+        ctx.fillStyle = self.penColor;
+        var defaultWidth = ctx.measureText(str).width;
+        var defaultHeight = self._fontsize;
+
+        t.drawScalableObject(ctx, self, self.width / defaultWidth, self.height / defaultHeight, function () {
             ctx.fillText(self.str, self.x, self.y);
         });
+    };
+
+    t.drawScalableObject = function (ctx, self, xr, yr, f) {
+        ctx.save();
+        ctx.translate(self.x, self.y);
+        ctx.rotate(deg2rad(self.angle));
+        ctx.scale(xr, yr);
+        ctx.translate(-self.x, -self.y);
+        f();
+        ctx.restore();
     };
 
     return t;
@@ -840,6 +872,36 @@ function createListTurtle(autoHide, name) {
                 ctx.strokeRect(x, y, obj.width, obj.height);
             });
         }
+    };
+
+    return t;
+}
+
+function createCardTurtle(str) {
+    var t = createTextTurtle(str);   // CRiPSではImageTurtleを継承していたがTextTurtleに変更
+
+    function resize() {
+        var canvas = document.getElementById('turtleCanvas');
+        if (!canvas.getContext) {
+            return;
+        }
+        var ctx = canvas.getContext('2d');
+        ctx.font = t._fontsize + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
+        t.width = ctx.measureText(str).width + jsCRiPS.CARD_MARGIN * 2;
+        t.height = t._fontsize + jsCRiPS.CARD_MARGIN * 2;
+    }
+
+    // override
+    t.draw = function (ctx) {
+        var self = this;
+        ctx.font = t._fontsize + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = t.penColor;
+        t.drawObject(ctx, self, function () {
+            ctx.strokeRect(self.x, self.y, self.width, self.height);
+            ctx.fillText(self.str, self.x, self.y);
+        });
     };
 
     return t;
