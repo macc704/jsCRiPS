@@ -349,6 +349,7 @@ function createTurtle() {
     };
 
     //  オブジェクトの見た目を変える命令
+    // TODO ListTurtleには非対応、対応させようとすると色々ものすごくめんどくさい
     t.looks = function (tt) {
         if (typeof tt._looks !== 'undefined') {  // tt extends Turtle
             t._looks = tt._looks;
@@ -628,16 +629,17 @@ function createListTurtle(autoHide, name) {
 
     // override
     t.getWidth = function () {
-        var self = this;
-        return self.width + t.actualWidth;
+        t.resize();
+        return t.width + t.actualWidth;
     };
 
     t.getHeight = function () {
-        var self = this;
-        return self.height + t.actualHeight;
+        t.resize();
+        return t.height + t.actualHeight;
     };
 
     t.scale = function (n) {
+        t.resize();
         t.width = t.actualWidth * n - t.actualWidth;
         t.height = t.actualHeight * n - t.actualHeight;
     };
@@ -800,12 +802,11 @@ function createListTurtle(autoHide, name) {
 
     // 内部で呼ばれる描画関係
     t.resize = function () {
-        var self = this;
         var width = jsCRiPS.LIST_MARGIN;
         var maxHeight = 0;
-        if (self.list.length !== 0) {
-            for (var i = 0; i < self.list.length; i++) {
-                var obj = self.list[i];
+        if (t.list.length !== 0) {
+            for (var i = 0; i < t.list.length; i++) {
+                var obj = t.list[i];
                 width += obj.width + jsCRiPS.LIST_MARGIN;
                 maxHeight = (maxHeight < obj.height) ? obj.height : maxHeight;
             }
@@ -825,19 +826,16 @@ function createListTurtle(autoHide, name) {
 
     // override
     t.draw = function (ctx) {
-        var self = this;
         t.resize();
-        var w = t.getWidth(), h = t.getHeight();
-        var x = t.x - t.width, y = t.y - t.height;
-        var wr = w / t.actualWidth, hr = h / t.actualHeight;
-        println(t.actualWidth, t.actualHeight, w, h, wr, hr);
-        // 背景と外枠
-        t.drawScalableObject(ctx, self, wr, hr, function () {
+        var x = t.x - t.actualWidth / 2, y = t.y - t.actualHeight / 2;
+        var wr = t.getWidth() / t.actualWidth, hr = t.getHeight() / t.actualHeight;
+        // 背景色と外枠
+        t.drawScalableObject(ctx, t, wr, hr, function () {
             ctx.fillStyle = t.bgColor;
-            ctx.fillRect(x, y, w, h);
+            ctx.fillRect(x, y, t.actualWidth, t.actualHeight);
             ctx.lineWidth = 1;
             ctx.strokeStyle = 'black';
-            ctx.strokeRect(x, y, w, h);
+            ctx.strokeRect(x, y, t.actualWidth, t.actualHeight);
         });
         x += jsCRiPS.LIST_MARGIN;
         y += jsCRiPS.LIST_MARGIN;
@@ -848,8 +846,8 @@ function createListTurtle(autoHide, name) {
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'center';
             ctx.fillStyle = 'black';
-            t.drawScalableObject(ctx, self, wr, hr, function () {
-                ctx.fillText(self.name, x + ctx.measureText(t.name).width / 2, y);
+            t.drawScalableObject(ctx, t, wr, hr, function () {
+                ctx.fillText(t.name, x + ctx.measureText(t.name).width / 2, y);
             });
             y += jsCRiPS.FONT_SIZE + jsCRiPS.LIST_MARGIN;
         }
@@ -866,19 +864,19 @@ function createListTurtle(autoHide, name) {
             obj.warp(tx, ty);
             obj.angle = tangle;
             if (t.cursor === i) { // cursorのあたっている要素の場合赤い枠で囲む
-                drawCursorRect(x, y, self.angle);
+                drawCursorRect(x, y, t.angle);
             }
             x += jsCRiPS.LIST_MARGIN + obj.width;
         }
 
         function drawListElem(ctx, t, obj) {
-            t.drawScalableObject(ctx, self, wr, hr, function () {
+            t.drawScalableObject(ctx, t, wr, hr, function () {
                 obj.draw(ctx);
             });
         }
 
         function drawCursorRect(x, y) {
-            t.drawScalableObject(ctx, self, wr, hr, function () {
+            t.drawScalableObject(ctx, t, wr, hr, function () {
                 ctx.lineWidth = 1;
                 ctx.strokeStyle = 'red';
                 ctx.strokeRect(x, y, obj.width, obj.height);
@@ -1106,8 +1104,8 @@ function println() {
     print(str + '\n');
 }
 
-/* -----イベント関係----- */
 
+// イベント関係
 // リスナー登録より上で宣言する必要あり
 jsCRiPS.keyDown = function (e) {
     jsCRiPS.keys[e.keyCode] = true;
