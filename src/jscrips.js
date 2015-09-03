@@ -255,7 +255,7 @@ function createTurtle() {
     };
 
     t.warpByTopLeft = function (x, y) {
-        t.warp(x + t.width / 2, y + t.height / 2);
+        t.warp(x + t.getWidth() / 2, y + t.getHeight() / 2);
     };
 
     t.getX = function () {
@@ -607,7 +607,8 @@ function createTextTurtle(str) {
     return t;
 }
 
-// TODO parentCheckすべき？(親が同じ場合、要素が移動したら移動元から同じ要素をremoveしていた)
+// TODO parentCheckすべき？(親がいる場合、要素が移動したら移動元から同じ要素をremoveしていた)
+// TOOD 座標は左上を基準にすべき？
 function createListTurtle(autoHide, name) {
     var t = createObjectTurtle();
     t.name = name;
@@ -656,7 +657,6 @@ function createListTurtle(autoHide, name) {
                 t.list.splice(x, 0, obj);
             }
         } else {    // add(obj)の場合
-            println(x.str);
             x.show(!autoHide);
             t.list.push(x);
         }
