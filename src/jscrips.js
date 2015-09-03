@@ -607,10 +607,10 @@ function createTextTurtle(str) {
     return t;
 }
 
+// TODO parentCheckすべき？(親が同じ場合、要素が移動したら移動元から同じ要素をremoveしていた)
 function createListTurtle(autoHide, name) {
     var t = createObjectTurtle();
     t.name = name;
-    t.show(!autoHide);
 
     t.list = [];
     t.cursor = 0;
@@ -648,6 +648,7 @@ function createListTurtle(autoHide, name) {
     // 追加と削除
     t.add = function (x, obj) {
         if (typeof obj !== 'undefined') { // add(n,obj)の場合
+            obj.show(!autoHide);
             if (x < 0 || t.list.length < x) {
                 println("[ add(" + x + "," + obj + ") ]挿入位置が不適切なので末尾に追加しました。");
                 t.list.push(obj);
@@ -655,6 +656,8 @@ function createListTurtle(autoHide, name) {
                 t.list.splice(x, 0, obj);
             }
         } else {    // add(obj)の場合
+            println(x.str);
+            x.show(!autoHide);
             t.list.push(x);
         }
     };
@@ -664,10 +667,14 @@ function createListTurtle(autoHide, name) {
     };
 
     t.addFirst = function (obj) {
+        obj.show(!autoHide);
         t.list.unshift(obj);
     };
 
     t.addAll = function (that) {
+        for (var i = 0; i < that.length; i++) {
+            that[i].show(!autoHide);
+        }
         t.list = t.list.concat(that.list);
     };
 
@@ -687,10 +694,10 @@ function createListTurtle(autoHide, name) {
             }
             if (trgIdx === -1) {
                 println("remove対象が存在しません。");
-                return;
+                return null;
             }
         }
-        return t.list.splice(trgIdx, 1);
+        return t.list.splice(trgIdx, 1)[0];
     };
 
     t.removeFirst = function () {
@@ -764,7 +771,7 @@ function createListTurtle(autoHide, name) {
     };
 
     t.removeAtCursor = function () {
-        t.remove(t.cursor);
+        return t.remove(t.cursor);
     };
 
     // 型がないし、そもそもいらない？
@@ -817,7 +824,7 @@ function createListTurtle(autoHide, name) {
             t.actualHeight = 30;
         }
         if (typeof name !== 'undefined') {
-            if (t.nameWidth > t.actualWidth) {
+            if ((t.nameWidth + jsCRiPS.LIST_MARGIN * 2) > t.actualWidth) {
                 t.actualWidth = t.nameWidth + jsCRiPS.LIST_MARGIN * 2;
             }
             t.actualHeight += jsCRiPS.FONT_SIZE + jsCRiPS.LIST_MARGIN;
@@ -839,7 +846,6 @@ function createListTurtle(autoHide, name) {
         });
         x += jsCRiPS.LIST_MARGIN;
         y += jsCRiPS.LIST_MARGIN;
-
         // ListTurtleの名前
         if (typeof t.name !== 'undefined') {
             ctx.font = jsCRiPS.FONT_SIZE + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
@@ -889,15 +895,15 @@ function createListTurtle(autoHide, name) {
 
 function createCardTurtle(str) {
     var t = createTextTurtle(str);   // CRiPSではImageTurtleを継承していたがTextTurtleに変更
-
+    var margin2 = +jsCRiPS.CARD_MARGIN * 2;
     // 描画関係
     resize();
     // override
     function resize() {
         var ctx = jsCRiPS.tCanvas.getContext('2d');
         ctx.font = t._fontsize + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
-        t.width = ctx.measureText(str).width + jsCRiPS.CARD_MARGIN * 2;
-        t.height = t._fontsize + jsCRiPS.CARD_MARGIN * 2;
+        t.width = ctx.measureText(str).width + margin2;
+        t.height = t._fontsize + margin2;
     }
 
     // override
@@ -908,8 +914,8 @@ function createCardTurtle(str) {
         ctx.textAlign = 'center';
         ctx.fillStyle = self.penColor;
         ctx.strokeStyle = self.penColor;
-        var defaultWidth = ctx.measureText(str).width;
-        var defaultHeight = self._fontsize;
+        var defaultWidth = ctx.measureText(str).width + margin2;
+        var defaultHeight = self._fontsize + margin2;
 
         t.drawScalableObject(ctx, self, self.width / defaultWidth, self.height / defaultHeight, function () {
             ctx.fillText(self.str, self.x, self.y);
