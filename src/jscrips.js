@@ -934,14 +934,6 @@ function createInputTurtle() {
 
     t.inputCapturing = true;
 
-    // override
-    t.resize = function() {
-        var ctx = jsCRiPS.tCanvas.getContext('2d');
-        ctx.font = t._fontsize + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
-        t.width = ctx.measureText(t.str).width + t.margin2;
-        t.height = t._fontsize + t.margin2;
-    };
-
     t.resize();
 
     t.setActive = function (active) {
@@ -1009,6 +1001,10 @@ function createButtonTurtle(str) {
         return ret;
     };
 
+
+    t.resize = function(){
+
+    }
 
     t.draw = function () {
 
