@@ -556,7 +556,7 @@ function createTextTurtle(str) {
             return t.str;
         }
         t.str = newStr;
-        resize();
+        t.resize();
     };
 
 
@@ -566,7 +566,7 @@ function createTextTurtle(str) {
             return t._fontsize;
         }
         t._fontsize = fs;
-        resize();
+        t.resize();
     };
 
     t.getNumber = function () {
@@ -579,13 +579,14 @@ function createTextTurtle(str) {
 
 
     // 描画関係
-    resize();
-    function resize() {
+    t.resize = function () {
         var ctx = jsCRiPS.tCanvas.getContext('2d');
         ctx.font = t._fontsize + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
         t.width = ctx.measureText(str).width;
         t.height = t._fontsize;
-    }
+    };
+
+    t.resize();
 
     // override
     t.draw = function (ctx) {
@@ -895,14 +896,15 @@ function createCardTurtle(str) {
     var t = createTextTurtle(str);   // CRiPSではImageTurtleを継承していたがTextTurtleに変更
     t.margin2 = +jsCRiPS.CARD_MARGIN * 2;
     // 描画関係
-    resize();
     // override
-    function resize() {
+    t.resize = function(){
         var ctx = jsCRiPS.tCanvas.getContext('2d');
         ctx.font = t._fontsize + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
         t.width = ctx.measureText(t.str).width + t.margin2;
         t.height = t._fontsize + t.margin2;
-    }
+    };
+
+    t.resize();
 
     // override
     t.draw = function (ctx) {
@@ -933,12 +935,14 @@ function createInputTurtle() {
     t.inputCapturing = true;
 
     // override
-    function resize() {
+    t.resize = function() {
         var ctx = jsCRiPS.tCanvas.getContext('2d');
         ctx.font = t._fontsize + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
         t.width = ctx.measureText(t.str).width + t.margin2;
         t.height = t._fontsize + t.margin2;
-    }
+    };
+
+    t.resize();
 
     t.setActive = function (active) {
         t.inputCapturing = active;
@@ -950,7 +954,7 @@ function createInputTurtle() {
 
     t.clearText = function () {
         t.str = '';
-        resize();
+        t.resize();
     };
 
     t.toJapaneseMode = function () {
@@ -977,7 +981,7 @@ function createInputTurtle() {
         }
 
         t.str = newStr;
-        resize();
+        t.resize();
 
 
         function romanConvert() {
@@ -990,6 +994,24 @@ function createInputTurtle() {
             }
             return newStr;
         }
+    };
+
+    return t;
+}
+
+function createButtonTurtle(str) {
+    var t = createTextTurtle(str);
+    var clicked = false;    // マウスが[範囲内]で[押されている]状態からぬけ出すとクリックとみなす
+
+    t.isClicked = function () {
+        var ret = clicked;
+        clicked = false;
+        return ret;
+    };
+
+
+    t.draw = function () {
+
     };
 
     return t;
