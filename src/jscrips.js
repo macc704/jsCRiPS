@@ -111,6 +111,7 @@ jsCRiPS.FONT_SIZE = 16;
 jsCRiPS.LIST_MARGIN = 12;
 jsCRiPS.CARD_MARGIN = 5;
 jsCRiPS.INPUT_MARGIN = 2;
+jsCRiPS.BUTTON_MARGIN = 5;
 
 function createTurtle() {
     var t = {};
@@ -897,7 +898,7 @@ function createCardTurtle(str) {
     t.margin2 = +jsCRiPS.CARD_MARGIN * 2;
     // 描画関係
     // override
-    t.resize = function(){
+    t.resize = function () {
         var ctx = jsCRiPS.tCanvas.getContext('2d');
         ctx.font = t._fontsize + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
         t.width = ctx.measureText(t.str).width + t.margin2;
@@ -992,8 +993,12 @@ function createInputTurtle() {
 }
 
 function createButtonTurtle(str) {
-    var t = createTextTurtle(str);
+    var t = createCardTurtle(str);
+    t.margin2 = jsCRiPS.BUTTON_MARGIN * 2;
     var clicked = false;    // マウスが[範囲内]で[押されている]状態からぬけ出すとクリックとみなす
+    t.pressing = false;
+
+    t.resize();
 
     t.isClicked = function () {
         var ret = clicked;
@@ -1001,14 +1006,34 @@ function createButtonTurtle(str) {
         return ret;
     };
 
-
-    t.resize = function(){
-
-    }
-
-    t.draw = function () {
-
+    // override
+    t.draw = function (ctx) {
+        var self = this;
+        if (typeof self.pressing !== 'undefined') {  // ButtonTurtleの場合
+            clickCheck();
+        }
+        ctx.font = t._fontsize + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'center';
+        ctx.strokeStyle = self.penColor;
+        ctx.fillStyle = self.pressing ? 'black' : 'white';  // CRiPSのButtonTurtle同様に色を連動させるなら self.pressing -> t.pressing
+        var defaultWidth = ctx.measureText(t.str).width + t.margin2;
+        var defaultHeight = self._fontsize + t.margin2;
+        t.drawObject(ctx, self, function () {
+            ctx.fillRect(self.x - self.width / 2, self.y - self.height / 2, self.width, self.height);
+            ctx.strokeRect(self.x - self.width / 2, self.y - self.height / 2, self.width, self.height);
+        });
+        ctx.fillStyle = self.penColor;
+        t.drawScalableObject(ctx, self, self.width / defaultWidth, self.height / defaultHeight, function () {
+            ctx.fillText(self.str, self.x, self.y);
+        });
     };
+
+    function clickCheck() {
+        var containAndPress = (mouseDown() && t.contains(mouseX(), mouseY()));
+        clicked = t.pressing && !containAndPress;
+        t.pressing = containAndPress;
+    }
 
     return t;
 }
