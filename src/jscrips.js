@@ -22,22 +22,22 @@ jsCRiPS.converter.convert = function (source) {
                 stmt.alternate = processStatement(stmt.alternate);
             }
         } else if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'CallExpression') {
-            return newBlock();
+            return newAssignmentBlock();
         } else if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'AssignmentExpression' &&
-            stmt.expression.right.type === 'CallExpression' && stmt.expression.right.callee.name === 'input') {
-            return newBlock(stmt.expression.left.name);
+            stmt.expression.right.type === 'CallExpression') {
+            return newAssignmentBlock(stmt.expression.left.name, stmt.expression.right.callee.name === 'input');
         } else if (stmt.type === 'VariableDeclaration' && stmt.declarations[0].init &&
-            stmt.declarations[0].init.type === 'CallExpression' && stmt.declarations[0].init.callee.name === 'input') {
-            return newBlock(stmt.declarations[0].id.name);
+            stmt.declarations[0].init.type === 'CallExpression') {
+            return newAssignmentBlock(stmt.declarations[0].id.name, stmt.declarations[0].init.callee.name === 'input');
         }
         return stmt;
 
-        function newBlock(inputName) {
+        function newAssignmentBlock(left, isInput) {
             var block = esprima.parse('{}').body[0];
             block.body.push(stmt);
             block.body.push(yieldAST);
-            if (inputName) {
-                block.body.push(esprima.parse(inputName + ' = jsCRiPS.inputText;').body[0]);
+            if (isInput && left) {
+                block.body.push(esprima.parse(left + ' = jsCRiPS.inputText;').body[0]);
             }
             return block;
         }
@@ -64,14 +64,18 @@ jsCRiPS.converter.convert = function (source) {
             if (each.type === 'ExpressionStatement' && each.expression.type === 'CallExpression') {
                 newStmts.push(yieldAST);
             } else if (each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
-                each.expression.right.type === 'CallExpression' && each.expression.right.callee.name === 'input') {
+                each.expression.right.type === 'CallExpression') {
                 // TODO var x=input(),y=input() や f(input()) や if(input()=='abc')などには未対応
                 newStmts.push(yieldAST);
-                newStmts.push(esprima.parse(each.expression.left.name + ' = jsCRiPS.inputText;').body[0]);
+                if (each.expression.right.callee.name === 'input') {
+                    newStmts.push(esprima.parse(each.expression.left.name + ' = jsCRiPS.inputText;').body[0]);
+                }
             } else if (each.type === 'VariableDeclaration' && each.declarations[0].init &&
-                each.declarations[0].init.type === 'CallExpression' && each.declarations[0].init.callee.name === 'input') {
+                each.declarations[0].init.type === 'CallExpression') {
                 newStmts.push(yieldAST);
-                newStmts.push(esprima.parse(each.declarations[0].id.name + ' = jsCRiPS.inputText;').body[0]);
+                if (each.declarations[0].init.callee.name === 'input') {
+                    newStmts.push(esprima.parse(each.declarations[0].id.name + ' = jsCRiPS.inputText;').body[0]);
+                }
             }
         });
         return newStmts;
@@ -91,6 +95,7 @@ jsCRiPS.th = Concurrent.Thread.create(function () {
 });
 jsCRiPS.ttls = []; // タートルを管理するリスト
 jsCRiPS.imgs = {}; // 画像を管理するマップ
+jsCRiPS.imgLoaded = false; // 画像読み込み制御
 jsCRiPS.inputText = ''; // 入力されたテキスト
 jsCRiPS.inputted = false; // 入力制御用
 jsCRiPS.tCanvas = {};    // Turtle描画用Canvas
@@ -522,19 +527,34 @@ function createObjectTurtle() {
 }
 
 function createImageTurtle(imgName) {
-    var t = createObjectTurtle(); // 先頭に書かないとなんかおかしくなる？
-    if (jsCRiPS.imgs[imgName] === undefined) {
+    var t = createObjectTurtle();
+    if (!jsCRiPS.imgs[imgName]) {
+        // 画像読み込み待ち用にスレッドを生成、同期式で読み込むため多少遅い
+        jsCRiPS.th = Thread.create(function () {
+            while (!jsCRiPS.imgLoaded) {
+                Thread.sleep(1);
+            }
+            jsCRiPS.imgLoaded = false;
+        });
         var img = new Image();
         img.src = imgName;
-        jsCRiPS.imgs[imgName] = img;
+        img.onload = function () {
+            jsCRiPS.imgLoaded = true;
+            jsCRiPS.imgs[imgName] = img;
+            t._looks = jsCRiPS.imgs[imgName];
+            t.width = t._looks.width;
+            t.height = t._looks.height;
+        };
         img.onerror = function () {
+            jsCRiPS.imgLoaded = true;   // 例外投げたほうがいい？
             document.getElementById('console').value +=
                 document.getElementById('console').value + '画像[' + imgName + ']が見つかりません\n';
         };
+    } else {
+        t._looks = jsCRiPS.imgs[imgName];
+        t.width = t._looks.width;
+        t.height = t._looks.height;
     }
-    t._looks = jsCRiPS.imgs[imgName];
-    t.width = t._looks.width;
-    t.height = t._looks.height;
 
     // override
     t.draw = function (ctx) {
