@@ -628,7 +628,7 @@ function createTextTurtle(str) {
 }
 
 // TODO parentCheckすべき？(親がいる場合、要素が移動したら移動元から同じ要素をremoveしていた)
-// TOOD 座標は左上を基準にすべき？
+// TODO TextTurtleやListTurtleは座標を左上基準にすべき？
 function createListTurtle(autoHide, name) {
     var t = createObjectTurtle();
     t.name = name;
@@ -1150,11 +1150,11 @@ function isInteger(str) {
     return (Number.isNaN(Number(str)) || Number.isNaN(parseInt(str, 10)));
 }
 
-// ユーザー用、秒単位で指定
-// TODO 外部から呼ばれない問題、別の何かが呼ばれてる？
-function sleep(s) {
-    println(s);
-    Thread.sleep(s * 1000);
+// TODO ユーザー用、秒単位で指定 sleepにするとConcurrent.Thread.jsのsleepが呼ばれてしまう
+function jsleep(s) {
+    jsCRiPS.th = Thread.create(function(s){
+        Thread.sleep(s * 1000);
+    },s);
 }
 
 function update() {
@@ -1209,7 +1209,7 @@ function restart() {
     main();
 }
 
-// TODO MAXスピードが遅い、関数呼び出しのオーバーヘッド？
+// TODO MAXスピードが遅い、no-kame時にmoveStep,rotateStepを大きな値に、th.join()を付与しないことで達成できるがしていいか？
 function changeSpeed(x) {
     jsCRiPS.sleepTime = Number(x);
     if (Number(x) === 0) {
