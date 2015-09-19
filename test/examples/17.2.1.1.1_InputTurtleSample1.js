@@ -5,7 +5,7 @@ var text = createTextTurtle("ここに文字が表示されます");
 text.fontsize(14);
  
 while (true) {
-	sleep(0.025);// 待つ
+	jsleep(0.025);// 待つ
 
 	// エンターキーが押されたら
 	if (key() == 13) {

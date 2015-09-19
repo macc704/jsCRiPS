@@ -3,7 +3,7 @@ var car = createImageTurtle("img/car.gif");// 車を生成
 {// アニメーションループ
     while (true) {
         // -- 待つ　---
-        sleep(0.1);
+        jsleep(0.1);
 
         { // 一コマの処理をする
             // マウスがクリックされた時の処理

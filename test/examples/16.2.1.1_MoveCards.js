@@ -17,7 +17,7 @@ update();
 }
 
 while(true){
-    sleep(0.025);
+    jsleep(0.025);
     {	//一コマの処理
         if(list1.getSize() != 0){//移動する
             list2.addLast(list1.removeAtCursor());

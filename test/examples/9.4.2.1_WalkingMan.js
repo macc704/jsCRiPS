@@ -18,7 +18,7 @@ var man8 = createImageTurtle("img/man8.gif");
 { // アニメーションループ
     var i = 0;
     while (true) {
-        sleep(0.1);
+        jsleep(0.1);
         { // 一コマの処理を行う
             if ((i % 8) == 0) {
                 man1.looks(man1);

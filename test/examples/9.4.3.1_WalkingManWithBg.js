@@ -31,7 +31,7 @@ var man8 = createImageTurtle("img/man8.gif");
     while (true) {
 
         // --- 待つ ---
-        sleep(0.1); // 0.1秒
+        jsleep(0.1); // 0.1秒
 
         { // 一コマの処理
             // 背景を動かす

@@ -8,7 +8,7 @@ var car = createImageTurtle("img/car.gif");
 { // アニメーションループ
     var i = 10;
     while (true) {
-        sleep(1);
+        jsleep(1);
         { // 一コマの処理
             number.text(i);
             if (i == 3) {

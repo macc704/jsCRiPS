@@ -10,7 +10,7 @@ holder.warpByTopLeft(50,200);
 }
 var man = createTurtle();
 while(true){
-    sleep(0.1);
+    jsleep(0.1);
     {	//1コマの処理
         holder.moveCursorToNext();
         man.looks(holder.getObjectAtCursor());

@@ -3,7 +3,7 @@ var helloButton = createButtonTurtle("押してください！");
 
 // アニメションループ
 while (true) {
-    sleep(0.025);
+    jsleep(0.025);
 
     if (helloButton.isClicked()) {// helloButtonがクリックされたら
         println("押されました");

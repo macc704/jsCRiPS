@@ -32,7 +32,7 @@ var button = createButtonTurtle("検索！");
 button.warpByTopLeft(200, 30);
 
 while (true) {
-    sleep(0.025);// 待つ
+    jsleep(0.025);// 待つ
 
     if (button.isClicked()) {
         //検索する
