@@ -385,14 +385,38 @@ function createTurtle() {
             yy <= ty2 && ty2 <= yy + t.height;
     };
 
+    // TODO 回転時の判定がやや不安定
     t.intersects = function (trg) {
-        // TODO 未実装
-        if (!trg.x || !trg.y) {
-            return false;
-        }
-        return t.contains(trg.x, trg.y);
-    };
 
+        var rad = deg2rad(t.angle);
+        var x0 = -t.width / 2, y0 = -t.height / 2,  // 7    矩形の頂点の位置の対応
+            x1 = t.width / 2, y1 = -t.height / 2,   // 9    7 8 9
+            x2 = -t.width / 2, y2 = t.height / 2,   // 1    4 5 6
+            x3 = t.width / 2, y3 = t.height / 2;   // 3     1 2 3
+        var x02 = t.x + x0 * Math.cos(rad) - y0 * Math.sin(rad), y02 = t.y + x0 * Math.sin(rad) + y0 * Math.cos(rad),
+            x12 = t.x + x1 * Math.cos(rad) - y1 * Math.sin(rad), y12 = t.y + x1 * Math.sin(rad) + y1 * Math.cos(rad),
+            x22 = t.x + x2 * Math.cos(rad) - y2 * Math.sin(rad), y22 = t.y + x2 * Math.sin(rad) + y2 * Math.cos(rad),
+            x32 = t.x + x3 * Math.cos(rad) - y3 * Math.sin(rad), y32 = t.y + x3 * Math.sin(rad) + y3 * Math.cos(rad);
+
+        var minX = Math.min(x02, x12, x22, x32), maxX = Math.max(x02, x12, x22, x32),
+            minY = Math.min(y02, y12, y22, y32), maxY = Math.max(y02, y12, y22, y32);
+
+        rad = deg2rad(trg.angle);
+        var xx0 = -trg.width / 2, yy0 = -trg.height / 2,  // 7
+            xx1 = trg.width / 2, yy1 = -trg.height / 2,   // 9
+            xx2 = -trg.width / 2, yy2 = trg.height / 2,   // 1
+            xx3 = trg.width / 2, yy3 = trg.height / 2;   // 3
+        var xx02 = trg.x + xx0 * Math.cos(rad) - yy0 * Math.sin(rad), yy02 = trg.y + xx0 * Math.sin(rad) + yy0 * Math.cos(rad),
+            xx12 = trg.x + xx1 * Math.cos(rad) - yy1 * Math.sin(rad), yy12 = trg.y + xx1 * Math.sin(rad) + yy1 * Math.cos(rad),
+            xx22 = trg.x + xx2 * Math.cos(rad) - yy2 * Math.sin(rad), yy22 = trg.y + xx2 * Math.sin(rad) + yy2 * Math.cos(rad),
+            xx32 = trg.x + xx3 * Math.cos(rad) - yy3 * Math.sin(rad), yy32 = trg.y + xx3 * Math.sin(rad) + yy3 * Math.cos(rad);
+
+        var minXX = Math.min(xx02, xx12, xx22, xx32), maxXX = Math.max(xx02, xx12, xx22, xx32),
+            minYY = Math.min(yy02, yy12, yy22, yy32), maxYY = Math.max(yy02, yy12, yy22, yy32);
+
+        return !(maxX < minXX || maxXX < minX || maxY < minYY || maxYY < minY);
+
+    };
 
     // 補助
     t.setRxRy = function () {
@@ -1152,9 +1176,9 @@ function isInteger(str) {
 
 // TODO ユーザー用、秒単位で指定 sleepにするとConcurrent.Thread.jsのsleepが呼ばれてしまう
 function jsleep(s) {
-    jsCRiPS.th = Thread.create(function(s){
+    jsCRiPS.th = Thread.create(function (s) {
         Thread.sleep(s * 1000);
-    },s);
+    }, s);
 }
 
 function update() {
