@@ -638,11 +638,10 @@ function createTextTurtle(str) {
         var self = this;
         ctx.font = t._fontsize + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
         ctx.textBaseline = 'middle';
-        ctx.textAlign = 'center';
+        ctx.textAlign = 'left';
         ctx.fillStyle = self.penColor;
         var defaultWidth = ctx.measureText(str).width;
         var defaultHeight = self._fontsize;
-
         t.drawScalableObject(ctx, self, self.width / defaultWidth, self.height / defaultHeight, function () {
             ctx.fillText(self.str, self.x, self.y);
         });
@@ -956,7 +955,7 @@ function createCardTurtle(str) {
         var self = this;
         ctx.font = t._fontsize + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
         ctx.textBaseline = 'middle';
-        ctx.textAlign = 'center';
+        ctx.textAlign = 'left';
         ctx.fillStyle = self.penColor;
         ctx.strokeStyle = self.penColor;
         var defaultWidth = ctx.measureText(t.str).width + t.margin2;
@@ -965,7 +964,7 @@ function createCardTurtle(str) {
             ctx.fillText(self.str, self.x, self.y);
         });
         t.drawObject(ctx, self, function () {
-            ctx.strokeRect(self.x - self.width / 2, self.y - self.height / 2, self.width, self.height);
+            ctx.strokeRect(self.x - t.margin2 / 2, self.y - self.height / 2, self.width, self.height);
         });
     };
 
@@ -1018,8 +1017,8 @@ function createInputTurtle() {
         }
 
         t.str = newStr;
-        t.resize();
 
+        t.resize();
 
         function romanConvert() {
             for (var i = 0; i < romanTable.length; i++) {
@@ -1058,7 +1057,7 @@ function createButtonTurtle(str) {
         }
         ctx.font = t._fontsize + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
         ctx.textBaseline = 'middle';
-        ctx.textAlign = 'center';
+        ctx.textAlign = 'right';
         ctx.strokeStyle = self.penColor;
         ctx.fillStyle = self.pressing ? 'black' : 'white';  // CRiPSのButtonTurtle同様に色を連動させるなら self.pressing -> t.pressing
         var defaultWidth = ctx.measureText(t.str).width + t.margin2;
@@ -1274,12 +1273,21 @@ function println() {
 jsCRiPS.keyDown = function (e) {
     jsCRiPS.keys[e.keyCode] = true;
     jsCRiPS.recentPressKey = e.keyCode;
+    if (e.keyCode === 8) {  // BackSpace chromeではpressで検知できないため
+        for (var i = 0; i < jsCRiPS.ttls.length; i++) {
+            if (jsCRiPS.ttls[i].inputCapturing) {    // InputTurtle かつ active
+                jsCRiPS.ttls[i].captureText(e);
+            }
+        }
+    }
 };
 
 jsCRiPS.keyPress = function (e) {
-    for (var i = 0; i < jsCRiPS.ttls.length; i++) {
-        if (jsCRiPS.ttls[i].inputCapturing) {    // InputTurtle かつ active
-            jsCRiPS.ttls[i].captureText(e);
+    if (e.keyCode !== 8 && e.keyCode !== 13) {  // BackSpaceとEnterを無視
+        for (var i = 0; i < jsCRiPS.ttls.length; i++) {
+            if (jsCRiPS.ttls[i].inputCapturing) {    // InputTurtle かつ active
+                jsCRiPS.ttls[i].captureText(e);
+            }
         }
     }
 };
