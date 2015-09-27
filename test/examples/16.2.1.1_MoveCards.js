@@ -2,8 +2,8 @@ canvasSize(550,300);
 var list1 =  createListTurtle(true,"リスト1");
 var list2 =  createListTurtle(true,"リスト2");
 {	//位置を移動する
-    list1.warp(200,50);
-    list2.warp(200,150);
+    list1.warpByTopLeft(60,50);
+    list2.warpByTopLeft(60,150);
 }
 update();
 

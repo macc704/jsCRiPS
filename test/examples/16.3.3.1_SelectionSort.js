@@ -1,22 +1,22 @@
-canvasSize(400,500);
-var 最小値候補 = createListTurtle(true,"最小値候補");
-var 未処理束 = createListTurtle(true,"未処理束");
-var 検索済束 = createListTurtle(true,"検索済束");
-var 並替済束 = createListTurtle(true,"並替済束");
+canvasSize(400, 500);
+var 最小値候補 = createListTurtle(true, "最小値候補");
+var 未処理束 = createListTurtle(true, "未処理束");
+var 検索済束 = createListTurtle(true, "検索済束");
+var 並替済束 = createListTurtle(true, "並替済束");
 {	//c//初期位置に設定する
-    最小値候補.warpByTopLeft(200,100);
+    最小値候補.warpByTopLeft(60, 50);
     最小値候補.setBgColor("#ff99cc");
-    未処理束.warpByTopLeft(200,200);
+    未処理束.warpByTopLeft(60, 150);
     未処理束.setBgColor("#3366ff");
-    検索済束.warpByTopLeft(200,300);
+    検索済束.warpByTopLeft(60, 250);
     検索済束.setBgColor("#00cc99");
-    並替済束.warpByTopLeft(200,400);
+    並替済束.warpByTopLeft(60, 350);
     並替済束.setBgColor("#ffff00");
     update();
 }
 {	//カードを追加する
     var i = 0;
-    while(i < 8){
+    while (i < 8) {
         未処理束.addLast(createCardTurtle(random(100)));
         update();
         i++;
