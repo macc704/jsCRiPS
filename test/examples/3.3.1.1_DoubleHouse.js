@@ -5,6 +5,8 @@ var smallHouseLength;// 小さい家の1辺の長さ
 var rightAngle = 90;// 直角
 smallHouseLength = length / 2;
 
+canvasSize(400,300);// Canvasのサイズを大きくする
+
 {// 屋根を書く
     t.rt(30); // 30度右に回る
     t.fd(length); // x歩前に進む
@@ -30,7 +32,7 @@ smallHouseLength = length / 2;
     t.lt(rightAngle * 2);
     t.fd(length * 2);
     t.lt(rightAngle);
-    dot.wn();
+    t.down();
 }
 
 {// 小さい家の屋根を書く
