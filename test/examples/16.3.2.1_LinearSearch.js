@@ -10,7 +10,6 @@ var 検索済束 = createListTurtle(true, "検索済束");
     検索済束.warpByTopLeft(60, 250);
     検索済束.setBgColor("#00cc99");
     update();
-    update();
 }
 {	//カードを追加する
     var i = 0;
@@ -24,17 +23,16 @@ var 検索済束 = createListTurtle(true, "検索済束");
     最小値候補.addLast(未処理束.getObjectAtCursor());
     while (未処理束.getSize() > 0) {
         if (未処理束.getObjectAtCursor().getNumber() < 最小値候補.getObjectAtCursor().getNumber()) {
-            検索済束.addLast(最小値候補.removeAtCursor());
+            検索済束.addLast(最小値候補.getObjectAtCursor());
             update();
-            最小値候補.addLast(未処理束.removeAtCursor());
+            最小値候補.addLast(未処理束.getObjectAtCursor());
             update();
         } else {
-            検索済束.addLast(未処理束.removeAtCursor());
+            検索済束.addLast(未処理束.getObjectAtCursor());
             update();
         }
 
     }
     検索済束.moveAllTo(未処理束);
-    検索済束.removeAll();
     update();
 }

@@ -26,20 +26,20 @@ var 並替済束 = createListTurtle(true, "並替済束");
     while (未処理束.getSize() > 0) {
         {	//最小値を検索する
             {	//未処理束の一番上を最小値候補に
-                最小値候補.addLast(未処理束.removeAtCursor());
+                最小値候補.addLast(未処理束.getObjectAtCursor());
                 update();
             }
             while (未処理束.getSize() > 0) {
                 if (未処理束.getObjectAtCursor().getNumber() < 最小値候補.getObjectAtCursor().getNumber()) {
                     {	//最小値候補を引いたカードと入れ替え，古い最小値候補は検索済み束へ
-                        検索済束.addLast(最小値候補.removeAtCursor());
+                        検索済束.addLast(最小値候補.getObjectAtCursor());
                         update();
-                        最小値候補.addLast(未処理束.removeAtCursor());
+                        最小値候補.addLast(未処理束.getObjectAtCursor());
                         update();
                     }
                 } else {
                     {	//引いたカードを検索済み束へ
-                        検索済束.addLast(未処理束.removeAtCursor());
+                        検索済束.addLast(未処理束.getObjectAtCursor());
                         update();
                     }
                 }
@@ -47,12 +47,11 @@ var 並替済束 = createListTurtle(true, "並替済束");
             }
             {	//検索済み束を元に戻す
                 検索済束.moveAllTo(未処理束);
-                検索済束.removeAll();
                 update();
             }
         }
         {	//見つけた最小値を並替済み束へ移動する
-            並替済束.addLast(最小値候補.removeAtCursor());
+            並替済束.addLast(最小値候補.getObjectAtCursor());
             update();
         }
     }

@@ -20,7 +20,7 @@ while(true){
     jsleep(0.025);
     {	//一コマの処理
         if(list1.getSize() != 0){//移動する
-            list2.addLast(list1.removeAtCursor());
+            list2.addLast(list1.getObjectAtCursor());
         }
     }
     update();

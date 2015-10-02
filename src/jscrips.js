@@ -100,7 +100,7 @@ jsCRiPS.inputText = ''; // 入力されたテキスト
 jsCRiPS.inputted = false; // 入力制御用
 jsCRiPS.tCanvas = {};    // Turtle描画用Canvas
 jsCRiPS.lCanvas = {};   // 軌跡描画用Canvas
-
+jsCRiPS.parentChecker = new Map(); // ListTurtleでparentCheckを行うための親子管理マップ
 
 /*global Concurrent*/
 var Thread = Concurrent.Thread;
@@ -385,7 +385,7 @@ function createTurtle() {
             yy <= ty2 && ty2 <= yy + t.height;
     };
 
-    // 参考：https://github.com/wise9/enchant.js/blob/master/dev/src/Entity.js#L392　(rtsan on 18 Mar 2014 bugfix about duplicating of collection )
+    // 参考：https://github.com/wise9/enchant.js/blob/5a9fea6c1e702c4e198fe856b7fb1a9db3418395/dev/src/Entity.js#L392
     // Copyright (c) Ubiquitous Entertainment Inc.
     t.intersects = function (trg) {
         var rad = deg2rad(t.angle);
@@ -393,7 +393,7 @@ function createTurtle() {
         var x0 = -t.width / 2, y0 = -t.height / 2,  // 7    矩形の頂点の位置の対応
             x1 = t.width / 2, y1 = -t.height / 2,   // 9    7 8 9
             x2 = -t.width / 2, y2 = t.height / 2,   // 1    4 5 6
-            x3 = t.width / 2, y3 = t.height / 2;    // 3     1 2 3
+            x3 = t.width / 2, y3 = t.height / 2;    // 3    1 2 3
         rect1.leftTop = [t.x + x0 * Math.cos(rad) - y0 * Math.sin(rad), t.y + x0 * Math.sin(rad) + y0 * Math.cos(rad)];
         rect1.rightTop = [t.x + x1 * Math.cos(rad) - y1 * Math.sin(rad), t.y + x1 * Math.sin(rad) + y1 * Math.cos(rad)];
         rect1.leftBottom = [t.x + x2 * Math.cos(rad) - y2 * Math.sin(rad), t.y + x2 * Math.sin(rad) + y2 * Math.cos(rad)];
@@ -712,7 +712,7 @@ function createTextTurtle(str) {
     return t;
 }
 
-// TODO parentCheckさせる
+// parentCheckしている。参照の仕組みを理解させるか、直感的で自然な現象として理解させるかの教育上の都合？
 function createListTurtle(autoHide, name) {
     var t = createObjectTurtle();
     t.name = name;
@@ -749,9 +749,19 @@ function createListTurtle(autoHide, name) {
         t.height = t.actualHeight * n - t.actualHeight;
     };
 
+    // 別のリストに要素が移ったら元のリストから要素を消す作業
+    function parentCheck(x) {
+        var p = jsCRiPS.parentChecker.get(x);   // 親を取り出す
+        if (p) {  // 親がいるなら要素を削除
+            p.remove(x);
+        }
+        jsCRiPS.parentChecker.set(x, t);   // 子に親をセット
+    }
+
     // 追加と削除
-    t.add = function (x, obj) {
+    t.add = function (x, obj) { // x,objが両方要素をとり得るので注意
         if (typeof obj !== 'undefined') { // add(n,obj)の場合
+            parentCheck(obj);
             obj.show(!autoHide);
             if (x < 0 || t.list.length < x) {
                 println("[ add(" + x + "," + obj + ") ]挿入位置が不適切なので末尾に追加しました。");
@@ -760,6 +770,7 @@ function createListTurtle(autoHide, name) {
                 t.list.splice(x, 0, obj);
             }
         } else {    // add(obj)の場合
+            parentCheck(x);
             x.show(!autoHide);
             t.list.push(x);
         }
@@ -771,14 +782,15 @@ function createListTurtle(autoHide, name) {
 
     t.addFirst = function (obj) {
         obj.show(!autoHide);
+        parentCheck(obj);
         t.list.unshift(obj);
     };
 
     t.addAll = function (that) {
-        for (var i = 0; i < that.length; i++) {
-            that[i].show(!autoHide);
+        for (var i = that.list.length; 0 < i; i--) {
+            that.list[0].show(!autoHide);
+            t.add(that.list[0]);
         }
-        t.list = t.list.concat(that.list);
     };
 
     t.moveAllTo = function (that) {
@@ -800,18 +812,27 @@ function createListTurtle(autoHide, name) {
                 return null;
             }
         }
-        return t.list.splice(trgIdx, 1)[0];
+        var elem = t.list.splice(trgIdx, 1)[0];
+        jsCRiPS.parentChecker.delete(elem);
+        return elem;
     };
 
     t.removeFirst = function () {
-        return t.list.shift();
+        var elem = t.list.shift();
+        jsCRiPS.parentChecker.delete(elem);
+        return elem;
     };
 
     t.removeLast = function () {
-        return t.list.pop();
+        var elem = t.list.pop();
+        jsCRiPS.parentChecker.delete(elem);
+        return elem;
     };
 
     t.removeAll = function () {
+        for (var i = 0; i < t.list.length; i++) {
+            jsCRiPS.parentChecker.delete(t.list[i]);
+        }
         t.list.length = 0;
     };
 
@@ -1286,6 +1307,7 @@ function restart() {
     jsCRiPS.th = Thread.create(function () {
     });
 
+
     jsCRiPS.tCanvas = document.getElementById('turtleCanvas');
     jsCRiPS.lCanvas = document.getElementById('locusCanvas');
     if (!jsCRiPS.tCanvas.getContext || !jsCRiPS.lCanvas.getContext) { // 毎回チェックするのは面倒なのでここで一度だけチェックする
@@ -1293,6 +1315,7 @@ function restart() {
         return;
     }
 
+    jsCRiPS.parentChecker.clear();
     jsCRiPS.ttls = [];
     main();
 }
