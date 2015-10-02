@@ -385,35 +385,96 @@ function createTurtle() {
             yy <= ty2 && ty2 <= yy + t.height;
     };
 
-    // TODO 回転時の判定がやや不安定
+    // 参考：https://github.com/wise9/enchant.js/blob/master/dev/src/Entity.js#L392　(rtsan on 18 Mar 2014 bugfix about duplicating of collection )
+    // Copyright (c) Ubiquitous Entertainment Inc.
     t.intersects = function (trg) {
         var rad = deg2rad(t.angle);
+        var rect1 = {}, rect2 = {};
         var x0 = -t.width / 2, y0 = -t.height / 2,  // 7    矩形の頂点の位置の対応
             x1 = t.width / 2, y1 = -t.height / 2,   // 9    7 8 9
             x2 = -t.width / 2, y2 = t.height / 2,   // 1    4 5 6
-            x3 = t.width / 2, y3 = t.height / 2;   // 3     1 2 3
-        var x02 = t.x + x0 * Math.cos(rad) - y0 * Math.sin(rad), y02 = t.y + x0 * Math.sin(rad) + y0 * Math.cos(rad),
-            x12 = t.x + x1 * Math.cos(rad) - y1 * Math.sin(rad), y12 = t.y + x1 * Math.sin(rad) + y1 * Math.cos(rad),
-            x22 = t.x + x2 * Math.cos(rad) - y2 * Math.sin(rad), y22 = t.y + x2 * Math.sin(rad) + y2 * Math.cos(rad),
-            x32 = t.x + x3 * Math.cos(rad) - y3 * Math.sin(rad), y32 = t.y + x3 * Math.sin(rad) + y3 * Math.cos(rad);
-
-        var minX = Math.min(x02, x12, x22, x32), maxX = Math.max(x02, x12, x22, x32),
-            minY = Math.min(y02, y12, y22, y32), maxY = Math.max(y02, y12, y22, y32);
+            x3 = t.width / 2, y3 = t.height / 2;    // 3     1 2 3
+        rect1.leftTop = [t.x + x0 * Math.cos(rad) - y0 * Math.sin(rad), t.y + x0 * Math.sin(rad) + y0 * Math.cos(rad)];
+        rect1.rightTop = [t.x + x1 * Math.cos(rad) - y1 * Math.sin(rad), t.y + x1 * Math.sin(rad) + y1 * Math.cos(rad)];
+        rect1.leftBottom = [t.x + x2 * Math.cos(rad) - y2 * Math.sin(rad), t.y + x2 * Math.sin(rad) + y2 * Math.cos(rad)];
+        rect1.rightBottom = [t.x + x3 * Math.cos(rad) - y3 * Math.sin(rad), t.y + x3 * Math.sin(rad) + y3 * Math.cos(rad)];
 
         rad = deg2rad(trg.angle);
-        var xx0 = -trg.width / 2, yy0 = -trg.height / 2,  // 7
-            xx1 = trg.width / 2, yy1 = -trg.height / 2,   // 9
-            xx2 = -trg.width / 2, yy2 = trg.height / 2,   // 1
-            xx3 = trg.width / 2, yy3 = trg.height / 2;   // 3
-        var xx02 = trg.x + xx0 * Math.cos(rad) - yy0 * Math.sin(rad), yy02 = trg.y + xx0 * Math.sin(rad) + yy0 * Math.cos(rad),
-            xx12 = trg.x + xx1 * Math.cos(rad) - yy1 * Math.sin(rad), yy12 = trg.y + xx1 * Math.sin(rad) + yy1 * Math.cos(rad),
-            xx22 = trg.x + xx2 * Math.cos(rad) - yy2 * Math.sin(rad), yy22 = trg.y + xx2 * Math.sin(rad) + yy2 * Math.cos(rad),
-            xx32 = trg.x + xx3 * Math.cos(rad) - yy3 * Math.sin(rad), yy32 = trg.y + xx3 * Math.sin(rad) + yy3 * Math.cos(rad);
+        var xx0 = -trg.width / 2, yy0 = -trg.height / 2,    // 7
+            xx1 = trg.width / 2, yy1 = -trg.height / 2,     // 9
+            xx2 = -trg.width / 2, yy2 = trg.height / 2,     // 1
+            xx3 = trg.width / 2, yy3 = trg.height / 2;      // 3
+        rect2.leftTop = [trg.x + xx0 * Math.cos(rad) - yy0 * Math.sin(rad), trg.y + xx0 * Math.sin(rad) + yy0 * Math.cos(rad)];
+        rect2.rightTop = [trg.x + xx1 * Math.cos(rad) - yy1 * Math.sin(rad), trg.y + xx1 * Math.sin(rad) + yy1 * Math.cos(rad)];
+        rect2.leftBottom = [trg.x + xx2 * Math.cos(rad) - yy2 * Math.sin(rad), trg.y + xx2 * Math.sin(rad) + yy2 * Math.cos(rad)];
+        rect2.rightBottom = [trg.x + xx3 * Math.cos(rad) - yy3 * Math.sin(rad), trg.y + xx3 * Math.sin(rad) + yy3 * Math.cos(rad)];
 
-        var minXX = Math.min(xx02, xx12, xx22, xx32), maxXX = Math.max(xx02, xx12, xx22, xx32),
-            minYY = Math.min(yy02, yy12, yy22, yy32), maxYY = Math.max(yy02, yy12, yy22, yy32);
-
-        return !(maxX < minXX || maxXX < minX || maxY < minYY || maxYY < minY);
+        var lt1 = rect1.leftTop, rt1 = rect1.rightTop,
+            lb1 = rect1.leftBottom, rb1 = rect1.rightBottom,
+            lt2 = rect2.leftTop, rt2 = rect2.rightTop,
+            lb2 = rect2.leftBottom, rb2 = rect2.rightBottom,
+            ltx1 = lt1[0], lty1 = lt1[1], rtx1 = rt1[0], rty1 = rt1[1],
+            lbx1 = lb1[0], lby1 = lb1[1], rbx1 = rb1[0], rby1 = rb1[1],
+            ltx2 = lt2[0], lty2 = lt2[1], rtx2 = rt2[0], rty2 = rt2[1],
+            lbx2 = lb2[0], lby2 = lb2[1], rbx2 = rb2[0], rby2 = rb2[1],
+            t1 = [rtx1 - ltx1, rty1 - lty1],
+            r1 = [rbx1 - rtx1, rby1 - rty1],
+            b1 = [lbx1 - rbx1, lby1 - rby1],
+            l1 = [ltx1 - lbx1, lty1 - lby1],
+            t2 = [rtx2 - ltx2, rty2 - lty2],
+            r2 = [rbx2 - rtx2, rby2 - rty2],
+            b2 = [lbx2 - rbx2, lby2 - rby2],
+            l2 = [ltx2 - lbx2, lty2 - lby2],
+        /*jslint bitwise: true */
+            cx1 = (ltx1 + rtx1 + lbx1 + rbx1) >> 2,
+            cy1 = (lty1 + rty1 + lby1 + rby1) >> 2,
+            cx2 = (ltx2 + rtx2 + lbx2 + rbx2) >> 2,
+            cy2 = (lty2 + rty2 + lby2 + rby2) >> 2,
+            i, j, poss1, poss2, dirs1, dirs2, pos1, pos2, dir1, dir2,
+            px1, py1, px2, py2, dx1, dy1, dx2, dy2, vx, vy, c, c1, c2;
+        if (t1[0] * (cy2 - lty1) - t1[1] * (cx2 - ltx1) > 0 &&
+            r1[0] * (cy2 - rty1) - r1[1] * (cx2 - rtx1) > 0 &&
+            b1[0] * (cy2 - rby1) - b1[1] * (cx2 - rbx1) > 0 &&
+            l1[0] * (cy2 - lby1) - l1[1] * (cx2 - lbx1) > 0) {
+            return true;
+        } else if (t2[0] * (cy1 - lty2) - t2[1] * (cx1 - ltx2) > 0 &&
+            r2[0] * (cy1 - rty2) - r2[1] * (cx1 - rtx2) > 0 &&
+            b2[0] * (cy1 - rby2) - b2[1] * (cx1 - rbx2) > 0 &&
+            l2[0] * (cy1 - lby2) - l2[1] * (cx1 - lbx2) > 0) {
+            return true;
+        } else {
+            poss1 = [lt1, rt1, rb1, lb1];
+            poss2 = [lt2, rt2, rb2, lb2];
+            dirs1 = [t1, r1, b1, l1];
+            dirs2 = [t2, r2, b2, l2];
+            for (i = 0; i < 4; i++) {
+                pos1 = poss1[i];
+                px1 = pos1[0];
+                py1 = pos1[1];
+                dir1 = dirs1[i];
+                dx1 = dir1[0];
+                dy1 = dir1[1];
+                for (j = 0; j < 4; j++) {
+                    pos2 = poss2[j];
+                    px2 = pos2[0];
+                    py2 = pos2[1];
+                    dir2 = dirs2[j];
+                    dx2 = dir2[0];
+                    dy2 = dir2[1];
+                    c = dx1 * dy2 - dy1 * dx2;
+                    if (c !== 0) {
+                        vx = px2 - px1;
+                        vy = py2 - py1;
+                        c1 = (vx * dy1 - vy * dx1) / c;
+                        c2 = (vx * dy2 - vy * dx2) / c;
+                        if (0 < c1 && c1 < 1 && 0 < c2 && c2 < 1) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
     };
 
     // 補助
@@ -1177,7 +1238,7 @@ function isInteger(str) {
     return (Number.isNaN(Number(str)) || Number.isNaN(parseInt(str, 10)));
 }
 
-// TODO ユーザー用、秒単位で指定 sleepにするとConcurrent.Thread.jsのsleepが呼ばれてしまう
+// ユーザー用、秒単位で指定 sleepにするとなぜかConcurrent.Thread.jsのsleepが呼ばれてしまう
 function jsleep(s) {
     jsCRiPS.th = Thread.create(function (s) {
         Thread.sleep(s * 1000);
