@@ -352,8 +352,8 @@ function createTurtle() {
         return t._isShow;
     };
 
-    //  オブジェクトの見た目を変える命令
-    // TODO ListTurtleには非対応、対応させようとすると色々ものすごくめんどくさい
+    // オブジェクトの見た目を変える命令
+    // 現状ListTurtleには非対応
     t.looks = function (tt) {
         if (typeof tt._looks !== 'undefined') {  // tt extends Turtle
             t._looks = tt._looks;
@@ -651,7 +651,7 @@ function createTextTurtle(str) {
     return t;
 }
 
-// TODO parentCheckすべき？(親がいる場合、要素が移動したら移動元から同じ要素をremoveしていた)
+// TODO parentCheckさせる
 function createListTurtle(autoHide, name) {
     var t = createObjectTurtle();
     t.name = name;
@@ -1318,7 +1318,7 @@ jsCRiPS.mouseUp = function (e) {
     jsCRiPS.mouseLeftDown = (jsCRiPS.mouseLeftDown && (e.button !== jsCRiPS.MOUSE_LEFT));
     jsCRiPS.mouseRightDown = (jsCRiPS.mouseRightDown && (e.button !== jsCRiPS.MOUSE_RIGHT));
 };
-// TODO ダブルクリックをクリックと認識していいか？
+
 jsCRiPS.mouseClick = function (e) {
     jsCRiPS.leftClick = (jsCRiPS.leftClick || (e.button === jsCRiPS.MOUSE_LEFT));
     jsCRiPS.rightClick = (jsCRiPS.rightClick || (e.button === jsCRiPS.MOUSE_RIGHT));
