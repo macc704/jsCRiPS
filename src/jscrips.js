@@ -101,6 +101,7 @@ jsCRiPS.inputted = false; // 入力制御用
 jsCRiPS.tCanvas = {};    // Turtle描画用Canvas
 jsCRiPS.lCanvas = {};   // 軌跡描画用Canvas
 jsCRiPS.parentChecker = new Map(); // ListTurtleでparentCheckを行うための親子管理マップ
+jsCRiPS.audios = [];
 
 /*global Concurrent*/
 var Thread = Concurrent.Thread;
@@ -750,6 +751,7 @@ function createListTurtle(autoHide, name) {
     };
 
     // 別のリストに要素が移ったら元のリストから要素を消す作業
+    // CRiPSでは各Turtleにparentを設定していたが、TurtleをListTurtleの実装に依存させないことを意識してマップで管理してみた
     function parentCheck(x) {
         var p = jsCRiPS.parentChecker.get(x);   // 親を取り出す
         if (p) {  // 親がいるなら要素を削除
@@ -1167,6 +1169,62 @@ function createButtonTurtle(str) {
     return t;
 }
 
+// TODO タートルを継承する必要ある？
+function createSoundTurtle(path) {
+    var t = createCardTurtle(path);
+    t.x = -100;
+    t.y = -100;
+
+    /* global Audio */
+    t.audio = new Audio(path);
+
+    t.audio.onerror = function () {
+        document.getElementById('console').value +=
+            document.getElementById('console').value + 'サウンド[' + path + ']が見つかりません\n';
+    };
+
+    t.play = function () {
+        t.audio.loop = false;
+        t.audio.play();
+    };
+
+    t.stop = function () {
+        t.audio.pause();
+        t.audio.currentTime = 0;
+    };
+
+    // stopだけだと分かりにくいので新たに追加
+    t.pause = function () {
+        t.audio.pause();
+    };
+
+    t.loop = function () {
+        t.audio.loop = true;
+        t.audio.play();
+    };
+
+    t.isPlaying = function () {
+        return !t.audio.paused;
+    };
+
+    t.getVolume = function () {
+        return t.audio.volume * 100;
+    };
+
+    t.setVolume = function (volume) {
+        volume = volume < 0 ? 0 : volume;
+        volume = volume > 100 ? 100 : volume;
+        t.audio.volume = volume * 0.01;
+    };
+
+    t.loadOnMemory = function () {
+        t.audio.load();
+    };
+
+    jsCRiPS.audios.add(t);
+
+    return t;
+}
 
 // 現在使っていない、デフォルトタートル用のものたち
 //var defaultTurtle = createTurtle();
@@ -1317,6 +1375,11 @@ function restart() {
 
     jsCRiPS.parentChecker.clear();
     jsCRiPS.ttls = [];
+    for (var i = 0; i < jsCRiPS.audios.length; i++) {
+        jsCRiPS.audios[i].pause();
+        jsCRiPS.audios[i].src = '';
+    }
+    jsCRiPS.audios = [];
     main();
 }
 
