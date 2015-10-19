@@ -6,7 +6,8 @@ var jsCRiPS = {};
 jsCRiPS.converter = {};
 jsCRiPS.converter.convert = function (source) {
     var ast = esprima.parse(source);
-    var yieldAST = esprima.parse('jsCRiPS.th.join();').body[0];
+    var yieldAST = jsCRiPS.withKame ?
+        esprima.parse('jsCRiPS.th.join();').body[0] : esprima.parse(';').body[0];
 
     //for debug       
     document.getElementById('ast').value = JSON.stringify(ast, null, 4);
@@ -65,7 +66,7 @@ jsCRiPS.converter.convert = function (source) {
                 newStmts.push(yieldAST);
             } else if (each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
                 each.expression.right.type === 'CallExpression') {
-                // TODO var x=input(),y=input() や f(input()) や if(input()=='abc')などには未対応
+                // var x=input(),y=input() や f(input()) や if(input()=='abc')などには未対応
                 newStmts.push(yieldAST);
                 if (each.expression.right.callee.name === 'input') {
                     newStmts.push(esprima.parse(each.expression.left.name + ' = jsCRiPS.inputText;').body[0]);
@@ -100,16 +101,18 @@ jsCRiPS.inputText = ''; // 入力されたテキスト
 jsCRiPS.inputted = false; // 入力制御用
 jsCRiPS.tCanvas = {};    // Turtle描画用Canvas
 jsCRiPS.lCanvas = {};   // 軌跡描画用Canvas
+/*global Map*/
 jsCRiPS.parentChecker = new Map(); // ListTurtleでparentCheckを行うための親子管理マップ
 jsCRiPS.audios = [];
 
 /*global Concurrent*/
 var Thread = Concurrent.Thread;
-jsCRiPS.DEFAULT_MOVE_STEP = 2;
-jsCRiPS.DEFAULT_ROTATE_STEP = 5;
-jsCRiPS.sleepTime = 10;
-jsCRiPS.moveStep = jsCRiPS.DEFAULT_MOVE_STEP;
-jsCRiPS.rotateStep = jsCRiPS.DEFAULT_ROTATE_STEP;
+jsCRiPS.DEFAULT_SLEEP_TIME = 20;
+jsCRiPS.sleepTime = jsCRiPS.DEFAULT_SLEEP_TIME;
+jsCRiPS.stepKinds = [100000, 1000, 20, 5, 2];
+jsCRiPS.moveStep = jsCRiPS.stepKinds[3];
+jsCRiPS.rotateStep = jsCRiPS.stepKinds[3];
+jsCRiPS.withKame = true;
 
 jsCRiPS.DEFAULT_FONT = 'MS Gothic';
 jsCRiPS.FONT_SIZE = 16;
@@ -1169,7 +1172,6 @@ function createButtonTurtle(str) {
     return t;
 }
 
-// TODO タートルを継承する必要ある？
 function createSoundTurtle(path) {
     var t = createCardTurtle(path);
     t.x = -100;
@@ -1350,14 +1352,11 @@ function canvasSize(w, h) {
 
 /*global main*/
 function restart() {
-    clearTurtleCanvas();
-    clearLocusCanvas();
-    document.getElementById('console').value = '';
     try {
         jsCRiPS.mth.kill();
         jsCRiPS.th.kill();
     } catch (e) {
-        // TODO mth,thが終了時に例外が出る、無視でok?
+        // TODO mth,thが終了時に例外が出る、無視でok?その他エラーは例外で処理するべきか？
         println('ERROR [ ' + e + ' ]');
     }
     jsCRiPS.mth = Thread.create(function () {
@@ -1365,13 +1364,16 @@ function restart() {
     jsCRiPS.th = Thread.create(function () {
     });
 
-
     jsCRiPS.tCanvas = document.getElementById('turtleCanvas');
     jsCRiPS.lCanvas = document.getElementById('locusCanvas');
     if (!jsCRiPS.tCanvas.getContext || !jsCRiPS.lCanvas.getContext) { // 毎回チェックするのは面倒なのでここで一度だけチェックする
         println('ERROR [ 必要なCanvasがありません ]');
         return;
     }
+
+    clearTurtleCanvas();
+    clearLocusCanvas();
+    document.getElementById('console').value = '';
 
     jsCRiPS.parentChecker.clear();
     jsCRiPS.ttls = [];
@@ -1383,16 +1385,12 @@ function restart() {
     main();
 }
 
-// TODO MAXスピードが遅い、no-kame時にmoveStep,rotateStepを大きな値に、th.join()を付与しないことで達成できるがしていいか？
+// TODO no kame時に前の描画部分が残ってしまう場合あり、example5.3.1.1_Circle.jsをno kameで実行し速度を変えて再度Runで発生
 function changeSpeed(x) {
-    jsCRiPS.sleepTime = Number(x);
-    if (Number(x) === 0) {
-        jsCRiPS.moveStep = 1000;
-        jsCRiPS.rotateStep = 1000;
-    } else {
-        jsCRiPS.moveStep = jsCRiPS.DEFAULT_MOVE_STEP;
-        jsCRiPS.rotateStep = jsCRiPS.DEFAULT_ROTATE_STEP;
-    }
+    jsCRiPS.moveStep = jsCRiPS.stepKinds[Number(x)];
+    jsCRiPS.rotateStep = jsCRiPS.stepKinds[Number(x)];
+
+    jsCRiPS.withKame = Number(x) !== 0; // if(withKame === true){ joinしない }
 }
 
 function print() {
