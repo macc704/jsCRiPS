@@ -1,5 +1,5 @@
 {// ウインドウを移動, 大きさ調整
-    canvasSize(480, 420);
+    canvasSize(480, 300);
 }
 
 // バックグラウンド画像を用意する
@@ -16,7 +16,7 @@ var man7 = createImageTurtle("img/man7.gif");
 var man8 = createImageTurtle("img/man8.gif");
 
 { // 準備
-    man1.warp(240, 240);
+    man1.warp(240, 200);
     man2.hide();
     man3.hide();
     man4.hide();
