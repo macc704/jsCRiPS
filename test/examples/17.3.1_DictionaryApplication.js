@@ -6,7 +6,7 @@ input.toJapaneseMode();
 input.warpByTopLeft(30, 30);
 
 // 出力結果
-var result = createImageTurtle("img/notfound.gif");
+var result = createImageTurtle("img/notfound.jpg");
 result.size(100, 100);
 result.warpByTopLeft(30, 60);
 
@@ -21,11 +21,11 @@ keys.addLast(createCardTurtle("みかん"));
 // 辞書の内容（絵）を入れておく入れ物
 var values = createListTurtle(true);
 values.warpByTopLeft(30, 250);
-values.addLast(createImageTurtle("img/apple.gif"));
-values.addLast(createImageTurtle("img/strawberry.gif"));
-values.addLast(createImageTurtle("img/wm.gif"));
-values.addLast(createImageTurtle("img/orange.gif"));
-values.addLast(createImageTurtle("img/notfound.gif"));
+values.addLast(createImageTurtle("img/apple.jpg"));
+values.addLast(createImageTurtle("img/strawberry.jpg"));
+values.addLast(createImageTurtle("img/wm.jpg"));
+values.addLast(createImageTurtle("img/orange.jpg"));
+values.addLast(createImageTurtle("img/notfound.jpg"));
 
 //検索ボタン
 var button = createButtonTurtle("検索！");
