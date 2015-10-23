@@ -1385,7 +1385,7 @@ function restart() {
     main();
 }
 
-// TODO no kame時に前の描画部分が残ってしまう場合あり、example5.3.1.1_Circle.jsをno kameで実行し速度を変えて再度Runで発生
+// no kame時に前の描画部分が残ってしまう場合あり、example5.3.1.1_Circle.jsをno kameで実行し速度を変えて再度Runで発生
 function changeSpeed(x) {
     jsCRiPS.moveStep = jsCRiPS.stepKinds[Number(x)];
     jsCRiPS.rotateStep = jsCRiPS.stepKinds[Number(x)];
