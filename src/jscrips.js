@@ -9,7 +9,7 @@ jsCRiPS.converter.convert = function (source) {
     var yieldAST = jsCRiPS.withKame ?
         esprima.parse('jsCRiPS.th.join();').body[0] : esprima.parse(';').body[0];
 
-    //for debug       
+    //for debug
     document.getElementById('ast').value = JSON.stringify(ast, null, 4);
 
     var processStatement = function (stmt) {
@@ -85,6 +85,112 @@ jsCRiPS.converter.convert = function (source) {
     ast.body = processStatements(ast.body);
     return escodegen.generate(ast);
 };
+
+jsCRiPS.debugConverter = {};
+jsCRiPS.debugWait = function(){
+    jsCRiPS.th = Thread.create(function () {    //  入力待ち用にスレッドを生成
+        while (!jsCRiPS.debugReady) {
+            Thread.sleep(1);
+        }
+        jsCRiPS.debugReady = false;
+    });
+};
+
+
+jsCRiPS.debugConverter.convert = function (source) {
+    var ast = esprima.parse(source);
+    var yieldAST = jsCRiPS.withKame ?
+        esprima.parse('jsCRiPS.th.join();').body[0] : esprima.parse(';').body[0];
+
+
+    var debugWaitAST = esprima.parse('jsCRiPS.debugWait();jsCRiPS.th.join();');
+    function pushDebugStatement(stmt){
+        stmt.push(debugWaitAST);
+
+    }
+
+
+    //for debug
+    document.getElementById('ast').value = JSON.stringify(ast, null, 4);
+
+    var processStatement = function (stmt) {
+        if (stmt.type === 'BlockStatement') {
+            stmt.body = processStatements(stmt.body);
+        } else if (stmt.type === 'IfStatement') {  // else if
+            if (stmt.consequent) {
+                stmt.consequent = processStatement(stmt.consequent);
+            }
+            if (stmt.alternate) {
+                stmt.alternate = processStatement(stmt.alternate);
+            }
+        } else if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'CallExpression') {
+            return newAssignmentBlock();
+        } else if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'AssignmentExpression' &&
+            stmt.expression.right.type === 'CallExpression') {
+            return newAssignmentBlock(stmt.expression.left.name, stmt.expression.right.callee.name === 'input');
+        } else if (stmt.type === 'VariableDeclaration' && stmt.declarations[0].init &&
+            stmt.declarations[0].init.type === 'CallExpression') {
+            return newAssignmentBlock(stmt.declarations[0].id.name, stmt.declarations[0].init.callee.name === 'input');
+        }
+        return stmt;
+
+        function newAssignmentBlock(left, isInput) {
+            var block = esprima.parse('{}').body[0];
+            block.body.push(stmt);
+            block.body.push(yieldAST);
+            if (isInput && left) {
+                block.body.push(esprima.parse(left + ' = jsCRiPS.inputText;').body[0]);
+            }
+            pushDebugStatement(block.body);
+
+            return block;
+        }
+
+    };
+
+    var processStatements = function (stmts) {
+        var newStmts = [];
+        stmts.forEach(function (each) {
+            if (each.type === 'BlockStatement') {
+                each.body = processStatements(each.body);
+            } else if (each.type === 'IfStatement') {
+                if (each.consequent) {
+                    each.consequent = processStatement(each.consequent);
+                }
+                if (each.alternate) {
+                    each.alternate = processStatement(each.alternate);
+                }
+            }
+            if (each.body) { //while series
+                each.body = processStatement(each.body);
+            }
+            newStmts.push(each);
+            if (each.type === 'ExpressionStatement' && each.expression.type === 'CallExpression') {
+                newStmts.push(yieldAST);
+                pushDebugStatement(newStmts);
+            } else if (each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
+                each.expression.right.type === 'CallExpression') {
+                // var x=input(),y=input() や f(input()) や if(input()=='abc')などには未対応
+                newStmts.push(yieldAST);
+                if (each.expression.right.callee.name === 'input') {
+                    newStmts.push(esprima.parse(each.expression.left.name + ' = jsCRiPS.inputText;').body[0]);
+                }
+                newStmts.push(yieldAST);
+            } else if (each.type === 'VariableDeclaration' && each.declarations[0].init &&
+                each.declarations[0].init.type === 'CallExpression') {
+                newStmts.push(yieldAST);
+                if (each.declarations[0].init.callee.name === 'input') {
+                    newStmts.push(esprima.parse(each.declarations[0].id.name + ' = jsCRiPS.inputText;').body[0]);
+                }
+                newStmts.push(yieldAST);
+            }
+        });
+        return newStmts;
+    };
+
+    ast.body = processStatements(ast.body);
+    return escodegen.generate(ast);
+};
 // 開始時に例外が出ないために予めスレッドを生成しておく、例外を無視する仕様にした場合いらなくなるかも
 // メインスレッド
 jsCRiPS.mth = Concurrent.Thread.create(function () {
@@ -101,6 +207,7 @@ jsCRiPS.inputText = ''; // 入力されたテキスト
 jsCRiPS.inputted = false; // 入力制御用
 jsCRiPS.tCanvas = {};    // Turtle描画用Canvas
 jsCRiPS.lCanvas = {};   // 軌跡描画用Canvas
+jsCRiPS.debugReady = false; // デバッグ制御用
 /*global Map*/
 jsCRiPS.parentChecker = new Map(); // ListTurtleでparentCheckを行うための親子管理マップ
 jsCRiPS.audios = [];
@@ -1384,6 +1491,47 @@ function restart() {
     jsCRiPS.audios = [];
     main();
 }
+
+function debugStart() {
+    try {
+        jsCRiPS.mth.kill();
+        jsCRiPS.th.kill();
+    } catch (e) {
+        // TODO mth,thが終了時に例外が出る、無視でok?その他エラーは例外で処理するべきか？
+        println('ERROR [ ' + e + ' ]');
+    }
+    jsCRiPS.mth = Thread.create(function () {
+    }); // これらが無いと最初のprint系でjoinし続ける？
+    jsCRiPS.th = Thread.create(function () {
+    });
+
+    jsCRiPS.tCanvas = document.getElementById('turtleCanvas');
+    jsCRiPS.lCanvas = document.getElementById('locusCanvas');
+    if (!jsCRiPS.tCanvas.getContext || !jsCRiPS.lCanvas.getContext) { // 毎回チェックするのは面倒なのでここで一度だけチェックする
+        println('ERROR [ 必要なCanvasがありません ]');
+        return;
+    }
+
+    clearTurtleCanvas();
+    clearLocusCanvas();
+    document.getElementById('console').value = '';
+
+    jsCRiPS.parentChecker.clear();
+    jsCRiPS.ttls = [];
+    for (var i = 0; i < jsCRiPS.audios.length; i++) {
+        jsCRiPS.audios[i].pause();
+        jsCRiPS.audios[i].src = '';
+    }
+    jsCRiPS.audios = [];
+
+    /* global debugMain */
+    debugMain();
+}
+
+function debugNext(){
+    jsCRiPS.debugReady = true;
+}
+
 
 // no kame時に前の描画部分が残ってしまう場合あり、example5.3.1.1_Circle.jsをno kameで実行し速度を変えて再度Runで発生
 function changeSpeed(x) {

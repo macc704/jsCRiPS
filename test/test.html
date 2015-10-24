@@ -26,6 +26,14 @@
             start(func);
         }
 
+        function debugMain(){
+            var source = document.getElementById('editorFrame').contentWindow.getSource();
+            var converted = jsCRiPS.debugConverter.convert(source);
+            document.getElementById('result').value = converted;
+            eval('var func = function(){' + converted + '}');
+            start(func);
+        }
+
     </script>
     <style type="text/css">
 
@@ -209,7 +217,12 @@
         速<input type="range" name="moveSpeed" min="0" max="4" step="1"
                 value="3" onchange="changeSpeed(this.value)" title="moveSpeed">遅
     </div>
-
+    <div>
+        <button type="button" id="debug" onclick="debugStart()">Debug</button>
+    </div>
+    <div>
+        <button type="button" id="debugNext" onclick="debugNext()">nextStep</button>
+    </div>
 </nav>
 
 
