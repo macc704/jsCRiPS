@@ -87,7 +87,7 @@ jsCRiPS.converter.convert = function (source) {
 };
 
 jsCRiPS.debugConverter = {};
-jsCRiPS.debugWait = function(){
+jsCRiPS.debugWait = function () {
     jsCRiPS.th = Thread.create(function () {    //  入力待ち用にスレッドを生成
         while (!jsCRiPS.debugReady) {
             Thread.sleep(1);
@@ -95,18 +95,75 @@ jsCRiPS.debugWait = function(){
         jsCRiPS.debugReady = false;
     });
 };
+jsCRiPS.debugTurtlesState = function () {
+    println('----- turtles -----');
+    for (var obj of jsCRiPS.variableTable.entries()) {
+        if (typeof obj[1]._looks !== 'undefined') {
+            println(obj[0]);
+            obj[1].printState();
+        }
+    }
+};
 
+jsCRiPS.debugVariables = function () {
+    println('----- variables -----');
+    for (var obj of jsCRiPS.variableTable.entries()) {
+        if (typeof obj[1] !== 'object') {
+            println(obj[0] + '=' + obj[1]);
+        }
+    }
+};
+
+jsCRiPS.debugCallStack = function () {
+    println('----- callStack -----');
+    for (var i = 0; i < jsCRiPS.callStack.length; i++) {
+        for (var j = 0; j < i; j++) {
+            print(" ");
+        }
+        println(jsCRiPS.callStack[i]);
+    }
+};
+
+jsCRiPS.addVariable = function (stmt, name) {
+    jsCRiPS.addVariableHelper = function (name, value) {
+        var lastIdx = jsCRiPS.callStack.length - 1;
+        var str = (lastIdx !== -1) ? jsCRiPS.callStack[lastIdx].toString() : "";
+        jsCRiPS.variableTable.set(str + name, value);
+    };
+    stmt.push(esprima.parse('jsCRiPS.addVariableHelper(\'' + name + '\',' + name + ');').body[0]);
+
+};
+
+// ネストした関数に未対応
+jsCRiPS.pushCallStack = function (stmt, name) {
+    jsCRiPS.functionNames.push(name);
+    stmt.unshift(esprima.parse('jsCRiPS.callStack.push(\'' + name + '\');').body[0]);
+
+};
+
+jsCRiPS.popCallStack = function (stmt, name) {
+    jsCRiPS.popCallStackHelper = function (name) {
+        if (jsCRiPS.functionNames.indexOf(name) >= 0) {
+            jsCRiPS.callStack.pop();
+        }
+    };
+    stmt.push(esprima.parse('jsCRiPS.popCallStackHelper(\'' + name + '\');').body[0]);
+
+};
 
 jsCRiPS.debugConverter.convert = function (source) {
-    var ast = esprima.parse(source);
+    var ast = esprima.parse(source, {loc: true});
     var yieldAST = jsCRiPS.withKame ?
         esprima.parse('jsCRiPS.th.join();').body[0] : esprima.parse(';').body[0];
 
-
-    var debugWaitAST = esprima.parse('jsCRiPS.debugWait();jsCRiPS.th.join();');
-    function pushDebugStatement(stmt){
-        stmt.push(debugWaitAST);
-
+    function pushDebugStatement(stmt, line) {
+        stmt.push(esprima.parse('println(\'Line:' + line + '\');').body[0]);
+        stmt.push(esprima.parse('jsCRiPS.debugTurtlesState();').body[0]);
+        stmt.push(esprima.parse('jsCRiPS.debugVariables();').body[0]);
+        stmt.push(esprima.parse('jsCRiPS.debugCallStack();').body[0]);
+        stmt.push(esprima.parse('jsCRiPS.debugWait();').body[0]);
+        stmt.push(esprima.parse('println(\'\');').body[0]);
+        stmt.push(yieldAST);
     }
 
 
@@ -167,7 +224,8 @@ jsCRiPS.debugConverter.convert = function (source) {
             newStmts.push(each);
             if (each.type === 'ExpressionStatement' && each.expression.type === 'CallExpression') {
                 newStmts.push(yieldAST);
-                pushDebugStatement(newStmts);
+                jsCRiPS.popCallStack(newStmts, each.expression.callee.name);
+                pushDebugStatement(newStmts, each.expression.callee.loc.start.line);
             } else if (each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
                 each.expression.right.type === 'CallExpression') {
                 // var x=input(),y=input() や f(input()) や if(input()=='abc')などには未対応
@@ -175,14 +233,23 @@ jsCRiPS.debugConverter.convert = function (source) {
                 if (each.expression.right.callee.name === 'input') {
                     newStmts.push(esprima.parse(each.expression.left.name + ' = jsCRiPS.inputText;').body[0]);
                 }
-                newStmts.push(yieldAST);
             } else if (each.type === 'VariableDeclaration' && each.declarations[0].init &&
                 each.declarations[0].init.type === 'CallExpression') {
                 newStmts.push(yieldAST);
                 if (each.declarations[0].init.callee.name === 'input') {
                     newStmts.push(esprima.parse(each.declarations[0].id.name + ' = jsCRiPS.inputText;').body[0]);
                 }
-                newStmts.push(yieldAST);
+            }
+            if (each.type === 'VariableDeclaration') {
+                for (var i = 0; i < each.declarations.length; i++) {
+                    var obj = each.declarations[i];
+                    jsCRiPS.addVariable(newStmts, obj.id.name);
+                }
+            }
+            if (each.type === 'FunctionDeclaration') {
+                if (each.body.type === 'BlockStatement') {
+                    jsCRiPS.pushCallStack(each.body.body, each.id.name);
+                }
             }
         });
         return newStmts;
@@ -207,7 +274,12 @@ jsCRiPS.inputText = ''; // 入力されたテキスト
 jsCRiPS.inputted = false; // 入力制御用
 jsCRiPS.tCanvas = {};    // Turtle描画用Canvas
 jsCRiPS.lCanvas = {};   // 軌跡描画用Canvas
+
 jsCRiPS.debugReady = false; // デバッグ制御用
+jsCRiPS.callStack = [];     // デバッグ用コールスタック
+jsCRiPS.variableTable = new Map();
+jsCRiPS.functionNames = [];
+
 /*global Map*/
 jsCRiPS.parentChecker = new Map(); // ListTurtleでparentCheckを行うための親子管理マップ
 jsCRiPS.audios = [];
@@ -1524,11 +1596,16 @@ function debugStart() {
     }
     jsCRiPS.audios = [];
 
+    jsCRiPS.debugReady = false;
+    jsCRiPS.callStack = [];
+    jsCRiPS.variableTable = new Map();
+    jsCRiPS.functionNames = [];
+
     /* global debugMain */
     debugMain();
 }
 
-function debugNext(){
+function debugNext() {
     jsCRiPS.debugReady = true;
 }
 
