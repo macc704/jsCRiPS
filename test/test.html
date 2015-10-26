@@ -26,7 +26,7 @@
             start(func);
         }
 
-        function debugMain(){
+        function debugMain() {
             var source = document.getElementById('editorFrame').contentWindow.getSource();
             var converted = jsCRiPS.debugConverter.convert(source);
             document.getElementById('result').value = converted;
@@ -221,7 +221,7 @@
         <button type="button" id="debug" onclick="debugStart()">Debug</button>
     </div>
     <div>
-        <button type="button" id="debugNext" onclick="debugNext()">nextStep</button>
+        <button type="button" id="debugNext" onclick="debugNext()" disabled="true">nextStep</button>
     </div>
 </nav>
 

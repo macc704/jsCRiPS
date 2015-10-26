@@ -89,35 +89,25 @@ jsCRiPS.converter.convert = function (source) {
 jsCRiPS.debugConverter = {};
 jsCRiPS.debugWait = function () {
     jsCRiPS.th = Thread.create(function () {    //  入力待ち用にスレッドを生成
+        var nextButton = document.getElementById('debugNext');
+        if (nextButton) {
+            nextButton.disabled = false;
+        }
         while (!jsCRiPS.debugReady) {
             Thread.sleep(1);
         }
         jsCRiPS.debugReady = false;
+        if (nextButton) {
+            nextButton.disabled = true;
+        }
     });
 };
-jsCRiPS.debugTurtlesState = function () {
-    println('----- turtles -----');
-    for (var obj of jsCRiPS.variableTable.entries()) {
-        if (typeof obj[1]._looks !== 'undefined') {
-            println(obj[0]);
-            obj[1].printState();
-        }
-    }
-};
 
-jsCRiPS.debugVariables = function () {
+
+jsCRiPS.debugVariablePrint = function () {
     println('----- variables -----');
-    for (var obj of jsCRiPS.variableTable.entries()) {
-        if (typeof obj[1] !== 'object') {
-            println(obj[0] + '=' + obj[1]);
-        }
-    }
-};
-
-jsCRiPS.debugCallStack = function () {
-    println('----- callStack -----');
     for (var i = 0; i < jsCRiPS.callStack.length; i++) {
-        for (var j = 0; j < i; j++) {
+        for (var j = 1; j < i; j++) {
             print(" ");
         }
         println(jsCRiPS.callStack[i]);
@@ -127,17 +117,23 @@ jsCRiPS.debugCallStack = function () {
 jsCRiPS.addVariable = function (stmt, name) {
     jsCRiPS.addVariableHelper = function (name, value) {
         var lastIdx = jsCRiPS.callStack.length - 1;
-        var str = (lastIdx !== -1) ? jsCRiPS.callStack[lastIdx].toString() : "";
-        jsCRiPS.variableTable.set(str + name, value);
+        jsCRiPS.callStack[lastIdx].addVariable(name, value);
     };
     stmt.push(esprima.parse('jsCRiPS.addVariableHelper(\'' + name + '\',' + name + ');').body[0]);
+};
 
+jsCRiPS.addVariableUnshift = function (stmt, name) {
+    jsCRiPS.addVariableHelper = function (name, value) {
+        var lastIdx = jsCRiPS.callStack.length - 1;
+        jsCRiPS.callStack[lastIdx].addVariable(name, value);
+    };
+    stmt.unshift(esprima.parse('jsCRiPS.addVariableHelper(\'' + name + '\',' + name + ');').body[0]);
 };
 
 // ネストした関数に未対応
 jsCRiPS.pushCallStack = function (stmt, name) {
     jsCRiPS.functionNames.push(name);
-    stmt.unshift(esprima.parse('jsCRiPS.callStack.push(\'' + name + '\');').body[0]);
+    stmt.unshift(esprima.parse('jsCRiPS.callStack.push(makeCallStack(\'' + name + '\'));').body[0]);
 
 };
 
@@ -151,19 +147,97 @@ jsCRiPS.popCallStack = function (stmt, name) {
 
 };
 
+jsCRiPS.intoBlock = function (stmt) {
+    jsCRiPS.intoBlockHelper = function () {
+        jsCRiPS.callStack[jsCRiPS.callStack.length - 1].intoBlock();
+    };
+    stmt.push(esprima.parse('jsCRiPS.intoBlockHelper();').body[0]);
+};
+
+jsCRiPS.outBlock = function (stmt) {
+    jsCRiPS.outBlockHelper = function () {
+        jsCRiPS.callStack[jsCRiPS.callStack.length - 1].outBlock();
+    };
+    stmt.push(esprima.parse('jsCRiPS.outBlockHelper();').body[0]);
+};
+
+
+function makeCallStack(path) {
+    var ret = {};
+    ret.path = path;
+    ret.blocks = [];
+    ret.blocks[0] = makeBlock();
+    ret.currentBlock = 0;
+
+    ret.addVariable = function (name, value) {
+        ret.blocks[ret.currentBlock].vDecls.push([name, value]);
+    };
+
+    ret.intoBlock = function () {
+        ret.currentBlock++;
+        ret.blocks[ret.currentBlock] = makeBlock();
+    };
+
+    ret.outBlock = function () {
+        ret.blocks[ret.currentBlock] = null;
+        ret.currentBlock--;
+    };
+
+    ret.toString = function () {
+        var str = ret.path + "\n";
+        for (var i = 0; i <= ret.currentBlock; i++) {
+            for (var j = 0; j < i; j++) {
+                str += " ";
+            }
+            str += ret.blocks[i].toString();
+        }
+        return str;
+    };
+
+    return ret;
+}
+
+function makeBlock() {
+    var ret = {};
+    ret.vDecls = [];
+
+    ret.toString = function () {
+        var str = "";
+        for (var i = 0; i < ret.vDecls.length; i++) {
+            var x = ret.vDecls[i];
+            if (typeof x[1]._looks !== 'undefined') {    // Turtle
+                str += "Turtle[" + x[0] + "] : " + x[1].strState() + "\n";
+            } else {
+                str += "Variable[" + x[0] + "] : " + x[1] + "\n";
+            }
+        }
+        return str;
+    };
+
+
+    return ret;
+}
+
+
 jsCRiPS.debugConverter.convert = function (source) {
     var ast = esprima.parse(source, {loc: true});
     var yieldAST = jsCRiPS.withKame ?
         esprima.parse('jsCRiPS.th.join();').body[0] : esprima.parse(';').body[0];
 
-    function pushDebugStatement(stmt, line) {
-        stmt.push(esprima.parse('println(\'Line:' + line + '\');').body[0]);
-        stmt.push(esprima.parse('jsCRiPS.debugTurtlesState();').body[0]);
-        stmt.push(esprima.parse('jsCRiPS.debugVariables();').body[0]);
-        stmt.push(esprima.parse('jsCRiPS.debugCallStack();').body[0]);
+    function pushDebugStatement(stmt, line, end) {
+        stmt.push(esprima.parse('println(\'Line:' + line + ' - ' + end + '\');').body[0]);
+        stmt.push(esprima.parse('jsCRiPS.debugVariablePrint();').body[0]);
         stmt.push(esprima.parse('jsCRiPS.debugWait();').body[0]);
         stmt.push(esprima.parse('println(\'\');').body[0]);
         stmt.push(yieldAST);
+    }
+
+    function unshiftDebugStatement(stmt, line, end) {
+        stmt.unshift(yieldAST);
+        stmt.unshift(esprima.parse('println(\'\');').body[0]);
+        stmt.unshift(esprima.parse('jsCRiPS.debugWait();').body[0]);
+        stmt.unshift(esprima.parse('jsCRiPS.debugVariablePrint();').body[0]);
+        stmt.unshift(esprima.parse('println(\'Line:' + line + ' - ' + end + '\');').body[0]);
     }
 
 
@@ -208,6 +282,8 @@ jsCRiPS.debugConverter.convert = function (source) {
     var processStatements = function (stmts) {
         var newStmts = [];
         stmts.forEach(function (each) {
+            // ブロックここから
+            jsCRiPS.intoBlock(newStmts);    // ここで実行すると少し冗長になる
             if (each.type === 'BlockStatement') {
                 each.body = processStatements(each.body);
             } else if (each.type === 'IfStatement') {
@@ -222,10 +298,13 @@ jsCRiPS.debugConverter.convert = function (source) {
                 each.body = processStatement(each.body);
             }
             newStmts.push(each);
+            jsCRiPS.outBlock(newStmts);    // ここで実行すると少し冗長になる
+            // ブロックおわり
+
             if (each.type === 'ExpressionStatement' && each.expression.type === 'CallExpression') {
                 newStmts.push(yieldAST);
                 jsCRiPS.popCallStack(newStmts, each.expression.callee.name);
-                pushDebugStatement(newStmts, each.expression.callee.loc.start.line);
+                pushDebugStatement(newStmts, each.expression.callee.loc.start.line, each.expression.callee.loc.end.line);
             } else if (each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
                 each.expression.right.type === 'CallExpression') {
                 // var x=input(),y=input() や f(input()) や if(input()=='abc')などには未対応
@@ -233,24 +312,38 @@ jsCRiPS.debugConverter.convert = function (source) {
                 if (each.expression.right.callee.name === 'input') {
                     newStmts.push(esprima.parse(each.expression.left.name + ' = jsCRiPS.inputText;').body[0]);
                 }
+                pushDebugStatement(newStmts, each.expression.loc.start.line, each.expression.loc.end.line);
             } else if (each.type === 'VariableDeclaration' && each.declarations[0].init &&
                 each.declarations[0].init.type === 'CallExpression') {
                 newStmts.push(yieldAST);
                 if (each.declarations[0].init.callee.name === 'input') {
                     newStmts.push(esprima.parse(each.declarations[0].id.name + ' = jsCRiPS.inputText;').body[0]);
                 }
+                // debugStatementは↓でやる
             }
+
             if (each.type === 'VariableDeclaration') {
                 for (var i = 0; i < each.declarations.length; i++) {
-                    var obj = each.declarations[i];
-                    jsCRiPS.addVariable(newStmts, obj.id.name);
+                    jsCRiPS.addVariable(newStmts, each.declarations[i].id.name);
                 }
+                pushDebugStatement(newStmts, each.declarations[0].loc.start.line,
+                    each.declarations[each.declarations.length - 1].loc.end.line);
             }
+
             if (each.type === 'FunctionDeclaration') {
                 if (each.body.type === 'BlockStatement') {
+                    var lastLine = (each.params.length === 0) ? each.id.loc.end.line : each.params[each.params.length - 1].loc.end.line;
+                    unshiftDebugStatement(each.body.body, each.id.loc.start.line, lastLine);
+                    if (each.params.length !== 0) {
+                        for (var i = each.params.length - 1; i >= 0; i--) {
+                            jsCRiPS.addVariableUnshift(each.body.body, each.params[i].name);
+                            lastLine = each.params[i].loc.end.line;
+                        }
+                    }
                     jsCRiPS.pushCallStack(each.body.body, each.id.name);
                 }
             }
+
         });
         return newStmts;
     };
@@ -277,7 +370,6 @@ jsCRiPS.lCanvas = {};   // 軌跡描画用Canvas
 
 jsCRiPS.debugReady = false; // デバッグ制御用
 jsCRiPS.callStack = [];     // デバッグ用コールスタック
-jsCRiPS.variableTable = new Map();
 jsCRiPS.functionNames = [];
 
 /*global Map*/
@@ -674,6 +766,12 @@ function createTurtle() {
         );
     };
 
+    t.strState = function () {
+        var str = '(x,y) = (' + parseInt(t.x) + ',' + parseInt(t.y) + ') / ' +
+            'angle = ' + t.angle + ' / ' +
+            '(width,height) = (' + t.width + ',' + t.height + ')';
+        return str;
+    };
 
     //　描画関係
     t.draw = function (ctx) {
@@ -1569,7 +1667,6 @@ function debugStart() {
         jsCRiPS.mth.kill();
         jsCRiPS.th.kill();
     } catch (e) {
-        // TODO mth,thが終了時に例外が出る、無視でok?その他エラーは例外で処理するべきか？
         println('ERROR [ ' + e + ' ]');
     }
     jsCRiPS.mth = Thread.create(function () {
@@ -1598,6 +1695,7 @@ function debugStart() {
 
     jsCRiPS.debugReady = false;
     jsCRiPS.callStack = [];
+    jsCRiPS.callStack[0] = makeCallStack("");
     jsCRiPS.variableTable = new Map();
     jsCRiPS.functionNames = [];
 
