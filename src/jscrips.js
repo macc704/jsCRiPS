@@ -108,26 +108,22 @@ jsCRiPS.debugVariablePrint = function () {
     println('----- variables -----');
     for (var i = 0; i < jsCRiPS.callStack.length; i++) {
         for (var j = 1; j < i; j++) {
-            print(" ");
+            print(">");
         }
         println(jsCRiPS.callStack[i]);
     }
 };
 
-jsCRiPS.addVariable = function (stmt, name) {
+jsCRiPS.addVariable = function (stmt, name, idx) {
     jsCRiPS.addVariableHelper = function (name, value) {
         var lastIdx = jsCRiPS.callStack.length - 1;
         jsCRiPS.callStack[lastIdx].addVariable(name, value);
     };
-    stmt.push(esprima.parse('jsCRiPS.addVariableHelper(\'' + name + '\',' + name + ');').body[0]);
-};
-
-jsCRiPS.addVariableUnshift = function (stmt, name) {
-    jsCRiPS.addVariableHelper = function (name, value) {
-        var lastIdx = jsCRiPS.callStack.length - 1;
-        jsCRiPS.callStack[lastIdx].addVariable(name, value);
-    };
-    stmt.unshift(esprima.parse('jsCRiPS.addVariableHelper(\'' + name + '\',' + name + ');').body[0]);
+    if (typeof idx !== 'undefined') {
+        stmt.splice(idx, 0, esprima.parse('jsCRiPS.addVariableHelper(\'' + name + '\',' + name + ');').body[0]);
+    } else {
+        stmt.push(esprima.parse('jsCRiPS.addVariableHelper(\'' + name + '\',' + name + ');').body[0]);
+    }
 };
 
 // ネストした関数に未対応
@@ -224,20 +220,18 @@ jsCRiPS.debugConverter.convert = function (source) {
     var yieldAST = jsCRiPS.withKame ?
         esprima.parse('jsCRiPS.th.join();').body[0] : esprima.parse(';').body[0];
 
-    function pushDebugStatement(stmt, line, end) {
-        stmt.push(esprima.parse('println(\'Line:' + line + ' - ' + end + '\');').body[0]);
-        stmt.push(esprima.parse('jsCRiPS.debugVariablePrint();').body[0]);
-        stmt.push(esprima.parse('jsCRiPS.debugWait();').body[0]);
-        stmt.push(esprima.parse('println(\'\');').body[0]);
-        stmt.push(yieldAST);
-    }
-
-    function unshiftDebugStatement(stmt, line, end) {
-        stmt.unshift(yieldAST);
-        stmt.unshift(esprima.parse('println(\'\');').body[0]);
-        stmt.unshift(esprima.parse('jsCRiPS.debugWait();').body[0]);
-        stmt.unshift(esprima.parse('jsCRiPS.debugVariablePrint();').body[0]);
-        stmt.unshift(esprima.parse('println(\'Line:' + line + ' - ' + end + '\');').body[0]);
+    function pushDebugStatement(stmt, line, end, idx) {
+        var block = esprima.parse('{}').body[0];
+        block.body.push(esprima.parse('println(\'Line:' + line + ' - ' + end + '\');').body[0]);
+        block.body.push(esprima.parse('jsCRiPS.debugVariablePrint();').body[0]);
+        block.body.push(esprima.parse('jsCRiPS.debugWait();').body[0]);
+        block.body.push(esprima.parse('println(\'\');').body[0]);
+        block.body.push(yieldAST);
+        if (typeof idx !== 'undefined') {
+            stmt.splice(idx, 0, block);
+        } else {
+            stmt.push(block);
+        }
     }
 
 
@@ -281,9 +275,10 @@ jsCRiPS.debugConverter.convert = function (source) {
 
     var processStatements = function (stmts) {
         var newStmts = [];
-        stmts.forEach(function (each) {
+        for (var i = 0; i < stmts.length; i++) {
+            var each = stmts[i];
             // ブロックここから
-            jsCRiPS.intoBlock(newStmts);    // ここで実行すると少し冗長になる
+            jsCRiPS.intoBlock(newStmts);    // ここで実行すると出力が少し冗長になるが、楽
             if (each.type === 'BlockStatement') {
                 each.body = processStatements(each.body);
             } else if (each.type === 'IfStatement') {
@@ -298,7 +293,7 @@ jsCRiPS.debugConverter.convert = function (source) {
                 each.body = processStatement(each.body);
             }
             newStmts.push(each);
-            jsCRiPS.outBlock(newStmts);    // ここで実行すると少し冗長になる
+            jsCRiPS.outBlock(newStmts);    // ここで実行すると出力が少し冗長になるが、楽
             // ブロックおわり
 
             if (each.type === 'ExpressionStatement' && each.expression.type === 'CallExpression') {
@@ -323,8 +318,8 @@ jsCRiPS.debugConverter.convert = function (source) {
             }
 
             if (each.type === 'VariableDeclaration') {
-                for (var i = 0; i < each.declarations.length; i++) {
-                    jsCRiPS.addVariable(newStmts, each.declarations[i].id.name);
+                for (var j = 0; j < each.declarations.length; j++) {
+                    jsCRiPS.addVariable(newStmts, each.declarations[j].id.name);
                 }
                 pushDebugStatement(newStmts, each.declarations[0].loc.start.line,
                     each.declarations[each.declarations.length - 1].loc.end.line);
@@ -333,18 +328,19 @@ jsCRiPS.debugConverter.convert = function (source) {
             if (each.type === 'FunctionDeclaration') {
                 if (each.body.type === 'BlockStatement') {
                     var lastLine = (each.params.length === 0) ? each.id.loc.end.line : each.params[each.params.length - 1].loc.end.line;
-                    unshiftDebugStatement(each.body.body, each.id.loc.start.line, lastLine);
+                    pushDebugStatement(each.body.body, each.id.loc.start.line, lastLine, 0);
                     if (each.params.length !== 0) {
-                        for (var i = each.params.length - 1; i >= 0; i--) {
-                            jsCRiPS.addVariableUnshift(each.body.body, each.params[i].name);
-                            lastLine = each.params[i].loc.end.line;
+                        for (var j = 0; j < each.params.length; j++) {
+                            jsCRiPS.addVariable(each.body.body, each.params[j].name, j);
+                            lastLine = each.params[j].loc.end.line;
                         }
                     }
+                    // 最後に先頭に挿入する必要あり
                     jsCRiPS.pushCallStack(each.body.body, each.id.name);
                 }
             }
 
-        });
+        }
         return newStmts;
     };
 
