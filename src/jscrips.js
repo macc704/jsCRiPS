@@ -241,12 +241,23 @@ jsCRiPS.debugConverter.convert = function (source) {
     var processStatement = function (stmt) {
         if (stmt.type === 'BlockStatement') {
             stmt.body = processStatements(stmt.body);
-        } else if (stmt.type === 'IfStatement') {  // else if
-            if (stmt.consequent) {
+        } else if (stmt.type === 'IfStatement') {
+            if (stmt.consequent) {  // if
                 stmt.consequent = processStatement(stmt.consequent);
+                var block1 = esprima.parse('{}').body[0];
+                pushDebugStatement(block1.body, stmt.test.loc.start.line, stmt.test.loc.end.line);
+                block1.body.push(stmt);
+                stmt = block1;
             }
-            if (stmt.alternate) {
+            if (stmt.alternate) {   // else
                 stmt.alternate = processStatement(stmt.alternate);
+                var block2 = esprima.parse('{}').body[0];
+                pushDebugStatement(block2.body, stmt.test.loc.start.line, stmt.test.loc.end.line);
+                block2.body.push(stmt);
+                stmt = block2;
+
+            } else if (stmt.body.length > 0 && stmt.body[1].alternate) {   // else ifが連なった場合
+                stmt.body[1].alternate = processStatement(stmt.body[1].alternate);
             }
         } else if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'CallExpression') {
             return newAssignmentBlock();
@@ -274,75 +285,71 @@ jsCRiPS.debugConverter.convert = function (source) {
     };
 
     var processStatements = function (stmts) {
-        var newStmts = [];
-        for (var i = 0; i < stmts.length; i++) {
-            var each = stmts[i];
-            // ブロックここから
-            jsCRiPS.intoBlock(newStmts);    // ここで実行すると出力が少し冗長になるが、楽
-            if (each.type === 'BlockStatement') {
-                each.body = processStatements(each.body);
-            } else if (each.type === 'IfStatement') {
-                if (each.consequent) {
-                    each.consequent = processStatement(each.consequent);
+            var newStmts = [];
+            for (var i = 0; i < stmts.length; i++) {
+                var each = stmts[i];
+                jsCRiPS.intoBlock(newStmts);    // ここで実行すると出力が少し冗長になるが、楽
+                if (each.type === 'BlockStatement') {
+                    each.body = processStatements(each.body);
+                } else if (each.type === 'IfStatement') {
+                    if (each.consequent) {  // if
+                        pushDebugStatement(newStmts, each.test.loc.start.line, each.test.loc.end.line);
+                        each.consequent = processStatement(each.consequent);
+                    }
+                    if (each.alternate) {   // else (if)
+                        each.alternate = processStatement(each.alternate);
+                    }
                 }
-                if (each.alternate) {
-                    each.alternate = processStatement(each.alternate);
+                if (each.body) { // while series
+                    each.body = processStatement(each.body);
                 }
-            }
-            if (each.body) { //while series
-                each.body = processStatement(each.body);
-            }
-            newStmts.push(each);
-            jsCRiPS.outBlock(newStmts);    // ここで実行すると出力が少し冗長になるが、楽
-            // ブロックおわり
+                newStmts.push(each);
+                jsCRiPS.outBlock(newStmts);    // ここで実行すると出力が少し冗長になるが、楽
 
-            if (each.type === 'ExpressionStatement' && each.expression.type === 'CallExpression') {
-                newStmts.push(yieldAST);
-                jsCRiPS.popCallStack(newStmts, each.expression.callee.name);
-                pushDebugStatement(newStmts, each.expression.callee.loc.start.line, each.expression.callee.loc.end.line);
-            } else if (each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
-                each.expression.right.type === 'CallExpression') {
-                // var x=input(),y=input() や f(input()) や if(input()=='abc')などには未対応
-                newStmts.push(yieldAST);
-                if (each.expression.right.callee.name === 'input') {
-                    newStmts.push(esprima.parse(each.expression.left.name + ' = jsCRiPS.inputText;').body[0]);
-                }
-                pushDebugStatement(newStmts, each.expression.loc.start.line, each.expression.loc.end.line);
-            } else if (each.type === 'VariableDeclaration' && each.declarations[0].init &&
-                each.declarations[0].init.type === 'CallExpression') {
-                newStmts.push(yieldAST);
-                if (each.declarations[0].init.callee.name === 'input') {
-                    newStmts.push(esprima.parse(each.declarations[0].id.name + ' = jsCRiPS.inputText;').body[0]);
-                }
-                // debugStatementは↓でやる
-            }
-
-            if (each.type === 'VariableDeclaration') {
-                for (var j = 0; j < each.declarations.length; j++) {
-                    jsCRiPS.addVariable(newStmts, each.declarations[j].id.name);
-                }
-                pushDebugStatement(newStmts, each.declarations[0].loc.start.line,
-                    each.declarations[each.declarations.length - 1].loc.end.line);
-            }
-
-            if (each.type === 'FunctionDeclaration') {
-                if (each.body.type === 'BlockStatement') {
-                    var lastLine = (each.params.length === 0) ? each.id.loc.end.line : each.params[each.params.length - 1].loc.end.line;
-                    pushDebugStatement(each.body.body, each.id.loc.start.line, lastLine, 0);
-                    if (each.params.length !== 0) {
-                        for (var j = 0; j < each.params.length; j++) {
-                            jsCRiPS.addVariable(each.body.body, each.params[j].name, j);
-                            lastLine = each.params[j].loc.end.line;
+                if (each.type === 'ExpressionStatement' && each.expression.type === 'CallExpression') {
+                    pushDebugStatement(newStmts, each.expression.callee.loc.start.line, each.expression.callee.loc.end.line, newStmts.length - 2);
+                    newStmts.push(yieldAST);
+                    jsCRiPS.popCallStack(newStmts, each.expression.callee.name);
+                } else if (each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
+                    each.expression.right.type === 'CallExpression') {
+                    pushDebugStatement(newStmts, each.expression.callee.loc.start.line, each.expression.callee.loc.end.line, newStmts.length - 2);
+                    // var x=input(),y=input() や f(input()) や if(input()=='abc')などには未対応
+                    newStmts.push(yieldAST);
+                    if (each.expression.right.callee.name === 'input') {
+                        newStmts.push(esprima.parse(each.expression.left.name + ' = jsCRiPS.inputText;').body[0]);
+                    }
+                } else if (each.type === 'VariableDeclaration') {
+                    pushDebugStatement(newStmts, each.declarations[0].loc.start.line, each.declarations[each.declarations.length - 1].loc.end.line, newStmts.length - 2);
+                    if (each.declarations[0].init && each.declarations[0].init.type === 'CallExpression') {
+                        newStmts.push(yieldAST);
+                        if (each.declarations[0].init.callee.name === 'input') {
+                            newStmts.push(esprima.parse(each.declarations[0].id.name + ' = jsCRiPS.inputText;').body[0]);
                         }
                     }
-                    // 最後に先頭に挿入する必要あり
-                    jsCRiPS.pushCallStack(each.body.body, each.id.name);
+                    for (var j = 0; j < each.declarations.length; j++) {
+                        jsCRiPS.addVariable(newStmts, each.declarations[j].id.name);
+                    }
                 }
-            }
 
+                if (each.type === 'FunctionDeclaration') {
+                    if (each.body.type === 'BlockStatement') {
+                        var lastLine = (each.params.length === 0) ? each.id.loc.end.line : each.params[each.params.length - 1].loc.end.line;
+                        pushDebugStatement(each.body.body, each.id.loc.start.line, lastLine, 0);
+                        if (each.params.length !== 0) {
+                            for (var j = 0; j < each.params.length; j++) {
+                                jsCRiPS.addVariable(each.body.body, each.params[j].name, j);
+                                lastLine = each.params[j].loc.end.line;
+                            }
+                        }
+                        // 最後に先頭に挿入する必要あり
+                        jsCRiPS.pushCallStack(each.body.body, each.id.name);
+                    }
+                }
+
+            }
+            return newStmts;
         }
-        return newStmts;
-    };
+        ;
 
     ast.body = processStatements(ast.body);
     return escodegen.generate(ast);
