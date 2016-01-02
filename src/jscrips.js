@@ -105,12 +105,43 @@ jsCRiPS.debugWait = function () {
 
 
 jsCRiPS.debugVariablePrint = function () {
-    println('----- variables -----');
-    for (var i = 0; i < jsCRiPS.callStack.length; i++) {
-        for (var j = 1; j < i; j++) {
-            print(">");
+    jsCRiPS.debugVariablePrintHelper = function(stack){
+        var argValues = "";
+        for (var i = 0; i < stack.args.length; i++) {
+            argValues += stack.args[i];
+            if((i+1) < stack.args.length){
+                argValues += ",";
+            }
         }
-        println(jsCRiPS.callStack[i]);
+        var position = stack.path + "(" + argValues + ")";
+        for (var i = 0; i <= stack.currentBlock; i++) {
+                var block = stack.blocks[i];
+                 for (var j = 0; j < block.vDecls.length; j++) {
+                    var x = block.vDecls[j];
+                    var newRow = jsCRiPS.debugTable.insertRow(-1);
+                    var tdName = document.createElement("td");
+                    tdName.innerHTML = block.vDecls[j][0];
+                    var tdValue = document.createElement("td");
+                    var v = block.vDecls[j][1];
+                    var vv = (v && (typeof v._looks !== 'undefined')) ? ("("+parseInt(v.x)+","+parseInt(v.y)+")<br>"+v.angle+"°")　: v;
+                    tdValue.innerHTML = vv;
+                    var tdType = document.createElement("td");
+                    tdType.innerHTML = (typeof block.vDecls[j][1]);
+                    var tdPos = document.createElement("td");
+                    tdPos.innerHTML = position;
+                    newRow.appendChild(tdName);
+                    newRow.appendChild(tdValue);
+                    newRow.appendChild(tdType);
+                    newRow.appendChild(tdPos);
+            }
+        }
+    }
+    // 毎回テーブルを作成し直す
+    while( jsCRiPS.debugTable.rows[1] ){
+        jsCRiPS.debugTable.deleteRow(1);
+    }
+    for (var i = jsCRiPS.callStack.length-1; i >= 0 ; i--) {
+        jsCRiPS.debugVariablePrintHelper(jsCRiPS.callStack[i]);
     }
 };
 
@@ -1740,6 +1771,7 @@ function debugStart() {
         debugTable.setAttribute("id","debugTable");
         debugTable.setAttribute("width","320px");
         debugTable.setAttribute("border","1");
+        debugTable.style.tableLayout="fixed";
         jsCRiPS.debugTable = debugTable;
 
         var newRow = debugTable.insertRow(0);
