@@ -103,7 +103,7 @@ jsCRiPS.debugWait = function () {
     });
 };
 
-
+// TODO スコープに合わせて色を変える、代入時の色を変える、表示をもっと綺麗に
 jsCRiPS.debugVariablePrint = function () {
     jsCRiPS.debugVariablePrintHelper = function(stack){
         var argValues = "";
