@@ -126,6 +126,18 @@ jsCRiPS.addVariable = function (stmt, name, idx) {
     }
 };
 
+jsCRiPS.addArgument = function (stmt, name, idx) {
+    jsCRiPS.addArgumentHelper = function (name, value) {
+        var lastIdx = jsCRiPS.callStack.length - 1;
+        jsCRiPS.callStack[lastIdx].addArgument(name, value);
+    };
+    if (typeof idx !== 'undefined') {
+        stmt.splice(idx, 0, esprima.parse('jsCRiPS.addArgumentHelper(\'' + name + '\',' + name + ');').body[0]);
+    } else {
+        stmt.push(esprima.parse('jsCRiPS.addArgumentHelper(\'' + name + '\',' + name + ');').body[0]);
+    }
+};
+
 // ネストした関数に未対応
 jsCRiPS.pushCallStack = function (stmt, name) {
     jsCRiPS.functionNames.push(name);
@@ -160,10 +172,16 @@ jsCRiPS.outBlock = function (stmt) {
 
 function makeCallStack(path) {
     var ret = {};
+    ret.args = [];
     ret.path = path;
     ret.blocks = [];
     ret.blocks[0] = makeBlock();
     ret.currentBlock = 0;
+
+    ret.addArgument = function(name,value){
+        ret.args.push(value);
+        ret.addVariable(name,value);
+    }
 
     ret.addVariable = function (name, value) {
         ret.blocks[ret.currentBlock].vDecls.push([name, value]);
@@ -180,7 +198,11 @@ function makeCallStack(path) {
     };
 
     ret.toString = function () {
-        var str = ret.path + "\n";
+        var argValues = "";
+        for (var i = 0; i < ret.args.length; i++) {
+            argValues = ret.args[i] + ",";
+        };
+        var str = ret.path + argValues + "\n";
         for (var i = 0; i <= ret.currentBlock; i++) {
             for (var j = 0; j < i; j++) {
                 str += " ";
@@ -201,10 +223,12 @@ function makeBlock() {
         var str = "";
         for (var i = 0; i < ret.vDecls.length; i++) {
             var x = ret.vDecls[i];
-            if (typeof x[1]._looks !== 'undefined') {    // Turtle
+            if(typeof x[1] === 'undefined'){    // 引数が与えられていないなど
+                str += "undefined"
+            }else if (typeof x[1]._looks !== 'undefined') {    // Turtle
                 str += "Turtle[" + x[0] + "] : " + x[1].strState() + "\n";
             } else {
-                str += "Variable[" + x[0] + "] : " + x[1] + "\n";
+                str += "Variable[" + x[0] + "] : " + (typeof x[1]) + x[1] + "\n";
             }
         }
         return str;
@@ -337,7 +361,7 @@ jsCRiPS.debugConverter.convert = function (source) {
                         pushDebugStatement(each.body.body, each.id.loc.start.line, lastLine, 0);
                         if (each.params.length !== 0) {
                             for (var j = 0; j < each.params.length; j++) {
-                                jsCRiPS.addVariable(each.body.body, each.params[j].name, j);
+                                jsCRiPS.addArgument(each.body.body, each.params[j].name, j);
                                 lastLine = each.params[j].loc.end.line;
                             }
                         }
