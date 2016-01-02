@@ -200,9 +200,12 @@ function makeCallStack(path) {
     ret.toString = function () {
         var argValues = "";
         for (var i = 0; i < ret.args.length; i++) {
-            argValues = ret.args[i] + ",";
+            argValues += ret.args[i];
+            if((i+1) < ret.args.length){
+                argValues += ",";
+            }
         };
-        var str = ret.path + argValues + "\n";
+        var str = ret.path + "(" + argValues + ")";
         for (var i = 0; i <= ret.currentBlock; i++) {
             for (var j = 0; j < i; j++) {
                 str += " ";
@@ -228,7 +231,7 @@ function makeBlock() {
             }else if (typeof x[1]._looks !== 'undefined') {    // Turtle
                 str += "Turtle[" + x[0] + "] : " + x[1].strState() + "\n";
             } else {
-                str += "Variable[" + x[0] + "] : " + (typeof x[1]) + x[1] + "\n";
+                str += "Variable[" + x[0] + "] : " + (typeof x[1]) + " " + x[1] + "\n";
             }
         }
         return str;
@@ -1725,6 +1728,41 @@ function debugStart() {
     jsCRiPS.callStack[0] = makeCallStack("");
     jsCRiPS.variableTable = new Map();
     jsCRiPS.functionNames = [];
+
+    // debug用のTableを作成する
+    if(!document.getElementById("debugTable")){
+        // var debugView = document.createElement("div"); 現状test.htmlで作ってある
+        // debugView.style.position = "absolute";
+        // debugView.style.height = "0px";
+        // debugView.style.width = "800px";
+        
+        var debugTable = document.createElement("table");
+        debugTable.setAttribute("id","debugTable");
+        debugTable.setAttribute("width","320px");
+        debugTable.setAttribute("border","1");
+        jsCRiPS.debugTable = debugTable;
+
+        var newRow = debugTable.insertRow(0);
+        var thName = document.createElement("th");
+        thName.innerHTML = "変数名";
+        var thValue = document.createElement("th");
+        thValue.innerHTML = "値";
+        var thType = document.createElement("th");
+        thType.innerHTML = "型";
+        var thPos = document.createElement("th");
+        thPos.innerHTML = "位置";
+        newRow.appendChild(thName);
+        newRow.appendChild(thValue);
+        newRow.appendChild(thType);
+        newRow.appendChild(thPos);
+
+        var dv = document.getElementById("debugView");
+        dv.appendChild(debugTable);
+        dv.style.display = "block";
+        debugView.setAttribute("class","animated bounceIn");    // require animate.(min.)css
+//        document.body.appendChild(debugView);
+    }
+
 
     /* global debugMain */
     debugMain();
