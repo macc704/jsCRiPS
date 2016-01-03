@@ -1769,7 +1769,7 @@ function debugStart() {
         
         var debugTable = document.createElement("table");
         debugTable.setAttribute("id","debugTable");
-        debugTable.setAttribute("width","320px");
+        debugTable.setAttribute("width","95%");
         debugTable.setAttribute("border","1");
         debugTable.style.tableLayout="fixed";
         jsCRiPS.debugTable = debugTable;
@@ -1792,6 +1792,11 @@ function debugStart() {
         dv.appendChild(debugTable);
         dv.style.display = "block";
         debugView.setAttribute("class","animated bounceIn");    // require animate.(min.)css
+        // デバッグの変数ビューをドラッグできるようにする
+        $(function() {
+            $('#debugView').draggable({handle: "#debugTable"});
+        });
+
 //        document.body.appendChild(debugView);
     }
 

@@ -3,6 +3,7 @@
 <html>
 <head>
     <script src="../lib/jquery-2.1.4.min.js"></script>
+    <script src="../lib/jquery-ui.min.js"></script>
     <script src="../lib/esprima-2.4.1/esprima.min.js"></script>
     <script src="../lib/escodegen-1.6.1/escodegen.browser.min.js"></script>
     <script src="../lib/ConcurrentThread.js"></script>
@@ -12,6 +13,7 @@
     <link rel="stylesheet" href="../lib/Slidebars-0.10.3/dist/slidebars.min.css">
     <link rel="stylesheet" href="../lib/sweetalert-master/dist/sweetalert.css">
     <link rel="stylesheet" href="../lib/animate.min.css">
+    <link rel="stylesheet" href="../lib/jquery-ui.min.css">
     <!--  <link rel="stylesheet" href="../lib/bootstrap-3.3.5-dist/css/bootstrap.min.css">
       <link rel="stylesheet" href="../lib/bootstrap-3.3.5-dist/css/bootstrap-theme.css"> -->
     <script src="../lib/sweetalert-master/dist/sweetalert.min.js"></script>
@@ -264,7 +266,7 @@
         </div>
     </div>
 
-    <div id="debugView" style="position:absolute;top:10px;left:800px;width:340px;height:400px;border:1px solid;display:none;overflow-y:scroll;">
+    <div id="debugView" style="position:absolute;top:10px;left:800px;width:400px;height:400px;border:1px solid;display:none;overflow-y:scroll;">
 
     </div>
 
@@ -444,6 +446,14 @@
     function setTheme(theme) {
         document.getElementById('editorFrame').contentWindow.setTheme(theme);
     }
+    // デバッグの変数ビューをサイズ可変にする
+    $(function() {
+        $('#debugView').resizable({
+            minHeight: 400,
+            minWidth: 400,
+            handles: 'se'
+        });
+    });
 </script>
 
 <script>
