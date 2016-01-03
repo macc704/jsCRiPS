@@ -105,30 +105,43 @@ jsCRiPS.debugWait = function () {
 
 // TODO スコープに合わせて色を変える、代入時の色を変える、表示をもっと綺麗に
 jsCRiPS.debugVariablePrint = function () {
-    jsCRiPS.debugVariablePrintHelper = function(stack){
-        var argValues = "";
+    jsCRiPS.debugVariablePrintHelper = function(stack,color){
+        var argValues = '';
         for (var i = 0; i < stack.args.length; i++) {
             argValues += stack.args[i];
             if((i+1) < stack.args.length){
-                argValues += ",";
+                argValues += ',';
             }
         }
-        var position = stack.path + "(" + argValues + ")";
+        var position = stack.path + '(' + argValues + ')';
         for (var i = 0; i <= stack.currentBlock; i++) {
                 var block = stack.blocks[i];
                  for (var j = 0; j < block.vDecls.length; j++) {
                     var x = block.vDecls[j];
                     var newRow = jsCRiPS.debugTable.insertRow(-1);
-                    var tdName = document.createElement("td");
+                    
+                    var tdName = document.createElement('td');
                     tdName.innerHTML = block.vDecls[j][0];
-                    var tdValue = document.createElement("td");
+                    tdName.style.backgroundColor = color;
+              
+                    var tdValue = document.createElement('td');
                     var v = block.vDecls[j][1];
-                    var vv = (v && (typeof v._looks !== 'undefined')) ? ("("+parseInt(v.x)+","+parseInt(v.y)+")<br>"+v.angle+"°")　: v;
-                    tdValue.innerHTML = vv;
-                    var tdType = document.createElement("td");
+                    // Turtleなら座標と角度を表示
+                    tdValue.innerHTML = (v && (typeof v._looks !== 'undefined')) ?
+                     ('('+parseInt(v.x)+','+parseInt(v.y)+')<br>'+v.angle+'°')　: v;
+                    // 初めて生成される変数なら黄色くする
+                    var vcolor = (block.vDecls[j][2]) ? '#EE3' : color;
+                    block.vDecls[j][2] = false;
+                    tdValue.style.backgroundColor = vcolor;
+              
+                    var tdType = document.createElement('td');
                     tdType.innerHTML = (typeof block.vDecls[j][1]);
-                    var tdPos = document.createElement("td");
+                    tdType.style.backgroundColor = color;
+              
+                    var tdPos = document.createElement('td');
                     tdPos.innerHTML = position;
+                    tdPos.style.backgroundColor = color;
+                    
                     newRow.appendChild(tdName);
                     newRow.appendChild(tdValue);
                     newRow.appendChild(tdType);
@@ -137,18 +150,21 @@ jsCRiPS.debugVariablePrint = function () {
         }
     }
     // 毎回テーブルを作成し直す
+    // テーブルの削除
     while( jsCRiPS.debugTable.rows[1] ){
         jsCRiPS.debugTable.deleteRow(1);
     }
+    // コールスタック毎に行を追加してく
     for (var i = jsCRiPS.callStack.length-1; i >= 0 ; i--) {
-        jsCRiPS.debugVariablePrintHelper(jsCRiPS.callStack[i]);
+        var color = (i == jsCRiPS.callStack.length-1) ? '#FFF' : '#CCC';
+        jsCRiPS.debugVariablePrintHelper(jsCRiPS.callStack[i],color);
     }
 };
 
 jsCRiPS.addVariable = function (stmt, name, idx) {
     jsCRiPS.addVariableHelper = function (name, value) {
         var lastIdx = jsCRiPS.callStack.length - 1;
-        jsCRiPS.callStack[lastIdx].addVariable(name, value);
+        jsCRiPS.callStack[lastIdx].addVariable(name, value,true);
     };
     if (typeof idx !== 'undefined') {
         stmt.splice(idx, 0, esprima.parse('jsCRiPS.addVariableHelper(\'' + name + '\',' + name + ');').body[0]);
@@ -211,11 +227,11 @@ function makeCallStack(path) {
 
     ret.addArgument = function(name,value){
         ret.args.push(value);
-        ret.addVariable(name,value);
+        ret.addVariable(name,value,true);
     }
 
-    ret.addVariable = function (name, value) {
-        ret.blocks[ret.currentBlock].vDecls.push([name, value]);
+    ret.addVariable = function (name, value,isNew) {
+        ret.blocks[ret.currentBlock].vDecls.push([name, value,isNew]);
     };
 
     ret.intoBlock = function () {
@@ -229,17 +245,17 @@ function makeCallStack(path) {
     };
 
     ret.toString = function () {
-        var argValues = "";
+        var argValues = '';
         for (var i = 0; i < ret.args.length; i++) {
             argValues += ret.args[i];
             if((i+1) < ret.args.length){
-                argValues += ",";
+                argValues += ',';
             }
         };
-        var str = ret.path + "(" + argValues + ")";
+        var str = ret.path + '(' + argValues + ')';
         for (var i = 0; i <= ret.currentBlock; i++) {
             for (var j = 0; j < i; j++) {
-                str += " ";
+                str += ' ';
             }
             str += ret.blocks[i].toString();
         }
@@ -254,15 +270,15 @@ function makeBlock() {
     ret.vDecls = [];
 
     ret.toString = function () {
-        var str = "";
+        var str = '';
         for (var i = 0; i < ret.vDecls.length; i++) {
             var x = ret.vDecls[i];
             if(typeof x[1] === 'undefined'){    // 引数が与えられていないなど
-                str += "undefined"
+                str += 'undefined'
             }else if (typeof x[1]._looks !== 'undefined') {    // Turtle
-                str += "Turtle[" + x[0] + "] : " + x[1].strState() + "\n";
+                str += 'Turtle[' + x[0] + '] : ' + x[1].strState() + '\n';
             } else {
-                str += "Variable[" + x[0] + "] : " + (typeof x[1]) + " " + x[1] + "\n";
+                str += 'Variable[' + x[0] + '] : ' + (typeof x[1]) + ' ' + x[1] + '\n';
             }
         }
         return str;
@@ -1061,7 +1077,7 @@ function createListTurtle(autoHide, name) {
 
     t.list = [];
     t.cursor = 0;
-    t.bgColor = "white";
+    t.bgColor = 'white';
 
     t.actualWidth = 0;
     t.actualHeight = 0;
@@ -1107,7 +1123,7 @@ function createListTurtle(autoHide, name) {
             parentCheck(obj);
             obj.show(!autoHide);
             if (x < 0 || t.list.length < x) {
-                println("[ add(" + x + "," + obj + ") ]挿入位置が不適切なので末尾に追加しました。");
+                println('[ add(' + x + ',' + obj + ') ]挿入位置が不適切なので末尾に追加しました。');
                 t.list.push(obj);
             } else {
                 t.list.splice(x, 0, obj);
@@ -1151,7 +1167,7 @@ function createListTurtle(autoHide, name) {
                 }
             }
             if (trgIdx === -1) {
-                println("remove対象が存在しません。");
+                println('remove対象が存在しません。');
                 return null;
             }
         }
@@ -1756,45 +1772,45 @@ function debugStart() {
 
     jsCRiPS.debugReady = false;
     jsCRiPS.callStack = [];
-    jsCRiPS.callStack[0] = makeCallStack("");
+    jsCRiPS.callStack[0] = makeCallStack('');
     jsCRiPS.variableTable = new Map();
     jsCRiPS.functionNames = [];
 
     // debug用のTableを作成する
-    if(!document.getElementById("debugTable")){
-        // var debugView = document.createElement("div"); 現状test.htmlで作ってある
-        // debugView.style.position = "absolute";
-        // debugView.style.height = "0px";
-        // debugView.style.width = "800px";
+    if(!document.getElementById('debugTable')){
+        // var debugView = document.createElement('div'); 現状test.htmlで作ってある
+        // debugView.style.position = 'absolute';
+        // debugView.style.height = '0px';
+        // debugView.style.width = '800px';
         
-        var debugTable = document.createElement("table");
-        debugTable.setAttribute("id","debugTable");
-        debugTable.setAttribute("width","95%");
-        debugTable.setAttribute("border","1");
-        debugTable.style.tableLayout="fixed";
+        var debugTable = document.createElement('table');
+        debugTable.setAttribute('id','debugTable');
+        debugTable.setAttribute('width','95%');
+        debugTable.setAttribute('border','1');
+        debugTable.style.tableLayout='fixed';
         jsCRiPS.debugTable = debugTable;
 
         var newRow = debugTable.insertRow(0);
-        var thName = document.createElement("th");
-        thName.innerHTML = "変数名";
-        var thValue = document.createElement("th");
-        thValue.innerHTML = "値";
-        var thType = document.createElement("th");
-        thType.innerHTML = "型";
-        var thPos = document.createElement("th");
-        thPos.innerHTML = "位置";
+        var thName = document.createElement('th');
+        thName.innerHTML = '変数名';
+        var thValue = document.createElement('th');
+        thValue.innerHTML = '値';
+        var thType = document.createElement('th');
+        thType.innerHTML = '型';
+        var thPos = document.createElement('th');
+        thPos.innerHTML = '位置';
         newRow.appendChild(thName);
         newRow.appendChild(thValue);
         newRow.appendChild(thType);
         newRow.appendChild(thPos);
 
-        var dv = document.getElementById("debugView");
+        var dv = document.getElementById('debugView');
         dv.appendChild(debugTable);
-        dv.style.display = "block";
-        debugView.setAttribute("class","animated bounceIn");    // require animate.(min.)css
+        dv.style.display = 'block';
+        debugView.setAttribute('class','animated bounceIn');    // require animate.(min.)css
         // デバッグの変数ビューをドラッグできるようにする
         $(function() {
-            $('#debugView').draggable({handle: "#debugTable"});
+            $('#debugView').draggable({handle: '#debugTable'});
         });
 
 //        document.body.appendChild(debugView);
