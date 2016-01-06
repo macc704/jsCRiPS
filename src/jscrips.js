@@ -434,6 +434,9 @@ jsCRiPS.debugConverter.convert = function (source) {
                     each.expression.right.type !== 'CallExpression'){
                     pushDebugStatement(newStmts, each.expression.loc.start.line, each.expression.loc.end.line);
                     jsCRiPS.updateVariable(newStmts, each.expression.left.name);
+                }else if(each.type === 'ExpressionStatement' && each.expression.type === 'UpdateExpression'){
+                    pushDebugStatement(newStmts, each.expression.loc.start.line, each.expression.loc.end.line);
+                    jsCRiPS.updateVariable(newStmts, each.expression.argument.name);                    
                 }
 
 
