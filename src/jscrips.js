@@ -185,6 +185,19 @@ jsCRiPS.addArgument = function (stmt, name, idx) {
     }
 };
 
+jsCRiPS.updateVariable = function (stmt, name, idx) {
+    jsCRiPS.updateVariableHelper = function (name, value) {
+        var lastIdx = jsCRiPS.callStack.length - 1;
+        jsCRiPS.callStack[lastIdx].updateVariable(name, value,true);
+    };
+    if (typeof idx !== 'undefined') {
+        stmt.splice(idx, 0, esprima.parse('jsCRiPS.updateVariableHelper(\'' + name + '\',' + name + ');').body[0]);
+    } else {
+        stmt.push(esprima.parse('jsCRiPS.updateVariableHelper(\'' + name + '\',' + name + ');').body[0]);
+    }
+};
+
+
 // ネストした関数に未対応
 jsCRiPS.pushCallStack = function (stmt, name) {
     jsCRiPS.functionNames.push(name);
@@ -234,13 +247,24 @@ function makeCallStack(path) {
         ret.blocks[ret.currentBlock].vDecls.push([name, value,isNew]);
     };
 
+    ret.updateVariable = function (name, value,isNew) {
+        for(var i = 0; i < ret.blocks.length; i++){
+            for(var j = 0; j < ret.blocks[i].vDecls.length; j++){
+                if(ret.blocks[i].vDecls[j][0] === name){
+                    ret.blocks[i].vDecls[j][1] = value;
+                    ret.blocks[i].vDecls[j][2] = isNew;
+                }
+            }
+          }
+    };
+
     ret.intoBlock = function () {
         ret.currentBlock++;
         ret.blocks[ret.currentBlock] = makeBlock();
     };
 
     ret.outBlock = function () {
-        ret.blocks[ret.currentBlock] = null;
+        ret.length = ret.currentBlock;
         ret.currentBlock--;
     };
 
@@ -351,8 +375,8 @@ jsCRiPS.debugConverter.convert = function (source) {
             if (isInput && left) {
                 block.body.push(esprima.parse(left + ' = jsCRiPS.inputText;').body[0]);
             }
+            jsCRiPS.updateVariable(block.body, left);
             pushDebugStatement(block.body);
-
             return block;
         }
 
@@ -386,12 +410,13 @@ jsCRiPS.debugConverter.convert = function (source) {
                     jsCRiPS.popCallStack(newStmts, each.expression.callee.name);
                 } else if (each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
                     each.expression.right.type === 'CallExpression') {
-                    pushDebugStatement(newStmts, each.expression.callee.loc.start.line, each.expression.callee.loc.end.line, newStmts.length - 2);
+                    pushDebugStatement(newStmts, each.expression.loc.start.line, each.expression.loc.end.line, newStmts.length - 2);
                     // var x=input(),y=input() や f(input()) や if(input()=='abc')などには未対応
                     newStmts.push(yieldAST);
                     if (each.expression.right.callee.name === 'input') {
                         newStmts.push(esprima.parse(each.expression.left.name + ' = jsCRiPS.inputText;').body[0]);
                     }
+                    jsCRiPS.updateVariable(newStmts, each.expression.left.name);
                 } else if (each.type === 'VariableDeclaration') {
                     pushDebugStatement(newStmts, each.declarations[0].loc.start.line, each.declarations[each.declarations.length - 1].loc.end.line, newStmts.length - 2);
                     if (each.declarations[0].init && each.declarations[0].init.type === 'CallExpression') {
@@ -404,6 +429,13 @@ jsCRiPS.debugConverter.convert = function (source) {
                         jsCRiPS.addVariable(newStmts, each.declarations[j].id.name);
                     }
                 }
+
+                if(each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
+                    each.expression.right.type !== 'CallExpression'){
+                    pushDebugStatement(newStmts, each.expression.loc.start.line, each.expression.loc.end.line);
+                    jsCRiPS.updateVariable(newStmts, each.expression.left.name);
+                }
+
 
                 if (each.type === 'FunctionDeclaration') {
                     if (each.body.type === 'BlockStatement') {
@@ -422,10 +454,10 @@ jsCRiPS.debugConverter.convert = function (source) {
 
             }
             return newStmts;
-        }
-        ;
-
+        };
     ast.body = processStatements(ast.body);
+    ast.body.push(esprima.parse('jsCRiPS.debugVariablePrint();').body[0]);
+
     return escodegen.generate(ast);
 };
 // 開始時に例外が出ないために予めスレッドを生成しておく、例外を無視する仕様にした場合いらなくなるかも
@@ -1670,7 +1702,7 @@ function deg2rad(deg) {
 }
 
 function isInteger(str) {
-    return (Number.isNaN(Number(str)) || Number.isNaN(parseInt(str, 10)));
+    return (!Number.isNaN(Number(str)) || !Number.isNaN(parseInt(str, 10)));
 }
 
 // ユーザー用、秒単位で指定 sleepにするとなぜかConcurrent.Thread.jsのsleepが呼ばれてしまう
@@ -2014,7 +2046,11 @@ function input(msg) {
                 swal.showInputError('You need to write something!');
                 return false;
             }
-            jsCRiPS.inputText = inputValue;
+            if(isInteger(inputValue)){
+                jsCRiPS.inputText = Number(inputValue);
+            }else{
+                 jsCRiPS.inputText = inputValue;
+            }
             println('INPUT [' + jsCRiPS.inputText + ']');
             jsCRiPS.inputted = true;             // th.kill(); 本当はこうしたい
             swal.close();
