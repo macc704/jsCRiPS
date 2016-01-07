@@ -202,16 +202,17 @@ jsCRiPS.updateVariable = function (stmt, name, idx) {
 jsCRiPS.pushCallStack = function (stmt, name) {
     jsCRiPS.functionNames.push(name);
     stmt.unshift(esprima.parse('jsCRiPS.callStack.push(makeCallStack(\'' + name + '\'));').body[0]);
-
 };
 
-jsCRiPS.popCallStack = function (stmt, name) {
-    jsCRiPS.popCallStackHelper = function (name) {
-        if (jsCRiPS.functionNames.indexOf(name) >= 0) {
+jsCRiPS.popCallStack = function (stmt,idx) {
+    jsCRiPS.popCallStackHelper = function () {
             jsCRiPS.callStack.pop();
-        }
     };
-    stmt.push(esprima.parse('jsCRiPS.popCallStackHelper(\'' + name + '\');').body[0]);
+    if (typeof idx !== 'undefined') {
+        stmt.splice(idx, 0, esprima.parse('jsCRiPS.popCallStackHelper();').body[0]);
+    } else {
+        stmt.push(esprima.parse('jsCRiPS.popCallStackHelper();').body[0]);
+    }
 
 };
 
@@ -397,9 +398,24 @@ jsCRiPS.debugConverter.convert = function (source) {
                     if (each.alternate) {   // else (if)
                         each.alternate = processStatement(each.alternate);
                     }
-                }
-                if (each.body) { // while series
+                }else if (each.type === 'WhileStatement') {
                     each.body = processStatement(each.body);
+                }else if (each.type === 'FunctionDeclaration') {
+                    each.body = processStatement(each.body);
+                    if (each.body.type === 'BlockStatement') {
+                        var lastLine = (each.params.length === 0) ?
+                            each.id.loc.end.line : each.params[each.params.length - 1].loc.end.line;
+                        pushDebugStatement(each.body.body, each.id.loc.start.line, lastLine, 0);
+                        if (each.params.length !== 0) {
+                            for (var j = 0; j < each.params.length; j++) {
+                                jsCRiPS.addArgument(each.body.body, each.params[j].name, j);
+                                lastLine = each.params[j].loc.end.line;
+                            }
+                        }
+                        jsCRiPS.popCallStack(each.body.body);
+                        // 最後に先頭に挿入する必要あり
+                        jsCRiPS.pushCallStack(each.body.body, each.id.name);
+                    }
                 }
                 newStmts.push(each);
                 jsCRiPS.outBlock(newStmts);    // ここで実行すると出力が少し冗長になるが、楽
@@ -407,7 +423,6 @@ jsCRiPS.debugConverter.convert = function (source) {
                 if (each.type === 'ExpressionStatement' && each.expression.type === 'CallExpression') {
                     pushDebugStatement(newStmts, each.expression.callee.loc.start.line, each.expression.callee.loc.end.line, newStmts.length - 2);
                     newStmts.push(yieldAST);
-                    jsCRiPS.popCallStack(newStmts, each.expression.callee.name);
                 } else if (each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
                     each.expression.right.type === 'CallExpression') {
                     pushDebugStatement(newStmts, each.expression.loc.start.line, each.expression.loc.end.line, newStmts.length - 2);
@@ -428,6 +443,9 @@ jsCRiPS.debugConverter.convert = function (source) {
                     for (var j = 0; j < each.declarations.length; j++) {
                         jsCRiPS.addVariable(newStmts, each.declarations[j].id.name);
                     }
+                }else if(each.type === 'ReturnStatement'){
+                    pushDebugStatement(newStmts, each.loc.start.line, each.loc.end.line, newStmts.length - 2);
+                    jsCRiPS.popCallStack(newStmts, newStmts.length - 2);
                 }
 
                 if(each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
@@ -437,22 +455,6 @@ jsCRiPS.debugConverter.convert = function (source) {
                 }else if(each.type === 'ExpressionStatement' && each.expression.type === 'UpdateExpression'){
                     pushDebugStatement(newStmts, each.expression.loc.start.line, each.expression.loc.end.line);
                     jsCRiPS.updateVariable(newStmts, each.expression.argument.name);                    
-                }
-
-
-                if (each.type === 'FunctionDeclaration') {
-                    if (each.body.type === 'BlockStatement') {
-                        var lastLine = (each.params.length === 0) ? each.id.loc.end.line : each.params[each.params.length - 1].loc.end.line;
-                        pushDebugStatement(each.body.body, each.id.loc.start.line, lastLine, 0);
-                        if (each.params.length !== 0) {
-                            for (var j = 0; j < each.params.length; j++) {
-                                jsCRiPS.addArgument(each.body.body, each.params[j].name, j);
-                                lastLine = each.params[j].loc.end.line;
-                            }
-                        }
-                        // 最後に先頭に挿入する必要あり
-                        jsCRiPS.pushCallStack(each.body.body, each.id.name);
-                    }
                 }
 
             }
