@@ -155,7 +155,7 @@ jsCRiPS.debugVariablePrint = function () {
         jsCRiPS.debugTable.deleteRow(1);
     }
     // コールスタック毎に行を追加してく
-    for (var i = jsCRiPS.callStack.length-1; i >= 0 ; i--) {
+    for (var i = 0; i < jsCRiPS.callStack.length ; i++) {
         var color = (i == jsCRiPS.callStack.length-1) ? '#FFF' : '#CCC';
         jsCRiPS.debugVariablePrintHelper(jsCRiPS.callStack[i],color);
     }
