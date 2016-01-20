@@ -128,7 +128,7 @@ jsCRiPS.debugVariablePrint = function () {
                     var v = block.vDecls[j][1];
                     // Turtleなら座標と角度を表示
                     tdValue.innerHTML = (v && (typeof v._looks !== 'undefined')) ?
-                     ('('+parseInt(v.x)+','+parseInt(v.y)+')<br>'+v.angle+'°')　: v;
+                     "Turtle"　: v;
                     // 初めて生成される変数なら黄色くする
                     var vcolor = (block.vDecls[j][2]) ? '#EE3' : color;
                     block.vDecls[j][2] = false;
