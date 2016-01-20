@@ -369,17 +369,19 @@ jsCRiPS.debugConverter.convert = function (source) {
                     }
                     jsCRiPS.updateVariable(newStmts, each.expression.left.name);
                 } else if (each.type === 'VariableDeclaration') {
-                    pushDebugStatement(newStmts, each.declarations[0].loc.start.line, each.declarations[each.declarations.length - 1].loc.end.line, newStmts.length - 2);
                     if (each.declarations[0].init && each.declarations[0].init.type === 'CallExpression') {
+                        pushDebugStatement(newStmts, each.declarations[0].loc.start.line, each.declarations[each.declarations.length - 1].loc.end.line, newStmts.length-1);
                         newStmts.push(yieldAST);
                         if (each.declarations[0].init.callee.name === 'input') {
                             newStmts.push(esprima.parse(each.declarations[0].id.name + ' = jsCRiPS.inputText;').body[0]);
                         }
+                    }else{
+                        pushDebugStatement(newStmts, each.declarations[0].loc.start.line, each.declarations[each.declarations.length - 1].loc.end.line, newStmts.length);
                     }
                     for (var j = 0; j < each.declarations.length; j++) {
                         jsCRiPS.addVariable(newStmts, each.declarations[j].id.name);
                     }
-                }else if(each.type === 'ReturnStatement'){
+                } else if(each.type === 'ReturnStatement'){
                     pushDebugStatement(newStmts, each.loc.start.line, each.loc.end.line, newStmts.length - 2);
                     jsCRiPS.popCallStack(newStmts, newStmts.length - 2);
                 }
@@ -388,7 +390,7 @@ jsCRiPS.debugConverter.convert = function (source) {
                     each.expression.right.type !== 'CallExpression'){
                     pushDebugStatement(newStmts, each.expression.loc.start.line, each.expression.loc.end.line);
                     jsCRiPS.updateVariable(newStmts, each.expression.left.name);
-                }else if(each.type === 'ExpressionStatement' && each.expression.type === 'UpdateExpression'){
+                } else if(each.type === 'ExpressionStatement' && each.expression.type === 'UpdateExpression'){
                     pushDebugStatement(newStmts, each.expression.loc.start.line, each.expression.loc.end.line);
                     jsCRiPS.updateVariable(newStmts, each.expression.argument.name);                    
                 }
