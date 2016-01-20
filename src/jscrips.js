@@ -124,9 +124,15 @@ jsCRiPS.debugVariablePrint = function () {
           
                 var tdValue = document.createElement('td');
                 var v = stack.vDecls[i][1];
+                var prevV = stack.vDecls[i][3];
                 // Turtleなら座標と角度を表示
-                tdValue.innerHTML = (v && (typeof v._looks !== 'undefined')) ?
-                 "Turtle"　: v;
+                var valueStr = "";
+                if(v && (typeof v._looks !== 'undefined')){
+                    valueStr = "Turtle";
+                }else{
+                    valueStr = (typeof prevV === 'undefined') ? v : prevV + " -> " + v;
+                }
+                tdValue.innerHTML = valueStr;
                 // 初めて生成される変数なら黄色くする
                 var vcolor = (stack.vDecls[i][2]) ? '#EE3' : color;
                 stack.vDecls[i][2] = false;
@@ -222,7 +228,7 @@ function makeCallStack(path) {
     ret.addArgument = function(name,value){
         ret.args.push(value);
         ret.addVariable(name,value,true);
-    }
+    };
 
     ret.addVariable = function (name, value,isNew) {
         ret.vDecls.push([name, value,isNew]);
@@ -231,6 +237,7 @@ function makeCallStack(path) {
     ret.updateVariable = function (name, value,isNew) {
         for(var i = 0; i < ret.vDecls.length; i++){
                 if(ret.vDecls[i][0] === name){
+                    ret.vDecls[i][3] = ret.vDecls[i][1]; // 前の値を保持
                     ret.vDecls[i][1] = value;
                     ret.vDecls[i][2] = isNew;
             }
