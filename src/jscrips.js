@@ -117,11 +117,11 @@ jsCRiPS.debugVariablePrint = function () {
         for (var i = 0; i < stack.vDecls.length; i++) {
                 var x = stack.vDecls[i];
                 var newRow = jsCRiPS.debugTable.insertRow(-1);
-                
+
                 var tdName = document.createElement('td');
                 tdName.innerHTML = stack.vDecls[i][0];
                 tdName.style.backgroundColor = color;
-          
+
                 var tdValue = document.createElement('td');
                 var v = stack.vDecls[i][1];
                 var prevV = stack.vDecls[i][3];
@@ -137,21 +137,21 @@ jsCRiPS.debugVariablePrint = function () {
                 var vcolor = (stack.vDecls[i][2]) ? '#EE3' : color;
                 stack.vDecls[i][2] = false;
                 tdValue.style.backgroundColor = vcolor;
-          
+
                 var tdType = document.createElement('td');
                 tdType.innerHTML = (typeof stack.vDecls[i][1]);
                 tdType.style.backgroundColor = color;
-          
+
                 var tdPos = document.createElement('td');
                 tdPos.innerHTML = position;
                 tdPos.style.backgroundColor = color;
-                
+
                 newRow.appendChild(tdName);
                 newRow.appendChild(tdValue);
                 newRow.appendChild(tdType);
                 newRow.appendChild(tdPos);
         }
-    }
+    };
     // 毎回テーブルを作成し直す
     // テーブルの削除
     while( jsCRiPS.debugTable.rows[1] ){
@@ -159,7 +159,7 @@ jsCRiPS.debugVariablePrint = function () {
     }
     // コールスタック毎に行を追加してく
     for (var i = 0; i < jsCRiPS.callStack.length ; i++) {
-        var color = (i == jsCRiPS.callStack.length-1) ? '#FFF' : '#CCC';
+        var color = (i === jsCRiPS.callStack.length-1) ? '#FFF' : '#CCC';
         jsCRiPS.debugVariablePrintHelper(jsCRiPS.callStack[i],color);
     }
 };
@@ -224,7 +224,7 @@ function makeCallStack(path) {
     ret.args = [];
     ret.path = path;
     ret.vDecls = [];
-    
+
     ret.addArgument = function(name,value){
         ret.args.push(value);
         ret.addVariable(name,value,true);
@@ -251,7 +251,7 @@ function makeCallStack(path) {
             if((i+1) < ret.args.length){
                 argValues += ',';
             }
-        };
+        }
         var str = ret.path + '(' + argValues + ')';
         return str;
     };
@@ -399,7 +399,7 @@ jsCRiPS.debugConverter.convert = function (source) {
                     jsCRiPS.updateVariable(newStmts, each.expression.left.name);
                 } else if(each.type === 'ExpressionStatement' && each.expression.type === 'UpdateExpression'){
                     pushDebugStatement(newStmts, each.expression.loc.start.line, each.expression.loc.end.line);
-                    jsCRiPS.updateVariable(newStmts, each.expression.argument.name);                    
+                    jsCRiPS.updateVariable(newStmts, each.expression.argument.name);
                 }
 
             }
@@ -1764,7 +1764,7 @@ function debugStart() {
         // debugView.style.position = 'absolute';
         // debugView.style.height = '0px';
         // debugView.style.width = '800px';
-        
+
         var debugTable = document.createElement('table');
         debugTable.setAttribute('id','debugTable');
         debugTable.setAttribute('width','95%');
@@ -1789,6 +1789,7 @@ function debugStart() {
         var dv = document.getElementById('debugView');
         dv.appendChild(debugTable);
         dv.style.display = 'block';
+        /* global debugView,$ */
         debugView.setAttribute('class','animated bounceIn');    // require animate.(min.)css
         // デバッグの変数ビューをドラッグできるようにする
         $(function() {
