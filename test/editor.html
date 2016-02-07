@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
-<head lang="en">
-    <meta charset="UTF-8">
+<head lang='en'>
+    <meta charset='UTF-8'>
     <title></title>
-    <style type="text/css">
+    <style type='text/css'>
         #editor {
             position: absolute;
             top: 0;
@@ -18,37 +18,37 @@
             window.parent.document.getElementById('editorFrame').style.height = PageHight + 'px';
         }
     </script>
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src='http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js'></script>
 </head>
 <body>
-<div id="editor">var t = createTurtle();
+<div id='editor'>var t = createTurtle();
 for(var i=0;i<12;i++){
     t.fd(10);
     t.rt(30);
 }
 </div>
 
-<div id="dummy" style="display: none">dummy</div>
+<div id='dummy' style='display: none'>dummy</div>
 
-<script src="../lib/src-noconflict/ace.js"></script>
+<script src='../lib/src-noconflict/ace.js'></script>
 <script>
-    var editor = ace.edit("editor");
-    editor.setTheme("ace/theme/monokai");
-    editor.getSession().setMode("ace/mode/javascript");
+    var editor = ace.edit('editor');
+    editor.setTheme('ace/theme/monokai');
+    editor.getSession().setMode('ace/mode/javascript');
     editor.$blockScrolling = Infinity;
 
     $(document).ready(function () {
-        var loadfile = function(path){
-            $("#dummy").load(path,
+        var loadFile = function(path){
+            $('#dummy').load(path,
                 function (response, status) {
                     if (status === 'error') {
-                        println("ERROR ファイル[" + path + "]が見つかりません")
+                        println('ERROR ファイル[' + path + ']が見つかりません')
                     } else {
                         paste(response);
                     }
                 });
-        }
-        loadfile('file:///C:/Users/cs11054/Documents/jsCRiPS/test/examples/2.2.1.1_House.js');
+        };
+        loadFile('file:///C:/Users/cs11054/Documents/jsCRiPS/test/examples/2.2.1.1_House.js');
     });
 
     // 自動でリサイズする設定だったもの
@@ -56,8 +56,8 @@ for(var i=0;i<12;i++){
     //     // http://stackoverflow.com/questions/11584061/
     //     var newHeight = editor.getSession().getScreenLength()
     //             * editor.renderer.lineHeight + 20;
-    //     window.parent.$('#editorFrame').height(newHeight.toString() + "px");
-    //     //  いらない？  $('#editor-section').height(newHeight.toString() + "px");
+    //     window.parent.$('#editorFrame').height(newHeight.toString() + 'px');
+    //     //  いらない？  $('#editor-section').height(newHeight.toString() + 'px');
 
     //     // This call is required for the editor to fix all of
     //     // its inner structure for adapting to a change in size
