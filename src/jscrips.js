@@ -105,69 +105,69 @@ jsCRiPS.debugWait = function () {
 
 // TODO スコープに合わせて色を変える、代入時の色を変える、表示をもっと綺麗に
 jsCRiPS.debugVariablePrint = function () {
-    jsCRiPS.debugVariablePrintHelper = function(stack,color){
+    jsCRiPS.debugVariablePrintHelper = function (stack, color) {
         var argValues = '';
         for (var i = 0; i < stack.args.length; i++) {
             argValues += stack.args[i];
-            if((i+1) < stack.args.length){
+            if ((i + 1) < stack.args.length) {
                 argValues += ',';
             }
         }
         var position = stack.path + '(' + argValues + ')';
         for (var i = 0; i < stack.vDecls.length; i++) {
-                var x = stack.vDecls[i];
-                var newRow = jsCRiPS.debugTable.insertRow(-1);
+            var x = stack.vDecls[i];
+            var newRow = jsCRiPS.debugTable.insertRow(-1);
 
-                var tdName = document.createElement('td');
-                tdName.innerHTML = stack.vDecls[i][0];
-                tdName.style.backgroundColor = color;
+            var tdName = document.createElement('td');
+            tdName.innerHTML = stack.vDecls[i][0];
+            tdName.style.backgroundColor = color;
 
-                var tdValue = document.createElement('td');
-                var v = stack.vDecls[i][1];
-                var prevV = stack.vDecls[i][3];
-                // Turtleなら座標と角度を表示
-                var valueStr = "";
-                if(v && (typeof v._looks !== 'undefined')){
-                    valueStr = "Turtle";
-                }else{
-                    valueStr = (typeof prevV === 'undefined') ? v : prevV + " -> " + v;
-                }
-                tdValue.innerHTML = valueStr;
-                // 初めて生成される変数なら黄色くする
-                var vcolor = (stack.vDecls[i][2]) ? '#EE3' : color;
-                stack.vDecls[i][2] = false;
-                tdValue.style.backgroundColor = vcolor;
+            var tdValue = document.createElement('td');
+            var v = stack.vDecls[i][1];
+            var prevV = stack.vDecls[i][3];
+            // Turtleなら座標と角度を表示
+            var valueStr = "";
+            if (v && (typeof v._looks !== 'undefined')) {
+                valueStr = "Turtle";
+            } else {
+                valueStr = (typeof prevV === 'undefined') ? v : prevV + " -> " + v;
+            }
+            tdValue.innerHTML = valueStr;
+            // 初めて生成される変数なら黄色くする
+            var vcolor = (stack.vDecls[i][2]) ? '#EE3' : color;
+            stack.vDecls[i][2] = false;
+            tdValue.style.backgroundColor = vcolor;
 
-                var tdType = document.createElement('td');
-                tdType.innerHTML = (typeof stack.vDecls[i][1]);
-                tdType.style.backgroundColor = color;
+            var tdType = document.createElement('td');
+            tdType.innerHTML = (typeof stack.vDecls[i][1]);
+            tdType.style.backgroundColor = color;
 
-                var tdPos = document.createElement('td');
-                tdPos.innerHTML = position;
-                tdPos.style.backgroundColor = color;
+            var tdPos = document.createElement('td');
+            tdPos.innerHTML = position;
+            tdPos.style.backgroundColor = color;
 
-                newRow.appendChild(tdName);
-                newRow.appendChild(tdValue);
-                newRow.appendChild(tdType);
-                newRow.appendChild(tdPos);
+            newRow.appendChild(tdName);
+            newRow.appendChild(tdValue);
+            newRow.appendChild(tdType);
+            newRow.appendChild(tdPos);
         }
     };
     // 毎回テーブルを作成し直す
     // テーブルの削除
-    while( jsCRiPS.debugTable.rows[1] ){
+    while (jsCRiPS.debugTable.rows[1]) {
         jsCRiPS.debugTable.deleteRow(1);
     }
     // コールスタック毎に行を追加してく
-    for (var i = 0; i < jsCRiPS.callStack.length ; i++) {
-        var color = (i === jsCRiPS.callStack.length-1) ? '#FFF' : '#CCC';
-        jsCRiPS.debugVariablePrintHelper(jsCRiPS.callStack[i],color);
+    for (var i = 0; i < jsCRiPS.callStack.length; i++) {
+        var color = (i === jsCRiPS.callStack.length - 1) ? '#FFF' : '#CCC';
+        jsCRiPS.debugVariablePrintHelper(jsCRiPS.callStack[i], color);
     }
 };
 
 jsCRiPS.addVariable = function (stmt, name, idx) {
     jsCRiPS.addVariableHelper = function (name, value) {
         var lastIdx = jsCRiPS.callStack.length - 1;
-        jsCRiPS.callStack[lastIdx].addVariable(name, value,true);
+        jsCRiPS.callStack[lastIdx].addVariable(name, value, true);
     };
     if (typeof idx !== 'undefined') {
         stmt.splice(idx, 0, esprima.parse('jsCRiPS.addVariableHelper(\'' + name + '\',' + name + ');').body[0]);
@@ -191,7 +191,7 @@ jsCRiPS.addArgument = function (stmt, name, idx) {
 jsCRiPS.updateVariable = function (stmt, name, idx) {
     jsCRiPS.updateVariableHelper = function (name, value) {
         var lastIdx = jsCRiPS.callStack.length - 1;
-        jsCRiPS.callStack[lastIdx].updateVariable(name, value,true);
+        jsCRiPS.callStack[lastIdx].updateVariable(name, value, true);
     };
     if (typeof idx !== 'undefined') {
         stmt.splice(idx, 0, esprima.parse('jsCRiPS.updateVariableHelper(\'' + name + '\',' + name + ');').body[0]);
@@ -207,9 +207,9 @@ jsCRiPS.pushCallStack = function (stmt, name) {
     stmt.unshift(esprima.parse('jsCRiPS.callStack.push(makeCallStack(\'' + name + '\'));').body[0]);
 };
 
-jsCRiPS.popCallStack = function (stmt,idx) {
+jsCRiPS.popCallStack = function (stmt, idx) {
     jsCRiPS.popCallStackHelper = function () {
-            jsCRiPS.callStack.pop();
+        jsCRiPS.callStack.pop();
     };
     if (typeof idx !== 'undefined') {
         stmt.splice(idx, 0, esprima.parse('jsCRiPS.popCallStackHelper();').body[0]);
@@ -225,21 +225,21 @@ function makeCallStack(path) {
     ret.path = path;
     ret.vDecls = [];
 
-    ret.addArgument = function(name,value){
+    ret.addArgument = function (name, value) {
         ret.args.push(value);
-        ret.addVariable(name,value,true);
+        ret.addVariable(name, value, true);
     };
 
-    ret.addVariable = function (name, value,isNew) {
-        ret.vDecls.push([name, value,isNew]);
+    ret.addVariable = function (name, value, isNew) {
+        ret.vDecls.push([name, value, isNew]);
     };
 
-    ret.updateVariable = function (name, value,isNew) {
-        for(var i = 0; i < ret.vDecls.length; i++){
-                if(ret.vDecls[i][0] === name){
-                    ret.vDecls[i][3] = ret.vDecls[i][1]; // 前の値を保持
-                    ret.vDecls[i][1] = value;
-                    ret.vDecls[i][2] = isNew;
+    ret.updateVariable = function (name, value, isNew) {
+        for (var i = 0; i < ret.vDecls.length; i++) {
+            if (ret.vDecls[i][0] === name) {
+                ret.vDecls[i][3] = ret.vDecls[i][1]; // 前の値を保持
+                ret.vDecls[i][1] = value;
+                ret.vDecls[i][2] = isNew;
             }
         }
     };
@@ -248,7 +248,7 @@ function makeCallStack(path) {
         var argValues = '';
         for (var i = 0; i < ret.args.length; i++) {
             argValues += ret.args[i];
-            if((i+1) < ret.args.length){
+            if ((i + 1) < ret.args.length) {
                 argValues += ',';
             }
         }
@@ -329,84 +329,84 @@ jsCRiPS.debugConverter.convert = function (source) {
     };
 
     var processStatements = function (stmts) {
-            var newStmts = [];
-            for (var i = 0; i < stmts.length; i++) {
-                var each = stmts[i];
-                if (each.type === 'BlockStatement') {
-                    each.body = processStatements(each.body);
-                } else if (each.type === 'IfStatement') {
-                    if (each.consequent) {  // if
-                        pushDebugStatement(newStmts, each.test.loc.start.line, each.test.loc.end.line);
-                        each.consequent = processStatement(each.consequent);
-                    }
-                    if (each.alternate) {   // else (if)
-                        each.alternate = processStatement(each.alternate);
-                    }
-                }else if (each.type === 'WhileStatement') {
-                    each.body = processStatement(each.body);
-                }else if (each.type === 'ForStatement'){
-                    each.body = processStatement(each.body);
-                }else if (each.type === 'FunctionDeclaration') {
-                    each.body = processStatement(each.body);
-                    if (each.body.type === 'BlockStatement') {
-                        var lastLine = (each.params.length === 0) ?
-                            each.id.loc.end.line : each.params[each.params.length - 1].loc.end.line;
-                        pushDebugStatement(each.body.body, each.id.loc.start.line, lastLine, 0);
-                        if (each.params.length !== 0) {
-                            for (var j = 0; j < each.params.length; j++) {
-                                jsCRiPS.addArgument(each.body.body, each.params[j].name, j);
-                                lastLine = each.params[j].loc.end.line;
-                            }
+        var newStmts = [];
+        for (var i = 0; i < stmts.length; i++) {
+            var each = stmts[i];
+            if (each.type === 'BlockStatement') {
+                each.body = processStatements(each.body);
+            } else if (each.type === 'IfStatement') {
+                if (each.consequent) {  // if
+                    pushDebugStatement(newStmts, each.test.loc.start.line, each.test.loc.end.line);
+                    each.consequent = processStatement(each.consequent);
+                }
+                if (each.alternate) {   // else (if)
+                    each.alternate = processStatement(each.alternate);
+                }
+            } else if (each.type === 'WhileStatement') {
+                each.body = processStatement(each.body);
+            } else if (each.type === 'ForStatement') {
+                each.body = processStatement(each.body);
+            } else if (each.type === 'FunctionDeclaration') {
+                each.body = processStatement(each.body);
+                if (each.body.type === 'BlockStatement') {
+                    var lastLine = (each.params.length === 0) ?
+                        each.id.loc.end.line : each.params[each.params.length - 1].loc.end.line;
+                    if (each.params.length !== 0) {
+                        for (var j = 0; j < each.params.length; j++) {
+                            jsCRiPS.addArgument(each.body.body, each.params[j].name, j);
+                            lastLine = each.params[j].loc.end.line;
                         }
-                        jsCRiPS.popCallStack(each.body.body);
-                        // 最後に先頭に挿入する必要あり
-                        jsCRiPS.pushCallStack(each.body.body, each.id.name);
                     }
+                    pushDebugStatement(each.body.body, each.id.loc.start.line, lastLine, 0);
+                    jsCRiPS.popCallStack(each.body.body);
+                    // 最後に先頭に挿入する必要あり
+                    jsCRiPS.pushCallStack(each.body.body, each.id.name);
                 }
-                newStmts.push(each);
-
-                if (each.type === 'ExpressionStatement' && each.expression.type === 'CallExpression') {
-                    pushDebugStatement(newStmts, each.expression.callee.loc.start.line, each.expression.callee.loc.end.line, newStmts.length - 2);
-                    newStmts.push(yieldAST);
-                } else if (each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
-                    each.expression.right.type === 'CallExpression') {
-                    pushDebugStatement(newStmts, each.expression.loc.start.line, each.expression.loc.end.line, newStmts.length - 2);
-                    // var x=input(),y=input() や f(input()) や if(input()=='abc')などには未対応
-                    newStmts.push(yieldAST);
-                    if (each.expression.right.callee.name === 'input') {
-                        newStmts.push(esprima.parse(each.expression.left.name + ' = jsCRiPS.inputText;').body[0]);
-                    }
-                    jsCRiPS.updateVariable(newStmts, each.expression.left.name);
-                } else if (each.type === 'VariableDeclaration') {
-                    if (each.declarations[0].init && each.declarations[0].init.type === 'CallExpression') {
-                        pushDebugStatement(newStmts, each.declarations[0].loc.start.line, each.declarations[each.declarations.length - 1].loc.end.line, newStmts.length-1);
-                        newStmts.push(yieldAST);
-                        if (each.declarations[0].init.callee.name === 'input') {
-                            newStmts.push(esprima.parse(each.declarations[0].id.name + ' = jsCRiPS.inputText;').body[0]);
-                        }
-                    }else{
-                        pushDebugStatement(newStmts, each.declarations[0].loc.start.line, each.declarations[each.declarations.length - 1].loc.end.line, newStmts.length);
-                    }
-                    for (var j = 0; j < each.declarations.length; j++) {
-                        jsCRiPS.addVariable(newStmts, each.declarations[j].id.name);
-                    }
-                } else if(each.type === 'ReturnStatement'){
-                    pushDebugStatement(newStmts, each.loc.start.line, each.loc.end.line, newStmts.length - 2);
-                    jsCRiPS.popCallStack(newStmts, newStmts.length - 2);
-                }
-
-                if(each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
-                    each.expression.right.type !== 'CallExpression'){
-                    pushDebugStatement(newStmts, each.expression.loc.start.line, each.expression.loc.end.line);
-                    jsCRiPS.updateVariable(newStmts, each.expression.left.name);
-                } else if(each.type === 'ExpressionStatement' && each.expression.type === 'UpdateExpression'){
-                    pushDebugStatement(newStmts, each.expression.loc.start.line, each.expression.loc.end.line);
-                    jsCRiPS.updateVariable(newStmts, each.expression.argument.name);
-                }
-
             }
-            return newStmts;
-        };
+            newStmts.push(each);
+
+            if (each.type === 'ExpressionStatement' && each.expression.type === 'CallExpression') {
+                pushDebugStatement(newStmts, each.expression.callee.loc.start.line, each.expression.callee.loc.end.line, newStmts.length - 1);
+                newStmts.push(yieldAST);
+            } else if (each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
+                each.expression.right.type === 'CallExpression') {
+                pushDebugStatement(newStmts, each.expression.loc.start.line, each.expression.loc.end.line, newStmts.length - 2);
+                // var x=input(),y=input() や f(input()) や if(input()=='abc')などには未対応
+                newStmts.push(yieldAST);
+                if (each.expression.right.callee.name === 'input') {
+                    newStmts.push(esprima.parse(each.expression.left.name + ' = jsCRiPS.inputText;').body[0]);
+                }
+                jsCRiPS.updateVariable(newStmts, each.expression.left.name);
+            } else if (each.type === 'VariableDeclaration') {
+                if (each.declarations[0].init && each.declarations[0].init.type === 'CallExpression') {
+                    pushDebugStatement(newStmts, each.declarations[0].loc.start.line, each.declarations[each.declarations.length - 1].loc.end.line, newStmts.length - 1);
+                    newStmts.push(yieldAST);
+                    if (each.declarations[0].init.callee.name === 'input') {
+                        newStmts.push(esprima.parse(each.declarations[0].id.name + ' = jsCRiPS.inputText;').body[0]);
+                    }
+                } else {
+                    pushDebugStatement(newStmts, each.declarations[0].loc.start.line, each.declarations[each.declarations.length - 1].loc.end.line, newStmts.length - 1);
+                }
+                for (var j = 0; j < each.declarations.length; j++) {
+                    jsCRiPS.addVariable(newStmts, each.declarations[j].id.name);
+                }
+            } else if (each.type === 'ReturnStatement') {
+                pushDebugStatement(newStmts, each.loc.start.line, each.loc.end.line, newStmts.length - 2);
+                jsCRiPS.popCallStack(newStmts, newStmts.length - 2);
+            }
+
+            if (each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
+                each.expression.right.type !== 'CallExpression') {
+                pushDebugStatement(newStmts, each.expression.loc.start.line, each.expression.loc.end.line, newStmts.length - 1);
+                jsCRiPS.updateVariable(newStmts, each.expression.left.name);
+            } else if (each.type === 'ExpressionStatement' && each.expression.type === 'UpdateExpression') {
+                pushDebugStatement(newStmts, each.expression.loc.start.line, each.expression.loc.end.line);
+                jsCRiPS.updateVariable(newStmts, each.expression.argument.name);
+            }
+
+        }
+        return newStmts;
+    };
     ast.body = processStatements(ast.body);
     ast.body.push(esprima.parse('jsCRiPS.debugVariablePrint();').body[0]);
 
@@ -1761,17 +1761,17 @@ function debugStart() {
     jsCRiPS.functionNames = [];
 
     // debug用のTableを作成する
-    if(!document.getElementById('debugTable')){
+    if (!document.getElementById('debugTable')) {
         // var debugView = document.createElement('div'); 現状test.htmlで作ってある
         // debugView.style.position = 'absolute';
         // debugView.style.height = '0px';
         // debugView.style.width = '800px';
 
         var debugTable = document.createElement('table');
-        debugTable.setAttribute('id','debugTable');
-        debugTable.setAttribute('width','95%');
-        debugTable.setAttribute('border','1');
-        debugTable.style.tableLayout='fixed';
+        debugTable.setAttribute('id', 'debugTable');
+        debugTable.setAttribute('width', '95%');
+        debugTable.setAttribute('border', '1');
+        debugTable.style.tableLayout = 'fixed';
         jsCRiPS.debugTable = debugTable;
 
         var newRow = debugTable.insertRow(0);
@@ -1792,9 +1792,9 @@ function debugStart() {
         dv.appendChild(debugTable);
         dv.style.display = 'block';
         /* global debugView,$ */
-        debugView.setAttribute('class','animated bounceIn');    // require animate.(min.)css
+        debugView.setAttribute('class', 'animated bounceIn');    // require animate.(min.)css
         // デバッグの変数ビューをドラッグできるようにする
-        $(function() {
+        $(function () {
             $('#debugView').draggable({handle: '#debugTable'});
         });
 
@@ -1999,10 +1999,10 @@ function input(msg) {
                 swal.showInputError('You need to write something!');
                 return false;
             }
-            if(isInteger(inputValue)){
+            if (isInteger(inputValue)) {
                 jsCRiPS.inputText = Number(inputValue);
-            }else{
-                 jsCRiPS.inputText = inputValue;
+            } else {
+                jsCRiPS.inputText = inputValue;
             }
             println('INPUT [' + jsCRiPS.inputText + ']');
             jsCRiPS.inputted = true;             // th.kill(); 本当はこうしたい
