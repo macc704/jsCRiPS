@@ -11,6 +11,12 @@
             bottom: 0;
             left: 0;
         }
+
+        .default_highlight_line {
+            background-color: #c3f2c7;
+            position: absolute;
+        }
+
     </style>
     <script>
         function resizeFrame() {
@@ -23,8 +29,8 @@
 <body>
 <div id='editor'>var t = createTurtle();
 for(var i=0;i<12;i++){
-    t.fd(10);
-    t.rt(30);
+t.fd(10);
+t.rt(30);
 }
 </div>
 
@@ -38,15 +44,15 @@ for(var i=0;i<12;i++){
     editor.$blockScrolling = Infinity;
 
     $(document).ready(function () {
-        var loadFile = function(path){
+        var loadFile = function (path) {
             $('#dummy').load(path,
-                function (response, status) {
-                    if (status === 'error') {
-                        println('ERROR ファイル[' + path + ']が見つかりません')
-                    } else {
-                        paste(response);
-                    }
-                });
+                    function (response, status) {
+                        if (status === 'error') {
+                            println('ERROR ファイル[' + path + ']が見つかりません')
+                        } else {
+                            paste(response);
+                        }
+                    });
         };
         loadFile('file:///C:/Users/cs11054/Documents/jsCRiPS/test/examples/2.2.1.1_House.js');
     });
@@ -65,7 +71,7 @@ for(var i=0;i<12;i++){
     // }
 
     // Set initial size to match initial content
-  //  heightUpdateFunction();
+    //  heightUpdateFunction();
     // Whenever a change happens inside the ACE editor, update
     // the size again
     //editor.getSession().on('change', heightUpdateFunction);
@@ -87,6 +93,21 @@ for(var i=0;i<12;i++){
     function setTheme(theme) {
         editor.setTheme(theme);
     }
+
+    var range = null;
+    function setHighlight(startLine, endLine, type) {
+        var session = editor.getSession();
+        if (typeof type === 'undefined') {
+            range = session.highlightLines(startLine, endLine, "error_line");
+        }
+    }
+
+    function removeHighlight() {
+        var session = editor.getSession();
+        session.removeMarker(range.id);
+    }
+
+
     // TODO いいライブラリが見つからない
     function format() {
 //        var input = editor.getValue();
