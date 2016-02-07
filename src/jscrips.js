@@ -266,8 +266,7 @@ jsCRiPS.debugConverter.convert = function (source) {
 
     function pushDebugStatement(stmt, line, end, idx) {
         var block = esprima.parse('{}').body[0];
-        block.body.push(esprima.parse('println(\'Line:' + line + ' - ' + end + '\');').body[0]);
-        block.body.push(esprima.parse('setHighlight(' + line + ',' + end + ');').body[0]);
+        block.body.push(esprima.parse('setHighlight(' + (line - 1) + ',' + (end - 1) + ');').body[0]);
         block.body.push(esprima.parse('jsCRiPS.debugVariablePrint();').body[0]);
         block.body.push(esprima.parse('jsCRiPS.debugWait();').body[0]);
         block.body.push(esprima.parse('println(\'\');').body[0]);

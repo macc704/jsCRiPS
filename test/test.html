@@ -37,6 +37,14 @@
             start(func);
         }
 
+        function setHighlight(startLine, endLine, type) {
+            document.getElementById('editorFrame').contentWindow.setHighlight(startLine, endLine, type);
+        }
+
+        function removeHighlight() {
+            document.getElementById('editorFrame').contentWindow.removeHighlight();
+        }
+
     </script>
     <style type="text/css">
 
@@ -145,10 +153,11 @@
             margin: 0px;
             padding: 2px;
         }
-        table td{
-            white-space:nowrap;
-            overflow:hidden;
-            text-overflow:ellipsis;
+
+        table td {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
     </style>
@@ -266,7 +275,8 @@
         </div>
     </div>
 
-    <div id="debugView" style="position:absolute;top:10px;left:800px;width:400px;height:400px;border:1px solid;display:none;overflow-y:scroll;">
+    <div id="debugView"
+         style="position:absolute;top:10px;left:800px;width:400px;height:400px;border:1px solid;display:none;overflow-y:scroll;">
 
     </div>
 
@@ -439,6 +449,7 @@
     (function ($) {
         $(document).ready(function () {
             var loadfile = function (path) {
+                removeHighlight();
                 $('#ptitle').html(path);
                 $('#editorFrame').contents().find("#dummy").load(path,
                         function (response, status) {
@@ -465,7 +476,7 @@
         document.getElementById('editorFrame').contentWindow.setTheme(theme);
     }
     // デバッグの変数ビューをサイズ可変にする
-    $(function() {
+    $(function () {
         $('#debugView').resizable({
             minHeight: 400,
             minWidth: 400,
