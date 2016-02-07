@@ -344,6 +344,8 @@ jsCRiPS.debugConverter.convert = function (source) {
                     }
                 }else if (each.type === 'WhileStatement') {
                     each.body = processStatement(each.body);
+                }else if (each.type === 'ForStatement'){
+                    each.body = processStatement(each.body);
                 }else if (each.type === 'FunctionDeclaration') {
                     each.body = processStatement(each.body);
                     if (each.body.type === 'BlockStatement') {
