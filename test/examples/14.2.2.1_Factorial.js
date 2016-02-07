@@ -4,7 +4,7 @@ println("factorial(3) = " + factorial(3));
 println("factorial(4) = " + factorial(4));
 println("factorial(5) = " + factorial(5));
 
-function factorial( n) {
+function factorial(n) {
     var result;
     if (n == 1) {
         result = 1;
