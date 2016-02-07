@@ -98,7 +98,7 @@ t.rt(30);
     function setHighlight(startLine, endLine, type) {
         var session = editor.getSession();
         if (typeof type === 'undefined') {
-            range = session.highlightLines(startLine, endLine, "error_line");
+            range = session.highlightLines(startLine, endLine, "default_highlight_line");
         }
     }
 
