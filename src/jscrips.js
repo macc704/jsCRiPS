@@ -391,7 +391,7 @@ jsCRiPS.debugConverter.convert = function (source) {
                     jsCRiPS.addVariable(newStmts, each.declarations[j].id.name);
                 }
             } else if (each.type === 'ReturnStatement') {
-                pushDebugStatement(newStmts, each.loc.start.line, each.loc.end.line, newStmts.length - 2);
+                pushDebugStatement(newStmts, each.loc.start.line, each.loc.end.line, newStmts.length - 1);
                 jsCRiPS.popCallStack(newStmts, newStmts.length - 2);
             }
 
