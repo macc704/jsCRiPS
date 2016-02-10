@@ -148,6 +148,10 @@
             transition: .3s ease-in-out;
         }
 
+        input[type="range"]:disabled {
+            opacity: 0.5;
+        }
+
         h1 {
             font-size: 2em;
             margin: 0px;
@@ -239,6 +243,11 @@
     <div>
         <button type="button" id="debugNext" onclick="debugNext()" disabled="true">nextStep</button>
     </div>
+    <div id="sldiv">
+        速<input type="range" name="movePenSpeed" min="0" max="2" step="0.1"
+                value="3" onchange="changePenSpeed(this.value)" title="movePenSpeed" disabled>遅
+    </div>
+
 </nav>
 
 
