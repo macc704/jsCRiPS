@@ -241,7 +241,10 @@
         <button type="button" id="debug" onclick="debugStart()">Debug</button>
     </div>
     <div>
-        <button type="button" id="debugNext" onclick="debugNext()" disabled="true">nextStep</button>
+        <button type="button" id="debugNext" onclick="debugNext()" disabled>nextStep</button>
+    </div>
+    <div>
+        <input type="checkbox" id="penCheckbox" disabled>Auto</button>
     </div>
     <div id="sldiv">
         速<input type="range" name="movePenSpeed" min="0" max="2" step="0.1"
