@@ -235,7 +235,7 @@
     </div>
     <div id="sldiv">
         速<input type="range" name="moveSpeed" min="0" max="4" step="1"
-                value="3" onchange="changeSpeed(this.value)" title="moveSpeed">遅
+                value="3" onchange="changeSpeed(this.value)" oninput="changeSpeed(this.value)" title="moveSpeed">遅
     </div>
     <div>
         <button type="button" id="debug" onclick="debugStart()">Debug</button>
@@ -247,8 +247,8 @@
         <input type="checkbox" id="penCheckbox" disabled onclick="autoStart(this.checked)">Auto</button>
     </div>
     <div id="sldiv">
-        速<input type="range" id="movePenSpeed" min="0" max="2" step="0.1"
-                value="3" onchange="changePenSpeed(this.value)" title="movePenSpeed" disabled>遅
+        速<input type="range" id="movePenSpeed" min="0" max="1.414" step="0.01"
+                value="3" onchange="changePenSpeed(this.value)" oninput="changePenSpeed(this.value)" title="movePenSpeed" disabled>遅
     </div>
 
 </nav>

@@ -90,11 +90,14 @@ jsCRiPS.debugConverter = {};
 jsCRiPS.debugWait = function () {
     jsCRiPS.th = Thread.create(function () {    //  入力待ち用にスレッドを生成
         var nextButton = document.getElementById('debugNext');
-        if (nextButton && !jsCRiPS.penCheckBox.checked) {
-            nextButton.disabled = false;
-        }
+        var startTime = new Date();
         while (!jsCRiPS.debugReady) {
             Thread.sleep(1);
+            if (nextButton && !jsCRiPS.PenMode) {
+                nextButton.disabled = false;
+            } else if (jsCRiPS.PenMode && ((new Date() - startTime) >= jsCRiPS.PenSpeed)) {
+                jsCRiPS.debugReady = true;
+            }
         }
         jsCRiPS.debugReady = false;
         if (nextButton) {
@@ -1742,14 +1745,15 @@ function debugStart() {
     clearLocusCanvas();
     document.getElementById('console').value = '';
 
-    jsCRiPS.penCheckBox = document.getElementById('penCheckbox');
-    if (jsCRiPS.penCheckBox) {  // 必要？
-        jsCRiPS.penCheckBox.disabled = false;
+    jsCRiPS.PenCheckBox = document.getElementById('penCheckbox');
+    if (jsCRiPS.PenCheckBox) {  // 必要？
+        jsCRiPS.PenCheckBox.disabled = false;
     }
-    var penSpeedSlider = document.getElementById('movePenSpeed');
-    if (penSpeedSlider) {  // 必要？
-        penSpeedSlider.disabled = false;
+    var PenSpeedSlider = document.getElementById('movePenSpeed');
+    if (PenSpeedSlider) {  // 必要？
+        PenSpeedSlider.disabled = false;
     }
+    jsCRiPS.PenSpeed = (Number(PenSpeedSlider.value) * Number(PenSpeedSlider.value)) * 1000;
 
     jsCRiPS.parentChecker.clear();
     jsCRiPS.ttls = [];
@@ -1811,6 +1815,7 @@ function debugStart() {
     debugMain();
 }
 
+// htmlから呼び出される関数群
 function debugNext() {
     jsCRiPS.debugReady = true;
 }
@@ -1819,13 +1824,17 @@ function autoStart(enable) {
     jsCRiPS.PenMode = enable;
 }
 
-
 // no kame時に前の描画部分が残ってしまう場合あり、example5.3.1.1_Circle.jsをno kameで実行し速度を変えて再度Runで発生
 function changeSpeed(x) {
     jsCRiPS.moveStep = jsCRiPS.stepKinds[Number(x)];
     jsCRiPS.rotateStep = jsCRiPS.stepKinds[Number(x)];
 
     jsCRiPS.withKame = Number(x) !== 0; // if(withKame === true){ joinしない }
+}
+
+// x is sec
+function changePenSpeed(x) {
+    jsCRiPS.PenSpeed = (Number(x) * Number(x)) * 1000;
 }
 
 function print() {
