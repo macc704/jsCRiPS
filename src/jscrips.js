@@ -90,7 +90,7 @@ jsCRiPS.debugConverter = {};
 jsCRiPS.debugWait = function () {
     jsCRiPS.th = Thread.create(function () {    //  入力待ち用にスレッドを生成
         var nextButton = document.getElementById('debugNext');
-        if (nextButton) {
+        if (nextButton && !jsCRiPS.penCheckBox.checked) {
             nextButton.disabled = false;
         }
         while (!jsCRiPS.debugReady) {
@@ -1746,6 +1746,15 @@ function debugStart() {
     clearLocusCanvas();
     document.getElementById('console').value = '';
 
+    jsCRiPS.penCheckBox = document.getElementById('penCheckbox');
+    if (jsCRiPS.penCheckBox) {  // 必要？
+        jsCRiPS.penCheckBox.disabled = false;
+    }
+    var penSpeedSlider = document.getElementById('movePenSpeed');
+    if (penSpeedSlider) {  // 必要？
+        penSpeedSlider.disabled = false;
+    }
+
     jsCRiPS.parentChecker.clear();
     jsCRiPS.ttls = [];
     for (var i = 0; i < jsCRiPS.audios.length; i++) {
@@ -1808,6 +1817,10 @@ function debugStart() {
 
 function debugNext() {
     jsCRiPS.debugReady = true;
+}
+
+function autoStart(enable){
+    jsCRiPS.PenMode = enable;
 }
 
 
