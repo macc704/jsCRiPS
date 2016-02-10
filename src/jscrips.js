@@ -103,7 +103,6 @@ jsCRiPS.debugWait = function () {
     });
 };
 
-// TODO スコープに合わせて色を変える、代入時の色を変える、表示をもっと綺麗に
 jsCRiPS.debugVariablePrint = function () {
     jsCRiPS.debugVariablePrintHelper = function (stack, color) {
         var argValues = '';
@@ -115,7 +114,6 @@ jsCRiPS.debugVariablePrint = function () {
         }
         var position = stack.path + '(' + argValues + ')';
         for (var i = 0; i < stack.vDecls.length; i++) {
-            var x = stack.vDecls[i];
             var newRow = jsCRiPS.debugTable.insertRow(-1);
 
             var tdName = document.createElement('td');
@@ -252,8 +250,7 @@ function makeCallStack(path) {
                 argValues += ',';
             }
         }
-        var str = ret.path + '(' + argValues + ')';
-        return str;
+        return ret.path + '(' + argValues + ')';
     };
 
     return ret;
@@ -269,7 +266,6 @@ jsCRiPS.debugConverter.convert = function (source) {
         block.body.push(esprima.parse('setHighlight(' + (line - 1) + ',' + (end - 1) + ');').body[0]);
         block.body.push(esprima.parse('jsCRiPS.debugVariablePrint();').body[0]);
         block.body.push(esprima.parse('jsCRiPS.debugWait();').body[0]);
-        block.body.push(esprima.parse('println(\'\');').body[0]);
         block.body.push(yieldAST);
         if (typeof idx !== 'undefined') {
             stmt.splice(idx, 0, block);
@@ -1819,7 +1815,7 @@ function debugNext() {
     jsCRiPS.debugReady = true;
 }
 
-function autoStart(enable){
+function autoStart(enable) {
     jsCRiPS.PenMode = enable;
 }
 
