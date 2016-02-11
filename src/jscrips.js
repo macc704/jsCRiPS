@@ -1729,7 +1729,7 @@ jsCRiPS.initProgram = function () {
         jsCRiPS.mth.kill();
         jsCRiPS.th.kill();
     } catch (e) {
-        // TODO mth,thが終了時に例外が出る、無視でok?その他エラーは例外で処理するべきか？
+        // TODO mth,thが終了時に例外が出る、無視でok?その他エラーは例外で処理するべきか？いつの間にかでなくなってる…？
         println('ERROR [ ' + e + ' ]');
     }
     jsCRiPS.mth = Thread.create(function () {
