@@ -1850,7 +1850,7 @@ function setBreakPoint(row) {
 function clearBreakPoint(row) {
     for (var i = 0; i < jsCRiPS.breakPoints.length; i++) {
         if (jsCRiPS.breakPoints[i] === row) {
-            jsCRiPS.breakPoints[i].splice(i, 1);
+            jsCRiPS.breakPoints.splice(i, 1);
         }
     }
 }
