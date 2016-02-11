@@ -284,6 +284,14 @@ function makeCallStack(path) {
 }
 
 jsCRiPS.debugConverter.convert = function (source) {
+    // 空白行に対するBreakpointへ対応する場合、ただし"{"のみの行など空白行以外でも対応できないBreakpointが発生してしまうので中途半端
+    //var lines = source.split(/\r\n|\r|\n/);
+    //jsCRiPS.dummy = function(){return 1;};
+    //source = '';
+    //for (var i = 0; i < lines.length; i++) {
+    //    source += ((lines[i] === '') ? 'jsCRiPS.dummy();' : lines[i]) + '\r\n';
+    //}
+
     var ast = esprima.parse(source, {loc: true});
     var yieldAST = jsCRiPS.withKame ?
         esprima.parse('jsCRiPS.th.join();').body[0] : esprima.parse(';').body[0];
