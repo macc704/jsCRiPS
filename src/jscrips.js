@@ -116,6 +116,7 @@ jsCRiPS.debugVariablePrint = function () {
             }
         }
         var position = stack.path + '(' + argValues + ')';
+        position = (position === '()') ? 'Global' : position;
         for (var i = 0; i < stack.vDecls.length; i++) {
             var newRow = jsCRiPS.debugTable.insertRow(-1);
 
@@ -236,12 +237,19 @@ function makeCallStack(path) {
     };
 
     ret.updateVariable = function (name, value, isNew) {
+        var find = false;
         for (var i = 0; i < ret.vDecls.length; i++) {
             if (ret.vDecls[i][0] === name) {
                 ret.vDecls[i][3] = ret.vDecls[i][1]; // 前の値を保持
                 ret.vDecls[i][1] = value;
                 ret.vDecls[i][2] = isNew;
+                find = true;
             }
+        }
+        if (ret !== jsCRiPS.callStack[0] && !find) {    // may be Global variable
+            jsCRiPS.callStack[0].updateVariable(name, value, isNew);
+        } else if (ret === jsCRiPS.callStack[0] && !find) { // declared
+            ret.addVariable(name, value, true);
         }
     };
 
