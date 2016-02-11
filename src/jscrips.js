@@ -154,13 +154,29 @@ jsCRiPS.debugVariablePrint = function () {
             newRow.appendChild(tdPos);
         }
     };
+
+    // Draw a line in the Table
+    function addLine() {
+        var newRow = jsCRiPS.debugTable.insertRow(-1);
+        var line = document.createElement('td');
+        line.setAttribute('colSpan', 4);
+        line.style.backgroundColor = '#333';
+        newRow.appendChild(line);
+    }
+
     // 毎回テーブルを作成し直す
     // テーブルの削除
     while (jsCRiPS.debugTable.rows[1]) {
         jsCRiPS.debugTable.deleteRow(1);
     }
     // コールスタック毎に行を追加してく
-    for (var i = 0; i < jsCRiPS.callStack.length; i++) {
+    // Globalのみ特別扱い
+    jsCRiPS.debugVariablePrintHelper(jsCRiPS.callStack[0], '#FFF');
+    // GlobalとLocalの間にラインを引く
+    if (jsCRiPS.callStack.length !== 1) {
+        addLine();
+    }
+    for (var i = 1; i < jsCRiPS.callStack.length; i++) {
         var color = (i === jsCRiPS.callStack.length - 1) ? '#FFF' : '#CCC';
         jsCRiPS.debugVariablePrintHelper(jsCRiPS.callStack[i], color);
     }
@@ -460,6 +476,9 @@ jsCRiPS.LIST_MARGIN = 12;
 jsCRiPS.CARD_MARGIN = 5;
 jsCRiPS.INPUT_MARGIN = 2;
 jsCRiPS.BUTTON_MARGIN = 5;
+
+// for debugger
+jsCRiPS.breakPoints = [];
 
 function createTurtle() {
     var t = {};
@@ -1823,7 +1842,7 @@ function debugStart() {
     debugMain();
 }
 
-// htmlから呼び出される関数群
+// htmlから呼び出される関数群、外部とのAPI
 function debugNext() {
     jsCRiPS.debugReady = true;
 }
@@ -1843,6 +1862,18 @@ function changeSpeed(x) {
 // x is sec
 function changePenSpeed(x) {
     jsCRiPS.PenSpeed = (Number(x) * Number(x)) * 1000;
+}
+
+function setBreakPoint(row) {
+    jsCRiPS.breakPoints.push(row);
+}
+
+function clearBreakPoint(row) {
+    for (var i = 0; i < jsCRiPS.breakPoints.length; i++) {
+        if (jsCRiPS.breakPoints[i] === row) {
+            jsCRiPS.breakPoints[i].splice(i, 1);
+        }
+    }
 }
 
 function print() {
