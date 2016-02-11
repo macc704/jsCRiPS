@@ -1715,7 +1715,7 @@ function canvasSize(w, h) {
 }
 
 /*global main*/
-function restart() {
+jsCRiPS.initProgram = function () {
     try {
         jsCRiPS.mth.kill();
         jsCRiPS.th.kill();
@@ -1746,31 +1746,16 @@ function restart() {
         jsCRiPS.audios[i].src = '';
     }
     jsCRiPS.audios = [];
+};
+
+
+function restart() {
+    jsCRiPS.initProgram();
     main();
 }
 
 function debugStart() {
-    try {
-        jsCRiPS.mth.kill();
-        jsCRiPS.th.kill();
-    } catch (e) {
-        println('ERROR [ ' + e + ' ]');
-    }
-    jsCRiPS.mth = Thread.create(function () {
-    }); // これらが無いと最初のprint系でjoinし続ける？
-    jsCRiPS.th = Thread.create(function () {
-    });
-
-    jsCRiPS.tCanvas = document.getElementById('turtleCanvas');
-    jsCRiPS.lCanvas = document.getElementById('locusCanvas');
-    if (!jsCRiPS.tCanvas.getContext || !jsCRiPS.lCanvas.getContext) { // 毎回チェックするのは面倒なのでここで一度だけチェックする
-        println('ERROR [ 必要なCanvasがありません ]');
-        return;
-    }
-
-    clearTurtleCanvas();
-    clearLocusCanvas();
-    document.getElementById('console').value = '';
+    jsCRiPS.initProgram();
 
     jsCRiPS.PenCheckBox = document.getElementById('penCheckbox');
     if (jsCRiPS.PenCheckBox) {  // 必要？
@@ -1782,64 +1767,58 @@ function debugStart() {
     }
     jsCRiPS.PenSpeed = (Number(PenSpeedSlider.value) * Number(PenSpeedSlider.value)) * 1000;
 
-    jsCRiPS.parentChecker.clear();
-    jsCRiPS.ttls = [];
-    for (var i = 0; i < jsCRiPS.audios.length; i++) {
-        jsCRiPS.audios[i].pause();
-        jsCRiPS.audios[i].src = '';
-    }
-    jsCRiPS.audios = [];
-
     jsCRiPS.debugReady = false;
     jsCRiPS.callStack = [];
     jsCRiPS.callStack[0] = makeCallStack('');
     jsCRiPS.variableTable = new Map();
     jsCRiPS.functionNames = [];
 
-    // debug用のTableを作成する
-    if (!document.getElementById('debugTable')) {
-        // var debugView = document.createElement('div'); 現状test.htmlで作ってある
-        // debugView.style.position = 'absolute';
-        // debugView.style.height = '0px';
-        // debugView.style.width = '800px';
-
-        var debugTable = document.createElement('table');
-        debugTable.setAttribute('id', 'debugTable');
-        debugTable.setAttribute('width', '95%');
-        debugTable.setAttribute('border', '1');
-        debugTable.style.tableLayout = 'fixed';
-        jsCRiPS.debugTable = debugTable;
-
-        var newRow = debugTable.insertRow(0);
-        var thName = document.createElement('th');
-        thName.innerHTML = '変数名';
-        var thValue = document.createElement('th');
-        thValue.innerHTML = '値';
-        var thType = document.createElement('th');
-        thType.innerHTML = '型';
-        var thPos = document.createElement('th');
-        thPos.innerHTML = '位置';
-        newRow.appendChild(thName);
-        newRow.appendChild(thValue);
-        newRow.appendChild(thType);
-        newRow.appendChild(thPos);
-
-        var dv = document.getElementById('debugView');
-        dv.appendChild(debugTable);
-        dv.style.display = 'block';
-        /* global debugView,$ */
-        debugView.setAttribute('class', 'animated bounceIn');    // require animate.(min.)css
-        // デバッグの変数ビューをドラッグできるようにする
-        $(function () {
-            $('#debugView').draggable({handle: '#debugTable'});
-        });
-
-//        document.body.appendChild(debugView);
-    }
-
+    makeVariableViewTable();
 
     /* global debugMain */
     debugMain();
+
+    // debug用のTableを作成する
+    function makeVariableViewTable() {
+        if (!document.getElementById('debugTable')) {
+            // var debugView = document.createElement('div'); 現状test.htmlで作ってある
+            // debugView.style.position = 'absolute';
+            // debugView.style.height = '0px';
+            // debugView.style.width = '800px';
+
+            var debugTable = document.createElement('table');
+            debugTable.setAttribute('id', 'debugTable');
+            debugTable.setAttribute('width', '95%');
+            debugTable.setAttribute('border', '1');
+            debugTable.style.tableLayout = 'fixed';
+            jsCRiPS.debugTable = debugTable;
+
+            var newRow = debugTable.insertRow(0);
+            var thName = document.createElement('th');
+            thName.innerHTML = '変数名';
+            var thValue = document.createElement('th');
+            thValue.innerHTML = '値';
+            var thType = document.createElement('th');
+            thType.innerHTML = '型';
+            var thPos = document.createElement('th');
+            thPos.innerHTML = '位置';
+            newRow.appendChild(thName);
+            newRow.appendChild(thValue);
+            newRow.appendChild(thType);
+            newRow.appendChild(thPos);
+
+            var dv = document.getElementById('debugView');
+            dv.appendChild(debugTable);
+            dv.style.display = 'block';
+            /* global debugView,$ */
+            debugView.setAttribute('class', 'animated bounceIn');    // require animate.(min.)css
+            // デバッグの変数ビューをドラッグできるようにする
+            $(function () {
+                $('#debugView').draggable({handle: '#debugTable'});
+            });
+//        document.body.appendChild(debugView);
+        }
+    }
 }
 
 // htmlから呼び出される関数群、外部とのAPI
