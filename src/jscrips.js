@@ -130,7 +130,7 @@ jsCRiPS.debugVariablePrint = function () {
             // Turtleなら座標と角度を表示
             var valueStr = "";
             if (v && (typeof v._looks !== 'undefined')) {
-                valueStr = "Turtle";
+                valueStr = '<img src=\'../test/img/turtle.png\'>';
             } else {
                 valueStr = (typeof prevV === 'undefined') ? v : prevV + " -> " + v;
             }
@@ -864,10 +864,9 @@ function createTurtle() {
     };
 
     t.strState = function () {
-        var str = '(x,y) = (' + parseInt(t.x) + ',' + parseInt(t.y) + ') / ' +
+        return '(x,y) = (' + parseInt(t.x) + ',' + parseInt(t.y) + ') / ' +
             'angle = ' + t.angle + ' / ' +
             '(width,height) = (' + t.width + ',' + t.height + ')';
-        return str;
     };
 
     //　描画関係
@@ -1475,7 +1474,7 @@ function createInputTurtle() {
         if (e.keyCode === 8) {   // backspace
             newStr = t.str.slice(0, -1);
         } else {
-            newStr += String.fromCharCode(e.charCode);
+            newStr += String.fromCharCode(Number(e.charCode));
             if (JapaneseMode) {
                 newStr = romanConvert(newStr);
             }
