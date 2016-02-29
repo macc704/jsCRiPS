@@ -378,7 +378,32 @@ jsCRiPS.debugConverter.convert = function (source) {
             } else if (each.type === 'WhileStatement') {
                 each.body = processStatement(each.body);
             } else if (each.type === 'ForStatement') {
+                pushDebugStatement(newStmts, each.loc.start.line, each.loc.end.line);
+                if (each.init.type === 'VariableDeclaration') { // for(var i = 0,j = 0; ....)
+                    for (var j = 0; j < each.init.declarations.length; j++) {
+                        jsCRiPS.addVariable(newStmts, each.init.declarations[j].id.name);
+                    }
+                }
                 each.body = processStatement(each.body);
+                var block = esprima.parse('{}').body[0];
+                if (each.init.type === 'VariableDeclaration') { // for(var i = 0,j = 0; ....)
+                    for (var j = 0; j < each.init.declarations.length; j++) {
+                        jsCRiPS.updateVariable(block.body, each.init.declarations[j].id.name);
+                    }
+                }
+                if (each.update.type === 'UpdateExpression') {  // 同じ変数を2回更新する場合があるが、表示上は問題ない
+                    jsCRiPS.updateVariable(block.body, each.update.argument.name);
+                } else if (each.update.type === 'SequenceExpression') {
+                    for (var j = 0; j < each.update.expressions.length; j++) {
+                        if (each.update.expressions[j].type === 'UpdateExpression') {
+                            jsCRiPS.updateVariable(block.body, each.update.expressions[j].argument.name);
+                        } else if (each.update.expressions[j].type ===  'AssignmentExpression') {
+                            jsCRiPS.updateVariable(block.body, each.update.expressions[j].left.name);
+                        }
+                    }
+                }
+                block.body.push(each.body);
+                each.body = block;
             } else if (each.type === 'FunctionDeclaration') {
                 each.body = processStatement(each.body);
                 if (each.body.type === 'BlockStatement') {
