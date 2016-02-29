@@ -91,7 +91,10 @@ jsCRiPS.debugWait = function () {
     jsCRiPS.th = Thread.create(function () {    //  入力待ち用にスレッドを生成
         var nextButton = document.getElementById('next');
         var startTime = new Date();
-        while (!jsCRiPS.debugReady && jsCRiPS.isBreakPoint) {
+        if (jsCRiPS.isBreakPoint) {
+            autoStart(false);
+        }
+        while (!jsCRiPS.debugReady) {
             Thread.sleep(1);
             if (nextButton && !jsCRiPS.AutoMode) {
                 nextButton.disabled = false;
@@ -302,7 +305,7 @@ jsCRiPS.debugConverter.convert = function (source) {
         block.body.push(esprima.parse('setHighlight(' + (line - 1) + ',' + (end - 1) + ');').body[0]);
         block.body.push(esprima.parse('jsCRiPS.debugVariablePrint();').body[0]);
         // なぜかdebugWaitの引数として渡せない(undefinedになる)ので、グローバル変数にbreakpointの情報を持たせる
-        block.body.push(esprima.parse('jsCRiPS.isBreakPoint = (jsCRiPS.breakPoints.indexOf(' + (line - 1) + ') !== -1 || ' + (jsCRiPS.breakPoints.length === 0) + ');').body[0]);
+        block.body.push(esprima.parse('jsCRiPS.isBreakPoint = jsCRiPS.breakPoints.indexOf(' + (line - 1) + ') !== -1;').body[0]);
         block.body.push(esprima.parse('jsCRiPS.debugWait();').body[0]);
         block.body.push(yieldAST);
         if (typeof idx !== 'undefined') {
