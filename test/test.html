@@ -145,6 +145,10 @@
             transition: .3s ease-in-out;
         }
 
+        input[type="range"].turtleSlider::-webkit-slider-thumb {
+            background-color: #090;
+        }
+
         input[type="range"]:disabled {
             opacity: 0.5;
         }
@@ -159,6 +163,10 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+        }
+
+        nav div button img {
+            height: 18px;
         }
 
     </style>
@@ -228,25 +236,27 @@
         </select>
     </div>
     <div>
-        <button type="button" id="restart" onclick="restart()">Run</button>
+        <button type="button" id="runOrPause" onclick="debugRun()"><img id="runOrPauseImg" src="./img/run.png">
+        </button>
     </div>
     <div>
-        Fast<input type="range" name="moveSpeed" min="0" max="4" step="1"
-                value="3" onchange="changeSpeed(this.value)" oninput="changeSpeed(this.value)" title="moveSpeed">Slow
+        <button type="button" id="next" onclick="debugNext()"><img id="nextImg" src="./img/next.png"></button>
     </div>
     <div>
-        <button type="button" id="debug" onclick="debugStart()">Debug</button>
+        <button type="button" id="restart" onclick="debugStart()"><img id="restartImg" src="./img/restart.png"></button>
     </div>
     <div>
-        <button type="button" id="debugNext" onclick="debugNext()" disabled>nextStep</button>
+        <span style="font-weight: bold">Turtle</span>
+        : Fast <input type="range" class="turtleSlider" name="moveSpeed" min="0" max="4" step="1"
+                      value="3" onchange="changeSpeed(this.value)" oninput="changeSpeed(this.value)" title="moveSpeed">Slow
     </div>
+
     <div>
-        <input type="checkbox" id="penCheckbox" disabled onclick="autoStart(this.checked)">Auto</button>
-    </div>
-    <div>
-        Fast<input type="range" id="movePenSpeed" min="0" max="1.414" step="0.01"
-                value="3" onchange="changePenSpeed(this.value)" oninput="changePenSpeed(this.value)"
-                title="movePenSpeed" disabled>Slow
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <span style="font-weight: bold">Animation</span>
+        : Fast<input type="range" id="movePenSpeed" min="0" max="1.414" step="0.01"
+                     value="0" onchange="changeAutoSpeed(this.value)" oninput="changeAutoSpeed(this.value)"
+                     title="movePenSpeed">Slow
     </div>
 
 </nav>
@@ -469,6 +479,7 @@
                                 println("ERROR ファイル[" + path + "]が見つかりません")
                             } else {
                                 document.getElementById('editorFrame').contentWindow.paste(response);
+                                debugStart();
                             }
                         });
             };

@@ -89,25 +89,27 @@ jsCRiPS.converter.convert = function (source) {
 jsCRiPS.debugConverter = {};
 jsCRiPS.debugWait = function () {
     jsCRiPS.th = Thread.create(function () {    //  入力待ち用にスレッドを生成
-        var nextButton = document.getElementById('debugNext');
+        var nextButton = document.getElementById('next');
         var startTime = new Date();
         while (!jsCRiPS.debugReady && jsCRiPS.isBreakPoint) {
             Thread.sleep(1);
-            if (nextButton && !jsCRiPS.PenMode) {
+            if (nextButton && !jsCRiPS.AutoMode) {
                 nextButton.disabled = false;
-            } else if (jsCRiPS.PenMode && ((new Date() - startTime) >= jsCRiPS.PenSpeed)) {
+                nextButton.style.opacity = 1;
+            } else if (jsCRiPS.AutoMode && ((new Date() - startTime) >= jsCRiPS.AutoSpeed)) {
                 jsCRiPS.debugReady = true;
             }
         }
         jsCRiPS.debugReady = false;
-        if (nextButton) {
+        if (nextButton && !jsCRiPS.AutoMode) {
             nextButton.disabled = true;
+            nextButton.style.opacity = 0.7;
         }
     });
 };
 
 jsCRiPS.debugVariablePrint = function () {
-    jsCRiPS.debugVariablePrintHelper = function (table,stack, color) {
+    jsCRiPS.debugVariablePrintHelper = function (table, stack, color) {
         var argValues = '';
         for (var i = 0; i < stack.args.length; i++) {
             argValues += stack.args[i];
@@ -165,11 +167,11 @@ jsCRiPS.debugVariablePrint = function () {
     }
     // コールスタック毎に行を追加してく
     // Globalのみ特別扱い
-    jsCRiPS.debugVariablePrintHelper(jsCRiPS.globalDebugTable,jsCRiPS.callStack[0], '#FFF');
+    jsCRiPS.debugVariablePrintHelper(jsCRiPS.globalDebugTable, jsCRiPS.callStack[0], '#FFF');
 
     for (var i = 1; i < jsCRiPS.callStack.length; i++) {
         var color = (i === jsCRiPS.callStack.length - 1) ? '#FFF' : '#CCC';
-        jsCRiPS.debugVariablePrintHelper(jsCRiPS.localDebugTable,jsCRiPS.callStack[i], color);
+        jsCRiPS.debugVariablePrintHelper(jsCRiPS.localDebugTable, jsCRiPS.callStack[i], color);
     }
 };
 
@@ -466,6 +468,7 @@ jsCRiPS.debugConverter.convert = function (source) {
     };
     ast.body = processStatements(ast.body);
     ast.body.push(esprima.parse('jsCRiPS.debugVariablePrint();').body[0]);
+    ast.body.push(esprima.parse('jsCRiPS.endRun();').body[0]);
 
     return escodegen.generate(ast);
 };
@@ -1787,7 +1790,15 @@ function restart() {
     main();
 }
 
+jsCRiPS.endRun = function () {
+    document.getElementById('runOrPauseImg').src = './img/run.png';
+    jsCRiPS.runReady = false;
+};
+jsCRiPS.runReady = false;
+
+/* htmlから呼び出される関数群、外部とのAPI */
 function debugStart() {
+
     jsCRiPS.initProgram();
 
     jsCRiPS.PenCheckBox = document.getElementById('penCheckbox');
@@ -1798,7 +1809,7 @@ function debugStart() {
     if (PenSpeedSlider) {  // 必要？
         PenSpeedSlider.disabled = false;
     }
-    jsCRiPS.PenSpeed = (Number(PenSpeedSlider.value) * Number(PenSpeedSlider.value)) * 1000;
+    jsCRiPS.AutoSpeed = (Number(PenSpeedSlider.value) * Number(PenSpeedSlider.value)) * 1000;
 
     jsCRiPS.debugReady = false;
     jsCRiPS.callStack = [];
@@ -1810,6 +1821,9 @@ function debugStart() {
 
     /* global debugMain */
     debugMain();
+
+    autoStart(false);
+    jsCRiPS.runReady = true;
 
     // debug用のTableを作成する
     function makeVariableViewTable() {
@@ -1870,13 +1884,32 @@ function debugStart() {
     }
 }
 
-// htmlから呼び出される関数群、外部とのAPI
 function debugNext() {
-    jsCRiPS.debugReady = true;
+    if (!jsCRiPS.runReady) {
+        debugStart();
+    } else {
+        jsCRiPS.debugReady = true;
+        autoStart(false);
+    }
+}
+
+function debugRun() {
+    if (!jsCRiPS.runReady) {
+        debugStart();
+        autoStart(true);
+    } else {
+        if (jsCRiPS.AutoMode) {
+            autoStart(false);
+        } else {
+            autoStart(true);
+        }
+    }
 }
 
 function autoStart(enable) {
-    jsCRiPS.PenMode = enable;
+    jsCRiPS.AutoMode = enable;
+    document.getElementById('runOrPauseImg').src =
+        enable ? './img/pause.png' : './img/run.png';
 }
 
 // no kame時に前の描画部分が残ってしまう場合あり、example5.3.1.1_Circle.jsをno kameで実行し速度を変えて再度Runで発生
@@ -1888,8 +1921,8 @@ function changeSpeed(x) {
 }
 
 // x is sec
-function changePenSpeed(x) {
-    jsCRiPS.PenSpeed = (Number(x) * Number(x)) * 1000;
+function changeAutoSpeed(x) {
+    jsCRiPS.AutoSpeed = (Number(x) * Number(x)) * 1000;
 }
 
 function setBreakPoint(row) {
