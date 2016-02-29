@@ -249,7 +249,15 @@ function makeCallStack(path) {
     };
 
     ret.addVariable = function (name, value, isNew) {
-        ret.vDecls.push([name, value, isNew]);
+        var alreadyDeclared = false;
+        for (var i = 0; i < ret.vDecls.length; i++) {
+            alreadyDeclared = ret.vDecls[i][0] === name;
+        }
+        if (alreadyDeclared) {
+            ret.updateVariable(name, value, isNew);
+        } else {
+            ret.vDecls.push([name, value, isNew]);
+        }
     };
 
     ret.updateVariable = function (name, value, isNew) {
@@ -397,7 +405,7 @@ jsCRiPS.debugConverter.convert = function (source) {
                     for (var j = 0; j < each.update.expressions.length; j++) {
                         if (each.update.expressions[j].type === 'UpdateExpression') {
                             jsCRiPS.updateVariable(block.body, each.update.expressions[j].argument.name);
-                        } else if (each.update.expressions[j].type ===  'AssignmentExpression') {
+                        } else if (each.update.expressions[j].type === 'AssignmentExpression') {
                             jsCRiPS.updateVariable(block.body, each.update.expressions[j].left.name);
                         }
                     }
