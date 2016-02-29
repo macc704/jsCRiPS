@@ -231,8 +231,8 @@
         <button type="button" id="restart" onclick="restart()">Run</button>
     </div>
     <div>
-        速<input type="range" name="moveSpeed" min="0" max="4" step="1"
-                value="3" onchange="changeSpeed(this.value)" oninput="changeSpeed(this.value)" title="moveSpeed">遅
+        Fast<input type="range" name="moveSpeed" min="0" max="4" step="1"
+                value="3" onchange="changeSpeed(this.value)" oninput="changeSpeed(this.value)" title="moveSpeed">Slow
     </div>
     <div>
         <button type="button" id="debug" onclick="debugStart()">Debug</button>
@@ -244,9 +244,9 @@
         <input type="checkbox" id="penCheckbox" disabled onclick="autoStart(this.checked)">Auto</button>
     </div>
     <div>
-        速<input type="range" id="movePenSpeed" min="0" max="1.414" step="0.01"
+        Fast<input type="range" id="movePenSpeed" min="0" max="1.414" step="0.01"
                 value="3" onchange="changePenSpeed(this.value)" oninput="changePenSpeed(this.value)"
-                title="movePenSpeed" disabled>遅
+                title="movePenSpeed" disabled>Slow
     </div>
 
 </nav>
