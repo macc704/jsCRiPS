@@ -285,9 +285,11 @@
         </div>
     </div>
 
-    <div id="debugView"
+    <div id="globalDebugView"
          style="position:absolute;top:10px;left:800px;width:400px;height:400px;border:1px solid;display:none;overflow-y:scroll;">
-
+    </div>
+    <div id="localDebugView"
+         style="position:absolute;top:410px;left:800px;width:400px;height:200px;border:1px solid;display:none;overflow-y:scroll;">
     </div>
 
 
@@ -487,8 +489,13 @@
     }
     // デバッグの変数ビューをサイズ可変にする
     $(function () {
-        $('#debugView').resizable({
+        $('#GlobalDebugView').resizable({
             minHeight: 400,
+            minWidth: 400,
+            handles: 'se'
+        });
+        $('#localDebugView').resizable({
+            minHeight: 200,
             minWidth: 400,
             handles: 'se'
         });

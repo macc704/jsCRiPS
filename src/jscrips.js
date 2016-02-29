@@ -107,7 +107,7 @@ jsCRiPS.debugWait = function () {
 };
 
 jsCRiPS.debugVariablePrint = function () {
-    jsCRiPS.debugVariablePrintHelper = function (stack, color) {
+    jsCRiPS.debugVariablePrintHelper = function (table,stack, color) {
         var argValues = '';
         for (var i = 0; i < stack.args.length; i++) {
             argValues += stack.args[i];
@@ -118,7 +118,7 @@ jsCRiPS.debugVariablePrint = function () {
         var position = stack.path + '(' + argValues + ')';
         position = (position === '()') ? 'Global' : position;
         for (var i = 0; i < stack.vDecls.length; i++) {
-            var newRow = jsCRiPS.debugTable.insertRow(-1);
+            var newRow = table.insertRow(-1);
 
             var tdName = document.createElement('td');
             tdName.innerHTML = stack.vDecls[i][0];
@@ -155,30 +155,21 @@ jsCRiPS.debugVariablePrint = function () {
         }
     };
 
-    // Draw a line in the Table
-    function addLine() {
-        var newRow = jsCRiPS.debugTable.insertRow(-1);
-        var line = document.createElement('td');
-        line.setAttribute('colSpan', 4);
-        line.style.backgroundColor = '#333';
-        newRow.appendChild(line);
-    }
-
     // 毎回テーブルを作成し直す
     // テーブルの削除
-    while (jsCRiPS.debugTable.rows[1]) {
-        jsCRiPS.debugTable.deleteRow(1);
+    while (jsCRiPS.globalDebugTable.rows[1]) {
+        jsCRiPS.globalDebugTable.deleteRow(1);
+    }
+    while (jsCRiPS.localDebugTable.rows[1]) {
+        jsCRiPS.localDebugTable.deleteRow(1);
     }
     // コールスタック毎に行を追加してく
     // Globalのみ特別扱い
-    jsCRiPS.debugVariablePrintHelper(jsCRiPS.callStack[0], '#FFF');
-    // GlobalとLocalの間にラインを引く
-    if (jsCRiPS.callStack.length !== 1) {
-        addLine();
-    }
+    jsCRiPS.debugVariablePrintHelper(jsCRiPS.globalDebugTable,jsCRiPS.callStack[0], '#FFF');
+
     for (var i = 1; i < jsCRiPS.callStack.length; i++) {
         var color = (i === jsCRiPS.callStack.length - 1) ? '#FFF' : '#CCC';
-        jsCRiPS.debugVariablePrintHelper(jsCRiPS.callStack[i], color);
+        jsCRiPS.debugVariablePrintHelper(jsCRiPS.localDebugTable,jsCRiPS.callStack[i], color);
     }
 };
 
@@ -1822,44 +1813,60 @@ function debugStart() {
 
     // debug用のTableを作成する
     function makeVariableViewTable() {
-        if (!document.getElementById('debugTable')) {
+        if (!document.getElementById('globalDebugTable')) {
             // var debugView = document.createElement('div'); 現状test.htmlで作ってある
             // debugView.style.position = 'absolute';
             // debugView.style.height = '0px';
             // debugView.style.width = '800px';
 
-            var debugTable = document.createElement('table');
-            debugTable.setAttribute('id', 'debugTable');
-            debugTable.setAttribute('width', '95%');
-            debugTable.setAttribute('border', '1');
-            debugTable.style.tableLayout = 'fixed';
-            jsCRiPS.debugTable = debugTable;
+            var gdt = createDebugTable('globalDebugTable');
+            jsCRiPS.globalDebugTable = gdt;
 
-            var newRow = debugTable.insertRow(0);
-            var thName = document.createElement('th');
-            thName.innerHTML = '変数名';
-            var thValue = document.createElement('th');
-            thValue.innerHTML = '値';
-            var thType = document.createElement('th');
-            thType.innerHTML = '型';
-            var thPos = document.createElement('th');
-            thPos.innerHTML = '位置';
-            newRow.appendChild(thName);
-            newRow.appendChild(thValue);
-            newRow.appendChild(thType);
-            newRow.appendChild(thPos);
+            var ldt = createDebugTable('localDebugTable');
+            jsCRiPS.localDebugTable = ldt;
 
-            var dv = document.getElementById('debugView');
-            dv.appendChild(debugTable);
-            dv.style.display = 'block';
-            /* global debugView,$ */
-            debugView.setAttribute('class', 'animated bounceIn');    // require animate.(min.)css
+            var gdv = document.getElementById('globalDebugView');
+            gdv.appendChild(gdt);
+            gdv.style.display = 'block';
+
+            var ldv = document.getElementById('localDebugView');
+            ldv.appendChild(ldt);
+            ldv.style.display = 'block';
+
+            /* global $ */
+            gdv.setAttribute('class', 'animated bounceIn');    // require animate.(min.)css
+            ldv.setAttribute('class', 'animated bounceIn');    // require animate.(min.)css
             // デバッグの変数ビューをドラッグできるようにする
             $(function () {
-                $('#debugView').draggable({handle: '#debugTable'});
+                $('#globalDebugView').draggable({handle: '#globalDebugTable'});
+                $('#localDebugView').draggable({handle: '#localDebugTable'});
             });
 //        document.body.appendChild(debugView);
         }
+    }
+
+    function createDebugTable(id) {
+        var table = document.createElement('table');
+        table.setAttribute('id', id);
+        table.setAttribute('width', '95%');
+        table.setAttribute('border', '1');
+        table.style.tableLayout = 'fixed';
+
+        var newRow = table.insertRow(0);
+        var thName = document.createElement('th');
+        thName.innerHTML = 'name';
+        var thValue = document.createElement('th');
+        thValue.innerHTML = 'value';
+        var thType = document.createElement('th');
+        thType.innerHTML = 'type';
+        var thPos = document.createElement('th');
+        thPos.innerHTML = 'position';
+        newRow.appendChild(thName);
+        newRow.appendChild(thValue);
+        newRow.appendChild(thType);
+        newRow.appendChild(thPos);
+
+        return table;
     }
 }
 
