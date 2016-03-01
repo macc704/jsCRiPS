@@ -367,6 +367,7 @@ jsCRiPS.debugConverter.convert = function (source) {
 
     var processStatements = function (stmts) {
         var newStmts = [];
+        var updateVars = new Set();// 同じ変数を2回更新しないようにするため
         for (var i = 0; i < stmts.length; i++) {
             var each = stmts[i];
             if (each.type === 'BlockStatement') {
@@ -390,21 +391,25 @@ jsCRiPS.debugConverter.convert = function (source) {
                 }
                 each.body = processStatement(each.body);
                 var block = esprima.parse('{}').body[0];
+
                 if (each.init.type === 'VariableDeclaration') { // for(var i = 0,j = 0; ....)
                     for (var j = 0; j < each.init.declarations.length; j++) {
-                        jsCRiPS.updateVariable(block.body, each.init.declarations[j].id.name);
+                        updateVars.add(each.init.declarations[j].id.name);
                     }
                 }
-                if (each.update.type === 'UpdateExpression') {  // 同じ変数を2回更新する場合があるが、表示上は問題ない
-                    jsCRiPS.updateVariable(block.body, each.update.argument.name);
+                if (each.update.type === 'UpdateExpression') {
+                    updateVars.add(each.update.argument.name);
                 } else if (each.update.type === 'SequenceExpression') {
                     for (var j = 0; j < each.update.expressions.length; j++) {
                         if (each.update.expressions[j].type === 'UpdateExpression') {
-                            jsCRiPS.updateVariable(block.body, each.update.expressions[j].argument.name);
+                            updateVars.add(each.update.expressions[j].argument.name);
                         } else if (each.update.expressions[j].type === 'AssignmentExpression') {
-                            jsCRiPS.updateVariable(block.body, each.update.expressions[j].left.name);
+                            updateVars.add(each.update.expressions[j].left.name);
                         }
                     }
+                }
+                for (let vName of updateVars) {
+                    jsCRiPS.updateVariable(newStmts, vName);
                 }
                 block.body.push(each.body);
                 each.body = block;
@@ -426,7 +431,10 @@ jsCRiPS.debugConverter.convert = function (source) {
                 }
             }
             newStmts.push(each);
-
+            for (let vName of updateVars) {
+                jsCRiPS.updateVariable(newStmts, vName);
+            }
+            updateVars.clear();
             if (each.type === 'ExpressionStatement' && each.expression.type === 'CallExpression') {
                 pushDebugStatement(newStmts, each.expression.callee.loc.start.line, each.expression.callee.loc.end.line, newStmts.length - 1);
                 newStmts.push(yieldAST);
