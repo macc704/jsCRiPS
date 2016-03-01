@@ -409,7 +409,7 @@ jsCRiPS.debugConverter.convert = function (source) {
                     }
                 }
                 for (let vName of updateVars) {
-                    jsCRiPS.updateVariable(newStmts, vName);
+                    jsCRiPS.updateVariable(block.body, vName);
                 }
                 block.body.push(each.body);
                 each.body = block;
