@@ -1807,7 +1807,7 @@ jsCRiPS.endRun = function () {
 };
 jsCRiPS.runReady = false;
 
-/* htmlから呼び出される関数群、外部とのAPI */
+/* htmlから呼び出される、html側へ呼ぶ関数群、外部とのAPI */
 function debugStart() {
 
     jsCRiPS.initProgram();
@@ -1971,6 +1971,10 @@ function println() {
     print(str + '\n');
 }
 
+function setTitle(name){
+    var title = document.getElementById('ptitle');
+    title.innerHTML = name;
+}
 
 // イベント関係
 // リスナー登録より上で宣言する必要あり
