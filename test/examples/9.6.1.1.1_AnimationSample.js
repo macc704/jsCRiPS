@@ -2,7 +2,8 @@ var text = new createTextTurtle("注目->");
 var number = new createTextTurtle("");
 var car = createImageTurtle("img/car.gif");
 { // 初期化
-    number.warp(200, 100);
+    text.warp(50,100);
+    number.warp(100, 100);
     car.hide();
 }
 { // アニメーションループ
