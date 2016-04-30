@@ -354,9 +354,11 @@ jsCRiPS.debugConverter.convert = function (source) {
         function newAssignmentBlock(left, isInput) {
             var block = esprima.parse('{}').body[0];
             block.body.push(stmt);
-            block.body.push(yieldAST);
-            if (isInput && left) {
+            if (isInput && left) { // inputの場合は必ずjoinする
+                block.body.push(esprima.parse('jsCRiPS.th.join();').body[0]);
                 block.body.push(esprima.parse(left + ' = jsCRiPS.inputText;').body[0]);
+            } else {
+                block.body.push(yieldAST);
             }
             jsCRiPS.updateVariable(block.body, left);
             pushDebugStatement(block.body);
@@ -442,17 +444,21 @@ jsCRiPS.debugConverter.convert = function (source) {
                 each.expression.right.type === 'CallExpression') {
                 pushDebugStatement(newStmts, each.expression.loc.start.line, each.expression.loc.end.line, newStmts.length - 2);
                 // var x=input(),y=input() や f(input()) や if(input()=='abc')などには未対応
-                newStmts.push(yieldAST);
-                if (each.expression.right.callee.name === 'input') {
+                if (each.expression.right.callee.name === 'input') {  // inputの場合は必ずjoinする
+                    newStmts.push(esprima.parse('jsCRiPS.th.join();').body[0]);
                     newStmts.push(esprima.parse(each.expression.left.name + ' = jsCRiPS.inputText;').body[0]);
+                } else {
+                    newStmts.push(yieldAST);
                 }
                 jsCRiPS.updateVariable(newStmts, each.expression.left.name);
             } else if (each.type === 'VariableDeclaration') {
                 if (each.declarations[0].init && each.declarations[0].init.type === 'CallExpression') {
                     pushDebugStatement(newStmts, each.declarations[0].loc.start.line, each.declarations[each.declarations.length - 1].loc.end.line, newStmts.length - 1);
-                    newStmts.push(yieldAST);
-                    if (each.declarations[0].init.callee.name === 'input') {
+                    if (each.declarations[0].init.callee.name === 'input') {    // inputの場合は必ずjoinする
+                        newStmts.push(esprima.parse('jsCRiPS.th.join();').body[0]);
                         newStmts.push(esprima.parse(each.declarations[0].id.name + ' = jsCRiPS.inputText;').body[0]);
+                    } else {
+                        newStmts.push(yieldAST);
                     }
                 } else {
                     pushDebugStatement(newStmts, each.declarations[0].loc.start.line, each.declarations[each.declarations.length - 1].loc.end.line, newStmts.length - 1);
@@ -1971,7 +1977,7 @@ function println() {
     print(str + '\n');
 }
 
-function setTitle(name){
+function setTitle(name) {
     var title = document.getElementById('ptitle');
     title.innerHTML = name;
 }
