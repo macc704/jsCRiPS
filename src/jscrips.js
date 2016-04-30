@@ -315,6 +315,10 @@ jsCRiPS.debugConverter.convert = function (source) {
         }
     }
 
+    function pushInputExpression(pushed, left) {
+        pushed.push(esprima.parse('jsCRiPS.th.join();').body[0]);
+        pushed.push(esprima.parse(left + ' = jsCRiPS.inputText;').body[0]);
+    }
 
     //for debug
     document.getElementById('ast').value = JSON.stringify(ast, null, 4);
@@ -354,9 +358,8 @@ jsCRiPS.debugConverter.convert = function (source) {
         function newAssignmentBlock(left, isInput) {
             var block = esprima.parse('{}').body[0];
             block.body.push(stmt);
-            if (isInput && left) { // inputの場合は必ずjoinする
-                block.body.push(esprima.parse('jsCRiPS.th.join();').body[0]);
-                block.body.push(esprima.parse(left + ' = jsCRiPS.inputText;').body[0]);
+            if (isInput && left) {
+                pushInputExpression(block.body, left);
             } else {
                 block.body.push(yieldAST);
             }
@@ -445,8 +448,7 @@ jsCRiPS.debugConverter.convert = function (source) {
                 pushDebugStatement(newStmts, each.expression.loc.start.line, each.expression.loc.end.line, newStmts.length - 2);
                 // var x=input(),y=input() や f(input()) や if(input()=='abc')などには未対応
                 if (each.expression.right.callee.name === 'input') {  // inputの場合は必ずjoinする
-                    newStmts.push(esprima.parse('jsCRiPS.th.join();').body[0]);
-                    newStmts.push(esprima.parse(each.expression.left.name + ' = jsCRiPS.inputText;').body[0]);
+                    pushInputExpression(newStmts, each.expression.left.name);
                 } else {
                     newStmts.push(yieldAST);
                 }
@@ -455,8 +457,7 @@ jsCRiPS.debugConverter.convert = function (source) {
                 if (each.declarations[0].init && each.declarations[0].init.type === 'CallExpression') {
                     pushDebugStatement(newStmts, each.declarations[0].loc.start.line, each.declarations[each.declarations.length - 1].loc.end.line, newStmts.length - 1);
                     if (each.declarations[0].init.callee.name === 'input') {    // inputの場合は必ずjoinする
-                        newStmts.push(esprima.parse('jsCRiPS.th.join();').body[0]);
-                        newStmts.push(esprima.parse(each.declarations[0].id.name + ' = jsCRiPS.inputText;').body[0]);
+                        pushInputExpression(newStmts, each.declarations[0].id.name);
                     } else {
                         newStmts.push(yieldAST);
                     }
