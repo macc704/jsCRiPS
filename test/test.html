@@ -479,7 +479,6 @@
                                 println("ERROR ファイル[" + path + "]が見つかりません")
                             } else {
                                 document.getElementById('editorFrame').contentWindow.paste(response);
-                                debugStart();
                                 document.getElementById('editorFrame').contentWindow.clearAllBreakPoints();
                             }
                         });
