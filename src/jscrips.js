@@ -651,6 +651,7 @@ function createTurtle() {
         }
     };
 
+    // TODO nokame時にupとdownがうまく動作しない問題あり
     t.up = function () {
         t.penDown = false;
     };
