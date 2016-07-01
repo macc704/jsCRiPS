@@ -486,6 +486,7 @@ jsCRiPS.debugConverter.convert = function (source) {
     };
     ast.body = processStatements(ast.body);
     ast.body.push(esprima.parse('jsCRiPS.debugVariablePrint();').body[0]);
+    ast.body.push(esprima.parse('setHighlight(' + (ast.loc.end.line) + ',' + (ast.loc.end.line) + ');').body[0]);
     ast.body.push(esprima.parse('jsCRiPS.endRun();').body[0]);
 
     return escodegen.generate(ast);
@@ -651,7 +652,7 @@ function createTurtle() {
         }
     };
 
-    // TODO nokame時にupとdownがうまく動作しない問題あり
+    // TODO nokame時にupとdownなどがうまく動作しない問題あり(描画関係以外の命令が動かない？)
     t.up = function () {
         t.penDown = false;
     };
