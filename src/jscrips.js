@@ -247,7 +247,7 @@ function makeCallStack(path) {
     ret.addVariable = function (name, value, isNew) {
         var alreadyDeclared = false;
         for (var i = 0; i < ret.vDecls.length; i++) {
-            alreadyDeclared = ret.vDecls[i][0] === name;
+            alreadyDeclared = (alreadyDeclared || ret.vDecls[i][0] === name);
         }
         if (alreadyDeclared) {
             ret.updateVariable(name, value, isNew);
