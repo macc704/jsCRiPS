@@ -162,11 +162,15 @@ jsCRiPS.debugVariablePrint = function () {
 
     // 毎回テーブルを作成し直す
     // テーブルの削除
-    while (jsCRiPS.globalDebugTable.rows[1]) {
-        jsCRiPS.globalDebugTable.deleteRow(1);
+    if(jsCRiPS.globalDebugTable){
+        while (jsCRiPS.globalDebugTable.rows[1]) {
+            jsCRiPS.globalDebugTable.deleteRow(1);
+        }
     }
-    while (jsCRiPS.localDebugTable.rows[1]) {
-        jsCRiPS.localDebugTable.deleteRow(1);
+    if(jsCRiPS.localDebugTable){
+        while (jsCRiPS.localDebugTable.rows[1]) {
+            jsCRiPS.localDebugTable.deleteRow(1);
+        }
     }
     // コールスタック毎に行を追加してく
     // Globalのみ特別扱い
@@ -1847,7 +1851,7 @@ function debugStart() {
 
     // debug用のTableを作成する
     function makeVariableViewTable() {
-        if (!document.getElementById('globalDebugTable')) {
+        if (document.getElementById('globalDebugView') && !jsCRiPS.globalDebugTable) {
             // var debugView = document.createElement('div'); 現状test.htmlで作ってある
             // debugView.style.position = 'absolute';
             // debugView.style.height = '0px';
@@ -1856,26 +1860,28 @@ function debugStart() {
             var gdt = createDebugTable('globalDebugTable');
             jsCRiPS.globalDebugTable = gdt;
 
-            var ldt = createDebugTable('localDebugTable');
-            jsCRiPS.localDebugTable = ldt;
-
             var gdv = document.getElementById('globalDebugView');
             gdv.appendChild(gdt);
-            gdv.style.display = 'block';
-
-            var ldv = document.getElementById('localDebugView');
-            ldv.appendChild(ldt);
-            ldv.style.display = 'block';
+            gdv.style.display = 'block';     
 
             /* global $ */
-            gdv.setAttribute('class', 'animated bounceIn');    // require animate.(min.)css
-            ldv.setAttribute('class', 'animated bounceIn');    // require animate.(min.)css
+//            gdv.setAttribute('class', 'animated bounceIn');    // require animate.(min.)css
+  //          ldv.setAttribute('class', 'animated bounceIn');    // require animate.(min.)css
             // デバッグの変数ビューをドラッグできるようにする
             $(function () {
                 $('#globalDebugView').draggable({handle: '#globalDebugTable'});
-                $('#localDebugView').draggable({handle: '#localDebugTable'});
             });
 //        document.body.appendChild(debugView);
+        }
+        if(document.getElementById('localDebugView') && !jsCRiPS.localDebugTable){
+            var ldt = createDebugTable('localDebugTable');
+            jsCRiPS.localDebugTable = ldt;
+            var ldv = document.getElementById('localDebugView');
+            ldv.appendChild(ldt);
+            ldv.style.display = 'block';
+            $(function () {
+                $('#globalDebugView').draggable({handle: '#globalDebugTable'});
+            });
         }
     }
 

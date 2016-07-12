@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head lang='en'>
+    <meta charset='UTF-8'>
+    <title></title>
+    <style type='text/css'>
+        #editor {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+        }
+
+        .default_highlight_line {
+            border-top: solid #c33;
+            opacity: 0.8;
+            z-index: 5;
+            position: absolute;
+        }
+
+        .ace_gutter-cell.ace_breakpoint {
+            border-radius: 0 0 20px;
+            box-shadow: 0 0 1px 1px red inset;
+        }
+
+    </style>
+    <script>
+        function resizeFrame() {
+            var PageHight = document.body.scrollHeight; // ページの高さを取得
+            window.parent.document.getElementById('editorFrame').style.height = PageHight + 'px';
+        }
+    </script>
+    <script src='http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js'></script>
+</head>
+<body>
+<div id='editor'>var t = createTurtle();
+var length = 200;
+t.fd(length);
+
+//var t = createMyTurtle();
+//var length = 500;
+//t.ifOnEdgeThenBounce(length);
+</div>
+
+<div id='dummy' style='display: none'>dummy</div>
+
+<script src='../lib/src-noconflict/ace.js'></script>
+<script>
+    var editor = ace.edit('editor');
+    editor.setTheme('ace/theme/monokai');
+    editor.getSession().setMode('ace/mode/javascript');
+    editor.$blockScrolling = Infinity;
+
+    $(document).ready(function () {
+        var loadFile = function (path) {
+            $('#dummy').load(path,
+                    function (response, status) {
+                        if (status === 'error') {
+                            println('ERROR ファイル[' + path + ']が見つかりません')
+                        } else {
+                            paste(response);
+                        }
+                    });
+        };
+    });
+
+    // 自動でリサイズする設定だったもの
+    // function heightUpdateFunction() {
+    //     // http://stackoverflow.com/questions/11584061/
+    //     var newHeight = editor.getSession().getScreenLength()
+    //             * editor.renderer.lineHeight + 20;
+    //     window.parent.$('#editorFrame').height(newHeight.toString() + 'px');
+    //     //  いらない？  $('#editor-section').height(newHeight.toString() + 'px');
+
+    //     // This call is required for the editor to fix all of
+    //     // its inner structure for adapting to a change in size
+    //     editor.resize();
+    // }
+
+    // Set initial size to match initial content
+    //  heightUpdateFunction();
+    // Whenever a change happens inside the ACE editor, update
+    // the size again
+    //editor.getSession().on('change', heightUpdateFunction);
+
+
+    function getSource() {
+        return editor.getValue();
+    }
+
+    function paste(str) {
+        editor.getSession().setValue(str);
+    }
+
+    function setFontSize(n) {
+        editor.setFontSize(n);
+        //heightUpdateFunction();
+    }
+
+    function setTheme(theme) {
+        editor.setTheme(theme);
+    }
+
+    var range = null;
+    function setHighlight(startLine, endLine, type) {
+        var session = editor.getSession();
+        if (range !== null) {
+            session.removeMarker(range.id);
+        }
+        if (typeof type === 'undefined') {
+            range = session.highlightLines(startLine, endLine, 'default_highlight_line');
+        }
+    }
+
+    function removeHighlight() {
+        var session = editor.getSession();
+        if (range !== null) {
+            session.removeMarker(range.id);
+        }
+    }
+
+    function clearAllBreakPoints() {
+        for (var i = 0; i < breakPointRows.length; i++) {
+            var row = breakPointRows[i];
+            editor.getSession().clearBreakpoint(row);
+            window.parent.clearBreakPoint(row);// need to implement
+        }
+    }
+
+    // http://qiita.com/nyamogera/items/73fe808909f9ffcd4d4aを少し変更して、複数のbreakpointに対応
+    // エディタ上の行番号は1,2,3,...だが、取得する行番号は0,1,2,...
+    var breakPointRows = [];
+    editor.on("guttermousedown", function (e) {
+        var target = e.domEvent.target;
+        if (target.className.indexOf("ace_gutter-cell") == -1) {
+            return;
+        }
+        if (!editor.isFocused()) {
+            return;
+        }
+        if (e.clientX > 25 + target.getBoundingClientRect().left) {
+            return;
+        }
+
+        var row = e.getDocumentPosition().row;
+        if (breakPointRows.indexOf(row) !== -1) {  // すでにbreakpointが設置されていた行の場合は削除
+            e.editor.session.clearBreakpoint(row);
+            breakPointRows.splice(breakPointRows.indexOf(row), 1);
+            window.parent.clearBreakPoint(row);   // need to implement
+        } else {
+            e.editor.session.setBreakpoint(row);
+            breakPointRows.push(row);
+            window.parent.setBreakPoint(row);   // need to implement
+        }
+        e.stop();
+    });
+
+
+    // TODO いいライブラリが見つからない
+    function format() {
+//        var input = editor.getValue();
+//        editor.getSession().setValue();
+    }
+    format();
+</script>
+</body>
+</html>
