@@ -491,6 +491,7 @@ jsCRiPS.debugConverter.convert = function (source) {
 
     return escodegen.generate(ast);
 };
+
 // 開始時に例外が出ないために予めスレッドを生成しておく、例外を無視する仕様にした場合いらなくなるかも
 // メインスレッド
 jsCRiPS.mth = Concurrent.Thread.create(function () {
