@@ -1759,7 +1759,7 @@ function random(n) {
     return parseInt(Math.random() * n);
 }
 
-// CRiPS#windows.size -> jsCRiPS#canvasSize
+// CRiPS#window.size -> jsCRiPS#canvasSize
 function canvasSize(w, h) {
     var tc = jsCRiPS.tCanvas;
     var lc = jsCRiPS.lCanvas;
