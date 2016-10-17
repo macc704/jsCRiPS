@@ -2155,6 +2155,15 @@ function input(msg) {
 
 }
 
+// create jsCRiPS object (like JQuery,$ method)
+// HTML要素からjsCRiPSオブジェクトを作成する
+function jsCRiPS(x,y){
+    var obj = {};
+
+
+    return obj;
+}
+
 // 亀描画用データ
 jsCRiPS.kameMotions = [
     // Front
