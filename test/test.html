@@ -172,9 +172,7 @@
     </style>
 
 
-    <script>
-        JCRiPS('#console').console();
-    </script>
+
 
 </head>
 
@@ -525,6 +523,12 @@
     // 余計なアンチエイリアスの解除
     var c = document.getElementById('locusCanvas');
     c.getContext('2d').translate(0.5, 0.5);
+</script>
+<script>
+    JCRiPS('#console').console({
+        cols:50,
+        width : "1600px"
+    });
 </script>
 </body>
 

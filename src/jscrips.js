@@ -2175,17 +2175,17 @@ function JCRiPS(selector) {
     var selectors = selector.toString().split(',');
     for (var i = 0; i < selectors.length; i++) {
         var s = selectors[i];
-        if (s.length === 0){
+        if (s.length === 0) {
             continue;
         }
 
         if (s[0] === '.') { // class
-            var elems = document.getElementsByClassName(s);
+            var elems = document.getElementsByClassName(s.substr(1));
             for (var j = 0; j < elems.length; j++) {
                 obj.elems.push(elems[j]);
             }
         } else if (s[0] === '#') { // id
-            obj.elems.push(document.getElementById(s));
+            obj.elems.push(document.getElementById(s.substr(1)));
         } else { // HTML Elem
             var elems = document.getElementsByTagName(s);
             for (var j = 0; j < elems.length; j++) {
@@ -2195,7 +2195,32 @@ function JCRiPS(selector) {
 
     }
 
-    obj.console = function (width, height, resize) {
+    obj.console = function (opt) {
+        var defaultMaxLength = 10000;
+        for (var i = 0; i < obj.elems.length; i++) {
+            jsCRiPS.console.push(obj.elems[i]);
+            obj.elems[i].maxLength = defaultMaxLength;
+
+            if (typeof opt === 'undefined') {
+                continue;
+            }
+
+            obj.elems[i].maxLength = jsCRiPS.orDefault(opt.maxLength, defaultMaxLength);
+            if (typeof opt.cols !== 'undefined') {
+                obj.elems[i].cols = opt.cols;
+            }
+            if (typeof opt.rows !== 'undefined') {
+                obj.elems[i].rows = opt.rows;
+            }
+            if (typeof opt.width !== 'undefined') {
+                obj.elems[i].style.width = opt.width;
+            }
+            if (typeof opt.height !== 'undefined') {
+                obj.elems[i].style.height = opt.height;
+            }
+
+
+        }
 
     };
 
@@ -2206,6 +2231,10 @@ function JCRiPS(selector) {
 
     return obj;
 }
+
+jsCRiPS.orDefault = function (v, defaultValue) {
+    return !(typeof v === 'undefined') ? v : defaultValue;
+};
 
 // 亀描画用データ
 jsCRiPS.kameMotions = [
