@@ -537,6 +537,9 @@ jsCRiPS.BUTTON_MARGIN = 5;
 // for debugger
 jsCRiPS.breakPoints = [];
 
+// jsCRiPS Components
+jsCRiPS.console = [];
+
 function createTurtle() {
     var t = {};
 
@@ -574,12 +577,12 @@ function createTurtle() {
                 var tmpPendown = t.penDown;
                 t.up();
                 for (var i = jsCRiPS.rotateStep; i < deg; i += jsCRiPS.rotateStep) {
-                    draw(t);
+                    jsCRiPS.draw(t);
                     t.angle += jsCRiPS.rotateStep;
                     Thread.sleep(jsCRiPS.sleepTime);
                 }
                 t.angle = tmpAngle + deg;
-                draw(t);
+                jsCRiPS.draw(t);
                 t.penDown = tmpPendown;
             }, deg, t);
         }
@@ -594,12 +597,12 @@ function createTurtle() {
                 var tmpPendown = t.penDown;
                 t.up();
                 for (var i = jsCRiPS.rotateStep; i < deg; i += jsCRiPS.rotateStep) {
-                    draw(t);
+                    jsCRiPS.draw(t);
                     t.angle -= jsCRiPS.rotateStep;
                     Thread.sleep(jsCRiPS.sleepTime);
                 }
                 t.angle = tmpAngle - deg;
-                draw(t);
+                jsCRiPS.draw(t);
                 t.penDown = tmpPendown;
             }, deg, t);
         }
@@ -618,13 +621,13 @@ function createTurtle() {
                 for (var i = jsCRiPS.moveStep; i < d; i += jsCRiPS.moveStep) {
                     t.x = xx + dx * i;
                     t.y = yy + dy * i;
-                    draw(t);
+                    jsCRiPS.draw(t);
                     t.setRxRy();
                     Thread.sleep(jsCRiPS.sleepTime);
                 }
                 t.x = xx + dx * d;
                 t.y = yy + dy * d;
-                draw(t);
+                jsCRiPS.draw(t);
             }, d, t);
         }
     };
@@ -642,13 +645,13 @@ function createTurtle() {
                 for (var i = jsCRiPS.moveStep; i < d; i += jsCRiPS.moveStep) {
                     t.x = xx - dx * i;
                     t.y = yy - dy * i;
-                    draw(t);
+                    jsCRiPS.draw(t);
                     t.setRxRy();
                     Thread.sleep(jsCRiPS.sleepTime);
                 }
                 t.x = xx - dx * d;
                 t.y = yy - dy * d;
-                draw(t);
+                jsCRiPS.draw(t);
             }, d, t);
         }
     };
@@ -931,7 +934,7 @@ function createTurtle() {
                 var nx = (kx * (-dy) + ky * (-dx)) * t.kameScale;
                 var ny = (kx * dx + ky * (-dy)) * t.kameScale;
                 if (j > 0) {
-                    drawLine(ctx, ix + px, iy + py, ix + nx, iy + ny);
+                    jsCRiPS.drawLine(ctx, ix + px, iy + py, ix + nx, iy + ny);
                 }
                 px = nx;
                 py = ny;
@@ -1057,8 +1060,7 @@ function createImageTurtle(imgName) {
         };
         img.onerror = function () {
             jsCRiPS.imgLoaded = true;   // 例外投げたほうがいい？
-            document.getElementById('console').value +=
-                document.getElementById('console').value + '画像[' + imgName + ']が見つかりません\n';
+            println('画像[' + imgName + ']が見つかりません');
         };
     } else {
         t._looks = jsCRiPS.imgs[imgName];
@@ -1602,8 +1604,7 @@ function createSoundTurtle(path) {
     t.audio = new Audio(path);
 
     t.audio.onerror = function () {
-        document.getElementById('console').value +=
-            document.getElementById('console').value + 'サウンド[' + path + ']が見つかりません\n';
+        println('サウンド[' + path + ']が見つかりません');
     };
 
     t.play = function () {
@@ -1683,53 +1684,53 @@ function createSoundTurtle(path) {
 
 
 /* 描画関連 */
-function draw(t) {
-    clearTurtleCanvas();
+jsCRiPS.draw = function (t) {
+    jsCRiPS.clearTurtleCanvas();
     if (t) {    // t == Turtle
         t.kameType++;
     }
     for (var i = 0; i < jsCRiPS.ttls.length; i++) {
         if (jsCRiPS.ttls[i]._isShow) {
-            drawTurtle(jsCRiPS.ttls[i]);
+            jsCRiPS.drawTurtle(jsCRiPS.ttls[i]);
         }
     }
     if (t && t.penDown) {
-        drawLocus(t);
+        jsCRiPS.drawLocus(t);
     }
-}
+};
 
-function drawTurtle(t) {
+jsCRiPS.drawTurtle = function (t) {
     var ctx = jsCRiPS.tCanvas.getContext('2d');
     t.draw(ctx);
-}
+};
 
-function drawLine(ctx, x, y, dx, dy) {
+jsCRiPS.drawLine = function (ctx, x, y, dx, dy) {
     ctx.beginPath();
     ctx.moveTo(x, y);
     ctx.lineTo(dx, dy);
     ctx.closePath();
     ctx.stroke();
-}
+};
 
-function drawLocus(t) {
+jsCRiPS.drawLocus = function (t) {
     var ctx = jsCRiPS.lCanvas.getContext('2d');
     ctx.strokeStyle = t.penColor;
-    drawLine(ctx, t.rx, t.ry, t.x, t.y);
-}
+    jsCRiPS.drawLine(ctx, t.rx, t.ry, t.x, t.y);
+};
 
-function clearTurtleCanvas() {
-    clearCanvas('turtleCanvas');
-}
+jsCRiPS.clearTurtleCanvas = function () {
+    jsCRiPS.clearCanvas('turtleCanvas');
+};
 
-function clearLocusCanvas() {
-    clearCanvas('locusCanvas');
-}
+jsCRiPS.clearLocusCanvas = function () {
+    jsCRiPS.clearCanvas('locusCanvas');
+};
 
-function clearCanvas(name) {
+jsCRiPS.clearCanvas = function (name) {
     var canvas = document.getElementById(name);
     var ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-}
+};
 
 /* 一般補助メソッド */
 function deg2rad(deg) {
@@ -1748,7 +1749,7 @@ function jsleep(s) {
 }
 
 function update() {
-    draw();
+    jsCRiPS.draw();
 }
 
 function start(f) {
@@ -1792,9 +1793,9 @@ jsCRiPS.initProgram = function () {
         return;
     }
 
-    clearTurtleCanvas();
-    clearLocusCanvas();
-    document.getElementById('console').value = '';
+    jsCRiPS.clearTurtleCanvas();
+    jsCRiPS.clearLocusCanvas();
+    jsCRiPS.clearConsole();
 
     jsCRiPS.parentChecker.clear();
     jsCRiPS.ttls = [];
@@ -1964,12 +1965,15 @@ function print() {
         str += arguments[i] + ',';
     }
     str += arguments[arguments.length - 1];
-    var msgArea = document.getElementById('console');
-    msgArea.value += str;
-    while (msgArea.value.length > 1000) {
-        msgArea.value = msgArea.value.split('\n').slice(1).join('\n');
+
+    for (var i = 0; i < jsCRiPS.console.length; i++) {
+        var msgArea = jsCRiPS.console[i];
+        msgArea.value += str;
+        while (msgArea.value.length > msgArea.maxLength) {
+            msgArea.value = msgArea.value.split('\n').slice(1).join('\n');
+        }
+        msgArea.scrollTop = msgArea.scrollHeight;
     }
-    msgArea.scrollTop = msgArea.scrollHeight;
 }
 
 function println() {
@@ -1980,6 +1984,12 @@ function println() {
     str += arguments[arguments.length - 1];
     print(str + '\n');
 }
+
+jsCRiPS.clearConsole = function () {
+    for (var i = 0; i < jsCRiPS.console.length; i++) {
+        jsCRiPS.console[i].value = '';
+    }
+};
 
 function setTitle(name) {
     var title = document.getElementById('ptitle');
@@ -2157,8 +2167,41 @@ function input(msg) {
 
 // create jsCRiPS object (like JQuery,$ method)
 // HTML要素からjsCRiPSオブジェクトを作成する
-function jsCRiPS(x,y){
+function JCRiPS(selector) {
     var obj = {};
+    obj.elems = [];
+
+    // selectorで指定された要素をobj.elems配列に格納していく
+    var selectors = selector.toString().split(',');
+    for (var i = 0; i < selectors.length; i++) {
+        var s = selectors[i];
+        if (s.length === 0){
+            continue;
+        }
+
+        if (s[0] === '.') { // class
+            var elems = document.getElementsByClassName(s);
+            for (var j = 0; j < elems.length; j++) {
+                obj.elems.push(elems[j]);
+            }
+        } else if (s[0] === '#') { // id
+            obj.elems.push(document.getElementById(s));
+        } else { // HTML Elem
+            var elems = document.getElementsByTagName(s);
+            for (var j = 0; j < elems.length; j++) {
+                obj.elems.push(elems[j]);
+            }
+        }
+
+    }
+
+    obj.console = function (width, height, resize) {
+
+    };
+
+    obj.localVariableTable = function (width, height, resize) {
+
+    };
 
 
     return obj;
