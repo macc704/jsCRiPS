@@ -172,8 +172,6 @@
     </style>
 
 
-
-
 </head>
 
 <body>
@@ -525,9 +523,8 @@
     c.getContext('2d').translate(0.5, 0.5);
 </script>
 <script>
-    JCRiPS('#console').console({
-        cols:50,
-        width : "1600px"
+    JCRiPS('textarea').console({
+        maxLength: 0
     });
 </script>
 </body>

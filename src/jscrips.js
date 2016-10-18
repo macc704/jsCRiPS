@@ -539,6 +539,9 @@ jsCRiPS.breakPoints = [];
 
 // jsCRiPS Components
 jsCRiPS.console = [];
+jsCRiPS.localVariableTable = [];
+jsCRiPS.globalVariableTable = [];
+
 
 function createTurtle() {
     var t = {};
@@ -1836,7 +1839,6 @@ function debugStart() {
     jsCRiPS.debugReady = false;
     jsCRiPS.callStack = [];
     jsCRiPS.callStack[0] = makeCallStack('');
-    jsCRiPS.variableTable = new Map();
     jsCRiPS.functionNames = [];
 
     makeVariableViewTable();
@@ -1969,7 +1971,7 @@ function print() {
     for (var i = 0; i < jsCRiPS.console.length; i++) {
         var msgArea = jsCRiPS.console[i];
         msgArea.value += str;
-        while (msgArea.value.length > msgArea.maxLength) {
+        while (msgArea.value.length > msgArea.maxLength && msgArea.maxLength !== 0) {
             msgArea.value = msgArea.value.split('\n').slice(1).join('\n');
         }
         msgArea.scrollTop = msgArea.scrollHeight;
@@ -2170,66 +2172,76 @@ function input(msg) {
 function JCRiPS(selector) {
     var obj = {};
     obj.elems = [];
+    addSelectedElems();
 
+    // option
+    //  - maxLength:テキストエリア内の最大文字数、0の場合は制限なし
+    obj.console = function (userOpts) {
+        var opts = {
+            maxLength: 10000
+        };
+        setComponentData(jsCRiPS.console,obj.elems,userOpts,opts);
+    };
+
+    // option
+    //  - maxLength:テキストエリア内の最大文字数、0の場合は制限なし
+    obj.globalVariableTable = function (userOpts) {
+        var opts = {
+            position: 'absolute'
+
+        };
+        setComponentData(jsCRiPS.globalVariableTable,obj.elems,userOpts,opts);
+    };
+
+    return obj;
+
+    // 以下便利メソッド
     // selectorで指定された要素をobj.elems配列に格納していく
-    var selectors = selector.toString().split(',');
-    for (var i = 0; i < selectors.length; i++) {
-        var s = selectors[i];
-        if (s.length === 0) {
-            continue;
-        }
-
-        if (s[0] === '.') { // class
-            var elems = document.getElementsByClassName(s.substr(1));
-            for (var j = 0; j < elems.length; j++) {
-                obj.elems.push(elems[j]);
-            }
-        } else if (s[0] === '#') { // id
-            obj.elems.push(document.getElementById(s.substr(1)));
-        } else { // HTML Elem
-            var elems = document.getElementsByTagName(s);
-            for (var j = 0; j < elems.length; j++) {
-                obj.elems.push(elems[j]);
-            }
-        }
-
-    }
-
-    obj.console = function (opt) {
-        var defaultMaxLength = 10000;
-        for (var i = 0; i < obj.elems.length; i++) {
-            jsCRiPS.console.push(obj.elems[i]);
-            obj.elems[i].maxLength = defaultMaxLength;
-
-            if (typeof opt === 'undefined') {
+    function addSelectedElems() {
+        var selectors = selector.toString().split(',');
+        for (var i = 0; i < selectors.length; i++) {
+            var s = selectors[i];
+            if (s.length === 0) {
                 continue;
             }
 
-            obj.elems[i].maxLength = jsCRiPS.orDefault(opt.maxLength, defaultMaxLength);
-            if (typeof opt.cols !== 'undefined') {
-                obj.elems[i].cols = opt.cols;
+            if (s[0] === '.') { // class
+                var elems = document.getElementsByClassName(s.substr(1));
+                for (var j = 0; j < elems.length; j++) {
+                    obj.elems.push(elems[j]);
+                }
+            } else if (s[0] === '#') { // id
+                obj.elems.push(document.getElementById(s.substr(1)));
+            } else { // HTML Elem
+                var elems = document.getElementsByTagName(s);
+                for (var j = 0; j < elems.length; j++) {
+                    obj.elems.push(elems[j]);
+                }
             }
-            if (typeof opt.rows !== 'undefined') {
-                obj.elems[i].rows = opt.rows;
-            }
-            if (typeof opt.width !== 'undefined') {
-                obj.elems[i].style.width = opt.width;
-            }
-            if (typeof opt.height !== 'undefined') {
-                obj.elems[i].style.height = opt.height;
-            }
-
-
         }
+    }
 
-    };
+    // fromからdstへオブジェクトを上書きする
+    function overwriteOptions(from, dst, createKeyMode) {
+        if (typeof from === 'undefined') {
+            return dst;
+        }
+        var fKeys = Object.keys(from);
+        for (var i = 0, len = fKeys.length; i < len; i++) {
+            if (typeof dst[fKeys[i]] !== 'undefined' || createKeyMode) {
+                dst[fKeys[i]] = from[fKeys[i]];
+            }
+        }
+    }
 
-    obj.localVariableTable = function (width, height, resize) {
-
-    };
-
-
-    return obj;
+    // elemsをComponentへ追加しつつオプションをセットする
+    function setComponentData(component, elems, userOptions, defaultOptions) {
+        overwriteOptions(userOptions, defaultOptions);
+        for (var i = 0; i < elems.length; i++) {
+            component.push(elems[i]);
+            overwriteOptions(defaultOptions, elems[i], true);
+        }
+    }
 }
 
 jsCRiPS.orDefault = function (v, defaultValue) {
