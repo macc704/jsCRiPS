@@ -2207,6 +2207,26 @@ function JCRiPS(selector) {
         makeVariableTable(jsCRiPS.localVariableTables, userOpts);
     };
 
+    obj.canvas = function (userOpts) {
+        var opts = {};
+        setComponentData(jsCRiPS.console, obj.elems, userOpts, opts);
+    };
+
+    obj.buttons = function (userOpts) {
+        var opts = {};
+        setComponentData(jsCRiPS.console, obj.elems, userOpts, opts);
+    };
+
+    obj.speedChangeBars = function (userOpts) {
+        var opts = {};
+        setComponentData(jsCRiPS.console, obj.elems, userOpts, opts);
+    };
+
+    obj.editor = function (userOpts) {
+        var opts = {};
+        setComponentData(jsCRiPS.console, obj.elems, userOpts, opts);
+    };
+
     return obj;
 
     // ***** 以下便利メソッド *****
