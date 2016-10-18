@@ -13,8 +13,15 @@
         }
 
         .default_highlight_line {
-            background-color: #c3f2c7;
+            border-top: solid #c33;
+            opacity: 0.8;
+            z-index: 5;
             position: absolute;
+        }
+
+        .ace_gutter-cell.ace_breakpoint {
+            border-radius: 0 0 20px;
+            box-shadow: 0 0 1px 1px red inset;
         }
 
     </style>
@@ -29,8 +36,8 @@
 <body>
 <div id='editor'>var t = createTurtle();
 for(var i=0;i<12;i++){
-t.fd(10);
-t.rt(30);
+    t.fd(10);
+    t.rt(30);
 }
 </div>
 
@@ -87,7 +94,7 @@ t.rt(30);
 
     function setFontSize(n) {
         editor.setFontSize(n);
-        heightUpdateFunction();
+        //heightUpdateFunction();
     }
 
     function setTheme(theme) {
@@ -97,15 +104,56 @@ t.rt(30);
     var range = null;
     function setHighlight(startLine, endLine, type) {
         var session = editor.getSession();
+        if (range !== null) {
+            session.removeMarker(range.id);
+        }
         if (typeof type === 'undefined') {
-            range = session.highlightLines(startLine, endLine, "default_highlight_line");
+            range = session.highlightLines(startLine, endLine, 'default_highlight_line');
         }
     }
 
     function removeHighlight() {
         var session = editor.getSession();
-        session.removeMarker(range.id);
+        if (range !== null) {
+            session.removeMarker(range.id);
+        }
     }
+
+    function clearAllBreakPoints() {
+        for (var i = 0; i < breakPointRows.length; i++) {
+            var row = breakPointRows[i];
+            editor.getSession().clearBreakpoint(row);
+            window.parent.clearBreakPoint(row);// need to implement
+        }
+    }
+
+    // http://qiita.com/nyamogera/items/73fe808909f9ffcd4d4aを少し変更して、複数のbreakpointに対応
+    // エディタ上の行番号は1,2,3,...だが、取得する行番号は0,1,2,...
+    var breakPointRows = [];
+    editor.on("guttermousedown", function (e) {
+        var target = e.domEvent.target;
+        if (target.className.indexOf("ace_gutter-cell") == -1) {
+            return;
+        }
+        if (!editor.isFocused()) {
+            return;
+        }
+        if (e.clientX > 25 + target.getBoundingClientRect().left) {
+            return;
+        }
+
+        var row = e.getDocumentPosition().row;
+        if (breakPointRows.indexOf(row) !== -1) {  // すでにbreakpointが設置されていた行の場合は削除
+            e.editor.session.clearBreakpoint(row);
+            breakPointRows.splice(breakPointRows.indexOf(row), 1);
+            window.parent.clearBreakPoint(row);   // need to implement
+        } else {
+            e.editor.session.setBreakpoint(row);
+            breakPointRows.push(row);
+            window.parent.setBreakPoint(row);   // need to implement
+        }
+        e.stop();
+    });
 
 
     // TODO いいライブラリが見つからない
