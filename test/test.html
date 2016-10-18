@@ -299,10 +299,10 @@
     </div>
 
     <div id="globalDebugView"
-         style="position:absolute;top:10px;left:800px;width:400px;height:400px;border:1px solid;display:none;overflow-y:scroll;">
+         style="position:absolute;top:10px;left:800px;width:400px;height:400px;border:1px solid;">
     </div>
     <div id="localDebugView"
-         style="position:absolute;top:410px;left:800px;width:400px;height:200px;border:1px solid;display:none;overflow-y:scroll;">
+         style="position:absolute;top:410px;left:800px;width:400px;height:200px;border:1px solid;">
     </div>
 
 
@@ -526,6 +526,15 @@
     JCRiPS('textarea').console({
         maxLength: 0
     });
+
+    JCRiPS('#globalDebugView').globalVariableTables({
+        tableClassName:'myGlobalVariableTable'
+
+    });
+    JCRiPS('#localDebugView').localVariableTables({
+        draggable:false
+    });
+
 </script>
 </body>
 

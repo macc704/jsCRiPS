@@ -162,19 +162,28 @@ jsCRiPS.debugVariablePrint = function () {
 
     // 毎回テーブルを作成し直す
     // テーブルの削除
-    while (jsCRiPS.globalDebugTable.rows[1]) {
-        jsCRiPS.globalDebugTable.deleteRow(1);
+    for (var i = 0; i < jsCRiPS.globalVariableTables.length; i++) {
+        while (jsCRiPS.globalVariableTables[i].table.rows[1]) {
+            jsCRiPS.globalVariableTables[i].table.deleteRow(1);
+        }
     }
-    while (jsCRiPS.localDebugTable.rows[1]) {
-        jsCRiPS.localDebugTable.deleteRow(1);
+    for (var i = 0; i < jsCRiPS.localVariableTables.length; i++) {
+        while (jsCRiPS.localVariableTables[i].table.rows[1]) {
+            jsCRiPS.localVariableTables[i].table.deleteRow(1);
+        }
     }
-    // コールスタック毎に行を追加してく
-    // Globalのみ特別扱い
-    jsCRiPS.debugVariablePrintHelper(jsCRiPS.globalDebugTable, jsCRiPS.callStack[0], '#FFF');
 
+    // GlobalVariableTableの更新
+    for (var i = 0; i < jsCRiPS.globalVariableTables.length; i++) {
+        jsCRiPS.debugVariablePrintHelper(jsCRiPS.globalVariableTables[i].table, jsCRiPS.callStack[0], '#FFF');
+    }
+
+    // LocalVariableTableの更新にはコールスタック毎に行を追加してく
     for (var i = 1; i < jsCRiPS.callStack.length; i++) {
         var color = (i === jsCRiPS.callStack.length - 1) ? '#FFF' : '#CCC';
-        jsCRiPS.debugVariablePrintHelper(jsCRiPS.localDebugTable, jsCRiPS.callStack[i], color);
+        for (var j = 0; j < jsCRiPS.localVariableTables.length; j++) {
+            jsCRiPS.debugVariablePrintHelper(jsCRiPS.localVariableTables[j].table, jsCRiPS.callStack[i], color);
+        }
     }
 };
 
@@ -539,8 +548,8 @@ jsCRiPS.breakPoints = [];
 
 // jsCRiPS Components
 jsCRiPS.console = [];
-jsCRiPS.localVariableTable = [];
-jsCRiPS.globalVariableTable = [];
+jsCRiPS.localVariableTables = [];
+jsCRiPS.globalVariableTables = [];
 
 
 function createTurtle() {
@@ -1841,7 +1850,7 @@ function debugStart() {
     jsCRiPS.callStack[0] = makeCallStack('');
     jsCRiPS.functionNames = [];
 
-    makeVariableViewTable();
+    makeVariableTable();
 
     /* global debugMain */
     debugMain();
@@ -1849,63 +1858,52 @@ function debugStart() {
     autoStart(false);
     jsCRiPS.runReady = true;
 
-    // debug用のTableを作成する
-    function makeVariableViewTable() {
-        if (!document.getElementById('globalDebugTable')) {
-            // var debugView = document.createElement('div'); 現状test.htmlで作ってある
-            // debugView.style.position = 'absolute';
-            // debugView.style.height = '0px';
-            // debugView.style.width = '800px';
+    // debug用の変数テーブルを作成する
+    function makeVariableTable() {
 
-            var gdt = createDebugTable('globalDebugTable');
-            jsCRiPS.globalDebugTable = gdt;
-
-            var ldt = createDebugTable('localDebugTable');
-            jsCRiPS.localDebugTable = ldt;
-
-            var gdv = document.getElementById('globalDebugView');
-            gdv.appendChild(gdt);
-            gdv.style.display = 'block';
-
-            var ldv = document.getElementById('localDebugView');
-            ldv.appendChild(ldt);
-            ldv.style.display = 'block';
-
-            /* global $ */
-            gdv.setAttribute('class', 'animated bounceIn');    // require animate.(min.)css
-            ldv.setAttribute('class', 'animated bounceIn');    // require animate.(min.)css
-            // デバッグの変数ビューをドラッグできるようにする
-            $(function () {
-                $('#globalDebugView').draggable({handle: '#globalDebugTable'});
-                $('#localDebugView').draggable({handle: '#localDebugTable'});
-            });
-//        document.body.appendChild(debugView);
+        // 既にテーブルが作成されている場合は何もしない
+        if (jsCRiPS.globalVariableTables.length !== 0 &&
+            typeof jsCRiPS.globalVariableTables[0].table !== 'undefined') {
+            return;
         }
+
+        makeTableAndSettingOption(jsCRiPS.globalVariableTables);
+        makeTableAndSettingOption(jsCRiPS.localVariableTables);
+
+        function makeTableAndSettingOption(tableWrappers, className) {
+            for (var i = 0; i < tableWrappers.length; i++) {
+                tableWrappers[i].table = makeTable(tableWrappers[i].tableClassName);
+                tableWrappers[i].appendChild(tableWrappers[i].table);
+            }
+        }
+
+        // HTML要素のTableを作る
+        function makeTable(className) {
+            var table = document.createElement('table');
+            table.setAttribute('class', className);
+            table.setAttribute('width', '95%');
+            table.setAttribute('border', '1');
+            table.style.tableLayout = 'fixed';
+
+            var newRow = table.insertRow(0);
+            var thName = document.createElement('th');
+            thName.innerHTML = 'name';
+            var thValue = document.createElement('th');
+            thValue.innerHTML = 'value';
+            var thType = document.createElement('th');
+            thType.innerHTML = 'type';
+            var thPos = document.createElement('th');
+            thPos.innerHTML = 'position';
+            newRow.appendChild(thName);
+            newRow.appendChild(thValue);
+            newRow.appendChild(thType);
+            newRow.appendChild(thPos);
+
+            return table;
+        }
+
     }
 
-    function createDebugTable(id) {
-        var table = document.createElement('table');
-        table.setAttribute('id', id);
-        table.setAttribute('width', '95%');
-        table.setAttribute('border', '1');
-        table.style.tableLayout = 'fixed';
-
-        var newRow = table.insertRow(0);
-        var thName = document.createElement('th');
-        thName.innerHTML = 'name';
-        var thValue = document.createElement('th');
-        thValue.innerHTML = 'value';
-        var thType = document.createElement('th');
-        thType.innerHTML = 'type';
-        var thPos = document.createElement('th');
-        thPos.innerHTML = 'position';
-        newRow.appendChild(thName);
-        newRow.appendChild(thValue);
-        newRow.appendChild(thType);
-        newRow.appendChild(thPos);
-
-        return table;
-    }
 }
 
 function debugNext() {
@@ -2174,28 +2172,44 @@ function JCRiPS(selector) {
     obj.elems = [];
     addSelectedElems();
 
-    // option
-    //  - maxLength:テキストエリア内の最大文字数、0の場合は制限なし
+    // *****  define Components *****
     obj.console = function (userOpts) {
         var opts = {
-            maxLength: 10000
+            maxLength: 10000    // テキストエリア内の最大文字数、0の場合は制限なし
         };
-        setComponentData(jsCRiPS.console,obj.elems,userOpts,opts);
+        setComponentData(jsCRiPS.console, obj.elems, userOpts, opts);
     };
 
-    // option
-    //  - maxLength:テキストエリア内の最大文字数、0の場合は制限なし
-    obj.globalVariableTable = function (userOpts) {
+    function makeVariableTable(tableKind, userOpts) {
+        var tcn = (tableKind === jsCRiPS.globalVariableTables) ?
+            'globalVariableTables' : 'localVariableTables';
         var opts = {
-            position: 'absolute'
-
+            position: 'absolute',
+            draggable: true,
+            scroll: true,
+            tableClassName: tcn
         };
-        setComponentData(jsCRiPS.globalVariableTable,obj.elems,userOpts,opts);
+        setComponentData(tableKind, obj.elems, userOpts, opts, function (elem) {
+            if (elem.scroll) {
+                elem.style['overflow-y'] = 'scroll';
+            }
+            if (elem.draggable) {
+                $(elem).draggable();    // require JQuery UI
+            }
+        });
+    }
+
+    obj.globalVariableTables = function (userOpts) {
+        makeVariableTable(jsCRiPS.globalVariableTables, userOpts);
+    };
+
+    obj.localVariableTables = function (userOpts) {
+        makeVariableTable(jsCRiPS.localVariableTables, userOpts);
     };
 
     return obj;
 
-    // 以下便利メソッド
+    // ***** 以下便利メソッド *****
     // selectorで指定された要素をobj.elems配列に格納していく
     function addSelectedElems() {
         var selectors = selector.toString().split(',');
@@ -2204,21 +2218,28 @@ function JCRiPS(selector) {
             if (s.length === 0) {
                 continue;
             }
+            switch (s[0]) {
+                case '.':   // class
+                    pushElems(document.getElementsByClassName(s.substr(1)), s);
+                    break;
+                case '#':   // id
+                    pushElems([document.getElementById(s.substr(1))], s);
+                    break;
+                default:    // HTML Elem
+                    pushElems(document.getElementsByTagName(s), s);
+            }
+        }
 
-            if (s[0] === '.') { // class
-                var elems = document.getElementsByClassName(s.substr(1));
-                for (var j = 0; j < elems.length; j++) {
-                    obj.elems.push(elems[j]);
-                }
-            } else if (s[0] === '#') { // id
-                obj.elems.push(document.getElementById(s.substr(1)));
-            } else { // HTML Elem
-                var elems = document.getElementsByTagName(s);
-                for (var j = 0; j < elems.length; j++) {
-                    obj.elems.push(elems[j]);
+        function pushElems(elems, trgElem) {
+            if (elems.length === 0 || elems[0] === null) {
+                console.log(`指定した要素が見つかりません[ ${trgElem} ]`);
+            } else {
+                for (var i = 0; i < elems.length; i++) {
+                    obj.elems.push(elems[i]);
                 }
             }
         }
+
     }
 
     // fromからdstへオブジェクトを上書きする
@@ -2235,18 +2256,18 @@ function JCRiPS(selector) {
     }
 
     // elemsをComponentへ追加しつつオプションをセットする
-    function setComponentData(component, elems, userOptions, defaultOptions) {
+    function setComponentData(component, elems, userOptions, defaultOptions, additionalFunc) {
         overwriteOptions(userOptions, defaultOptions);
         for (var i = 0; i < elems.length; i++) {
             component.push(elems[i]);
             overwriteOptions(defaultOptions, elems[i], true);
+            if (typeof additionalFunc !== 'undefined') {
+                additionalFunc(elems[i]);
+            }
         }
     }
-}
 
-jsCRiPS.orDefault = function (v, defaultValue) {
-    return !(typeof v === 'undefined') ? v : defaultValue;
-};
+}
 
 // 亀描画用データ
 jsCRiPS.kameMotions = [
