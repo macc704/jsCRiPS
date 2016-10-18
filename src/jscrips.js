@@ -9,7 +9,7 @@ jsCRiPS.converter.convert = function (source) {
     var yieldAST = jsCRiPS.withKame ?
         esprima.parse('jsCRiPS.th.join();').body[0] : esprima.parse(';').body[0];
 
-    //for debug       
+    //for debug
     document.getElementById('ast').value = JSON.stringify(ast, null, 4);
 
     var processStatement = function (stmt) {
@@ -85,6 +85,422 @@ jsCRiPS.converter.convert = function (source) {
     ast.body = processStatements(ast.body);
     return escodegen.generate(ast);
 };
+
+jsCRiPS.debugConverter = {};
+jsCRiPS.debugWait = function () {
+    jsCRiPS.th = Thread.create(function () {    //  入力待ち用にスレッドを生成
+        var nextButton = document.getElementById('next');
+        var startTime = new Date();
+        if (jsCRiPS.isBreakPoint) {
+            autoStart(false);
+        }
+        while (!jsCRiPS.debugReady) {
+            Thread.sleep(1);
+            if (nextButton && !jsCRiPS.AutoMode) {
+                nextButton.disabled = false;
+                nextButton.style.opacity = 1;
+            } else if (jsCRiPS.AutoMode && ((new Date() - startTime) >= jsCRiPS.AutoSpeed)) {
+                jsCRiPS.debugReady = true;
+            }
+        }
+        jsCRiPS.debugReady = false;
+        if (nextButton && !jsCRiPS.AutoMode) {
+            nextButton.disabled = true;
+            nextButton.style.opacity = 0.7;
+        }
+    });
+};
+
+jsCRiPS.debugVariablePrint = function () {
+    jsCRiPS.debugVariablePrintHelper = function (table, stack, color) {
+        var argValues = '';
+        for (var i = 0; i < stack.args.length; i++) {
+            argValues += stack.args[i];
+            if ((i + 1) < stack.args.length) {
+                argValues += ',';
+            }
+        }
+        var position = stack.path + '(' + argValues + ')';
+        position = (position === '()') ? 'Global' : position;
+        for (var i = 0; i < stack.vDecls.length; i++) {
+            var newRow = table.insertRow(-1);
+
+            var tdName = document.createElement('td');
+            tdName.innerHTML = stack.vDecls[i][0];
+            tdName.style.backgroundColor = color;
+
+            var tdValue = document.createElement('td');
+            var v = stack.vDecls[i][1];
+            var prevV = stack.vDecls[i][3];
+            // Turtleなら座標と角度を表示
+            var valueStr = "";
+            if (v && (typeof v._looks !== 'undefined')) {
+                valueStr = '<img src=\'../test/img/turtle.png\'>';
+            } else {
+                valueStr = (typeof prevV === 'undefined') ? v : prevV + " -> " + v;
+            }
+            tdValue.innerHTML = valueStr;
+            // 初めて生成される変数なら黄色くする
+            var vcolor = (stack.vDecls[i][2]) ? '#EE3' : color;
+            stack.vDecls[i][2] = false;
+            tdValue.style.backgroundColor = vcolor;
+
+            var tdType = document.createElement('td');
+            tdType.innerHTML = (typeof stack.vDecls[i][1]);
+            tdType.style.backgroundColor = color;
+
+            var tdPos = document.createElement('td');
+            tdPos.innerHTML = position;
+            tdPos.style.backgroundColor = color;
+
+            newRow.appendChild(tdName);
+            newRow.appendChild(tdValue);
+            newRow.appendChild(tdType);
+            newRow.appendChild(tdPos);
+        }
+    };
+
+    // 毎回テーブルを作成し直す
+    // テーブルの削除
+    for (var i = 0; i < jsCRiPS.globalVariableTables.length; i++) {
+        while (jsCRiPS.globalVariableTables[i].table.rows[1]) {
+            jsCRiPS.globalVariableTables[i].table.deleteRow(1);
+        }
+    }
+    for (var i = 0; i < jsCRiPS.localVariableTables.length; i++) {
+        while (jsCRiPS.localVariableTables[i].table.rows[1]) {
+            jsCRiPS.localVariableTables[i].table.deleteRow(1);
+        }
+    }
+
+    // GlobalVariableTableの更新
+    for (var i = 0; i < jsCRiPS.globalVariableTables.length; i++) {
+        jsCRiPS.debugVariablePrintHelper(jsCRiPS.globalVariableTables[i].table, jsCRiPS.callStack[0], '#FFF');
+    }
+
+    // LocalVariableTableの更新にはコールスタック毎に行を追加してく
+    for (var i = 1; i < jsCRiPS.callStack.length; i++) {
+        var color = (i === jsCRiPS.callStack.length - 1) ? '#FFF' : '#CCC';
+        for (var j = 0; j < jsCRiPS.localVariableTables.length; j++) {
+            jsCRiPS.debugVariablePrintHelper(jsCRiPS.localVariableTables[j].table, jsCRiPS.callStack[i], color);
+        }
+    }
+};
+
+jsCRiPS.addVariable = function (stmt, name, idx) {
+    jsCRiPS.addVariableHelper = function (name, value) {
+        var lastIdx = jsCRiPS.callStack.length - 1;
+        jsCRiPS.callStack[lastIdx].addVariable(name, value, true);
+    };
+    if (typeof idx !== 'undefined') {
+        stmt.splice(idx, 0, esprima.parse('jsCRiPS.addVariableHelper(\'' + name + '\',' + name + ');').body[0]);
+    } else {
+        stmt.push(esprima.parse('jsCRiPS.addVariableHelper(\'' + name + '\',' + name + ');').body[0]);
+    }
+};
+
+jsCRiPS.addArgument = function (stmt, name, idx) {
+    jsCRiPS.addArgumentHelper = function (name, value) {
+        var lastIdx = jsCRiPS.callStack.length - 1;
+        jsCRiPS.callStack[lastIdx].addArgument(name, value);
+    };
+    if (typeof idx !== 'undefined') {
+        stmt.splice(idx, 0, esprima.parse('jsCRiPS.addArgumentHelper(\'' + name + '\',' + name + ');').body[0]);
+    } else {
+        stmt.push(esprima.parse('jsCRiPS.addArgumentHelper(\'' + name + '\',' + name + ');').body[0]);
+    }
+};
+
+jsCRiPS.updateVariable = function (stmt, name, idx) {
+    jsCRiPS.updateVariableHelper = function (name, value) {
+        var lastIdx = jsCRiPS.callStack.length - 1;
+        jsCRiPS.callStack[lastIdx].updateVariable(name, value, true);
+    };
+    if (typeof idx !== 'undefined') {
+        stmt.splice(idx, 0, esprima.parse('jsCRiPS.updateVariableHelper(\'' + name + '\',' + name + ');').body[0]);
+    } else {
+        stmt.push(esprima.parse('jsCRiPS.updateVariableHelper(\'' + name + '\',' + name + ');').body[0]);
+    }
+};
+
+
+// ネストした関数に未対応
+jsCRiPS.pushCallStack = function (stmt, name) {
+    jsCRiPS.functionNames.push(name);
+    stmt.unshift(esprima.parse('jsCRiPS.callStack.push(makeCallStack(\'' + name + '\'));').body[0]);
+};
+
+jsCRiPS.popCallStack = function (stmt, idx) {
+    jsCRiPS.popCallStackHelper = function () {
+        jsCRiPS.callStack.pop();
+    };
+    if (typeof idx !== 'undefined') {
+        stmt.splice(idx, 0, esprima.parse('jsCRiPS.popCallStackHelper();').body[0]);
+    } else {
+        stmt.push(esprima.parse('jsCRiPS.popCallStackHelper();').body[0]);
+    }
+
+};
+
+function makeCallStack(path) {
+    var ret = {};
+    ret.args = [];
+    ret.path = path;
+    ret.vDecls = [];
+
+    ret.addArgument = function (name, value) {
+        ret.args.push(value);
+        ret.addVariable(name, value, true);
+    };
+
+    ret.addVariable = function (name, value, isNew) {
+        var alreadyDeclared = false;
+        for (var i = 0; i < ret.vDecls.length; i++) {
+            alreadyDeclared = (alreadyDeclared || ret.vDecls[i][0] === name);
+        }
+        if (alreadyDeclared) {
+            ret.updateVariable(name, value, isNew);
+        } else {
+            ret.vDecls.push([name, value, isNew]);
+        }
+    };
+
+    ret.updateVariable = function (name, value, isNew) {
+        var find = false;
+        for (var i = 0; i < ret.vDecls.length; i++) {
+            if (ret.vDecls[i][0] === name) {
+                ret.vDecls[i][3] = ret.vDecls[i][1]; // 前の値を保持
+                ret.vDecls[i][1] = value;
+                ret.vDecls[i][2] = isNew;
+                find = true;
+            }
+        }
+        if (ret !== jsCRiPS.callStack[0] && !find) {    // may be Global variable
+            jsCRiPS.callStack[0].updateVariable(name, value, isNew);
+        } else if (ret === jsCRiPS.callStack[0] && !find) { // declared
+            ret.addVariable(name, value, true);
+        }
+    };
+
+    ret.toString = function () {
+        var argValues = '';
+        for (var i = 0; i < ret.args.length; i++) {
+            argValues += ret.args[i];
+            if ((i + 1) < ret.args.length) {
+                argValues += ',';
+            }
+        }
+        return ret.path + '(' + argValues + ')';
+    };
+
+    return ret;
+}
+
+jsCRiPS.debugConverter.convert = function (source) {
+    // 空白行に対するBreakpointへ対応する場合、ただし"{"のみの行など空白行以外でも対応できないBreakpointが発生してしまうので中途半端
+    //var lines = source.split(/\r\n|\r|\n/);
+    //jsCRiPS.dummy = function(){return 1;};
+    //source = '';
+    //for (var i = 0; i < lines.length; i++) {
+    //    source += ((lines[i] === '') ? 'jsCRiPS.dummy();' : lines[i]) + '\r\n';
+    //}
+
+    var ast = esprima.parse(source, {loc: true});
+    var yieldAST = jsCRiPS.withKame ?
+        esprima.parse('jsCRiPS.th.join();').body[0] : esprima.parse(';').body[0];
+
+    function pushDebugStatement(stmt, line, end, idx) {
+        var block = esprima.parse('{}').body[0];
+        block.body.push(esprima.parse('setHighlight(' + (line - 1) + ',' + (end - 1) + ');').body[0]);
+        block.body.push(esprima.parse('jsCRiPS.debugVariablePrint();').body[0]);
+        // なぜかdebugWaitの引数として渡せない(undefinedになる)ので、グローバル変数にbreakpointの情報を持たせる
+        block.body.push(esprima.parse('jsCRiPS.isBreakPoint = jsCRiPS.breakPoints.indexOf(' + (line - 1) + ') !== -1;').body[0]);
+        block.body.push(esprima.parse('jsCRiPS.debugWait();').body[0]);
+        block.body.push(yieldAST);
+        if (typeof idx !== 'undefined') {
+            stmt.splice(idx, 0, block);
+        } else {
+            stmt.push(block);
+        }
+    }
+
+    function pushInputExpression(pushed, left) {
+        pushed.push(esprima.parse('jsCRiPS.th.join();').body[0]);
+        pushed.push(esprima.parse(left + ' = jsCRiPS.inputText;').body[0]);
+    }
+
+    //for debug
+    document.getElementById('ast').value = JSON.stringify(ast, null, 4);
+
+    var processStatement = function (stmt) {
+        if (stmt.type === 'BlockStatement') {
+            stmt.body = processStatements(stmt.body);
+        } else if (stmt.type === 'IfStatement') {
+            if (stmt.consequent) {  // if
+                stmt.consequent = processStatement(stmt.consequent);
+                var block1 = esprima.parse('{}').body[0];
+                pushDebugStatement(block1.body, stmt.test.loc.start.line, stmt.test.loc.end.line);
+                block1.body.push(stmt);
+                stmt = block1;
+            }
+            if (stmt.alternate) {   // else
+                stmt.alternate = processStatement(stmt.alternate);
+                var block2 = esprima.parse('{}').body[0];
+                pushDebugStatement(block2.body, stmt.test.loc.start.line, stmt.test.loc.end.line);
+                block2.body.push(stmt);
+                stmt = block2;
+
+            } else if (stmt.body.length > 0 && stmt.body[1].alternate) {   // else ifが連なった場合
+                stmt.body[1].alternate = processStatement(stmt.body[1].alternate);
+            }
+        } else if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'CallExpression') {
+            return newAssignmentBlock();
+        } else if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'AssignmentExpression' &&
+            stmt.expression.right.type === 'CallExpression') {
+            return newAssignmentBlock(stmt.expression.left.name, stmt.expression.right.callee.name === 'input');
+        } else if (stmt.type === 'VariableDeclaration' && stmt.declarations[0].init &&
+            stmt.declarations[0].init.type === 'CallExpression') {
+            return newAssignmentBlock(stmt.declarations[0].id.name, stmt.declarations[0].init.callee.name === 'input');
+        }
+        return stmt;
+
+        function newAssignmentBlock(left, isInput) {
+            var block = esprima.parse('{}').body[0];
+            block.body.push(stmt);
+            if (isInput && left) {
+                pushInputExpression(block.body, left);
+            } else {
+                block.body.push(yieldAST);
+            }
+            jsCRiPS.updateVariable(block.body, left);
+            pushDebugStatement(block.body);
+            return block;
+        }
+
+    };
+
+    var processStatements = function (stmts) {
+        var newStmts = [];
+        var updateVars = new Set();// 同じ変数を2回更新しないようにするため
+        for (var i = 0; i < stmts.length; i++) {
+            var each = stmts[i];
+            if (each.type === 'BlockStatement') {
+                each.body = processStatements(each.body);
+            } else if (each.type === 'IfStatement') {
+                if (each.consequent) {  // if
+                    pushDebugStatement(newStmts, each.test.loc.start.line, each.test.loc.end.line);
+                    each.consequent = processStatement(each.consequent);
+                }
+                if (each.alternate) {   // else (if)
+                    each.alternate = processStatement(each.alternate);
+                }
+            } else if (each.type === 'WhileStatement') {
+                each.body = processStatement(each.body);
+            } else if (each.type === 'ForStatement') {
+                pushDebugStatement(newStmts, each.loc.start.line, each.loc.end.line);
+                if (each.init.type === 'VariableDeclaration') { // for(var i = 0,j = 0; ....)
+                    for (var j = 0; j < each.init.declarations.length; j++) {
+                        jsCRiPS.addVariable(newStmts, each.init.declarations[j].id.name);
+                    }
+                }
+                each.body = processStatement(each.body);
+                var block = esprima.parse('{}').body[0];
+
+                if (each.init.type === 'VariableDeclaration') { // for(var i = 0,j = 0; ....)
+                    for (var j = 0; j < each.init.declarations.length; j++) {
+                        updateVars.add(each.init.declarations[j].id.name);
+                    }
+                }
+                if (each.update.type === 'UpdateExpression') {
+                    updateVars.add(each.update.argument.name);
+                } else if (each.update.type === 'SequenceExpression') {
+                    for (var j = 0; j < each.update.expressions.length; j++) {
+                        if (each.update.expressions[j].type === 'UpdateExpression') {
+                            updateVars.add(each.update.expressions[j].argument.name);
+                        } else if (each.update.expressions[j].type === 'AssignmentExpression') {
+                            updateVars.add(each.update.expressions[j].left.name);
+                        }
+                    }
+                }
+                for (let vName of updateVars) {
+                    jsCRiPS.updateVariable(block.body, vName);
+                }
+                block.body.push(each.body);
+                each.body = block;
+            } else if (each.type === 'FunctionDeclaration') {
+                each.body = processStatement(each.body);
+                if (each.body.type === 'BlockStatement') {
+                    var lastLine = (each.params.length === 0) ?
+                        each.id.loc.end.line : each.params[each.params.length - 1].loc.end.line;
+                    if (each.params.length !== 0) {
+                        for (var j = 0; j < each.params.length; j++) {
+                            jsCRiPS.addArgument(each.body.body, each.params[j].name, j);
+                            lastLine = each.params[j].loc.end.line;
+                        }
+                    }
+                    pushDebugStatement(each.body.body, each.id.loc.start.line, lastLine, 0);
+                    jsCRiPS.popCallStack(each.body.body);
+                    // 最後に先頭に挿入する必要あり
+                    jsCRiPS.pushCallStack(each.body.body, each.id.name);
+                }
+            }
+            newStmts.push(each);
+            for (let vName of updateVars) {
+                jsCRiPS.updateVariable(newStmts, vName);
+            }
+            updateVars.clear();
+            if (each.type === 'ExpressionStatement' && each.expression.type === 'CallExpression') {
+                pushDebugStatement(newStmts, each.expression.callee.loc.start.line, each.expression.callee.loc.end.line, newStmts.length - 1);
+                newStmts.push(yieldAST);
+            } else if (each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
+                each.expression.right.type === 'CallExpression') {
+                pushDebugStatement(newStmts, each.expression.loc.start.line, each.expression.loc.end.line, newStmts.length - 2);
+                // var x=input(),y=input() や f(input()) や if(input()=='abc')などには未対応
+                if (each.expression.right.callee.name === 'input') {  // inputの場合は必ずjoinする
+                    pushInputExpression(newStmts, each.expression.left.name);
+                } else {
+                    newStmts.push(yieldAST);
+                }
+                jsCRiPS.updateVariable(newStmts, each.expression.left.name);
+            } else if (each.type === 'VariableDeclaration') {
+                if (each.declarations[0].init && each.declarations[0].init.type === 'CallExpression') {
+                    pushDebugStatement(newStmts, each.declarations[0].loc.start.line, each.declarations[each.declarations.length - 1].loc.end.line, newStmts.length - 1);
+                    if (each.declarations[0].init.callee.name === 'input') {    // inputの場合は必ずjoinする
+                        pushInputExpression(newStmts, each.declarations[0].id.name);
+                    } else {
+                        newStmts.push(yieldAST);
+                    }
+                } else {
+                    pushDebugStatement(newStmts, each.declarations[0].loc.start.line, each.declarations[each.declarations.length - 1].loc.end.line, newStmts.length - 1);
+                }
+                for (var j = 0; j < each.declarations.length; j++) {
+                    jsCRiPS.addVariable(newStmts, each.declarations[j].id.name);
+                }
+            } else if (each.type === 'ReturnStatement') {
+                pushDebugStatement(newStmts, each.loc.start.line, each.loc.end.line, newStmts.length - 1);
+                jsCRiPS.popCallStack(newStmts, newStmts.length - 1);
+            }
+
+            if (each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
+                each.expression.right.type !== 'CallExpression') {
+                pushDebugStatement(newStmts, each.expression.loc.start.line, each.expression.loc.end.line, newStmts.length - 1);
+                jsCRiPS.updateVariable(newStmts, each.expression.left.name);
+            } else if (each.type === 'ExpressionStatement' && each.expression.type === 'UpdateExpression') {
+                pushDebugStatement(newStmts, each.expression.loc.start.line, each.expression.loc.end.line);
+                jsCRiPS.updateVariable(newStmts, each.expression.argument.name);
+            }
+
+        }
+        return newStmts;
+    };
+    ast.body = processStatements(ast.body);
+    ast.body.push(esprima.parse('jsCRiPS.debugVariablePrint();').body[0]);
+    ast.body.push(esprima.parse('setHighlight(' + (ast.loc.end.line) + ',' + (ast.loc.end.line) + ');').body[0]);
+    ast.body.push(esprima.parse('jsCRiPS.endRun();').body[0]);
+
+    return escodegen.generate(ast);
+};
+
 // 開始時に例外が出ないために予めスレッドを生成しておく、例外を無視する仕様にした場合いらなくなるかも
 // メインスレッド
 jsCRiPS.mth = Concurrent.Thread.create(function () {
@@ -101,6 +517,11 @@ jsCRiPS.inputText = ''; // 入力されたテキスト
 jsCRiPS.inputted = false; // 入力制御用
 jsCRiPS.tCanvas = {};    // Turtle描画用Canvas
 jsCRiPS.lCanvas = {};   // 軌跡描画用Canvas
+
+jsCRiPS.debugReady = false; // デバッグ制御用
+jsCRiPS.callStack = [];     // デバッグ用コールスタック
+jsCRiPS.functionNames = [];
+
 /*global Map*/
 jsCRiPS.parentChecker = new Map(); // ListTurtleでparentCheckを行うための親子管理マップ
 jsCRiPS.audios = [];
@@ -121,6 +542,15 @@ jsCRiPS.LIST_MARGIN = 12;
 jsCRiPS.CARD_MARGIN = 5;
 jsCRiPS.INPUT_MARGIN = 2;
 jsCRiPS.BUTTON_MARGIN = 5;
+
+// for debugger
+jsCRiPS.breakPoints = [];
+
+// jsCRiPS Components
+jsCRiPS.console = [];
+jsCRiPS.localVariableTables = [];
+jsCRiPS.globalVariableTables = [];
+
 
 function createTurtle() {
     var t = {};
@@ -159,12 +589,12 @@ function createTurtle() {
                 var tmpPendown = t.penDown;
                 t.up();
                 for (var i = jsCRiPS.rotateStep; i < deg; i += jsCRiPS.rotateStep) {
-                    draw(t);
+                    jsCRiPS.draw(t);
                     t.angle += jsCRiPS.rotateStep;
                     Thread.sleep(jsCRiPS.sleepTime);
                 }
                 t.angle = tmpAngle + deg;
-                draw(t);
+                jsCRiPS.draw(t);
                 t.penDown = tmpPendown;
             }, deg, t);
         }
@@ -179,12 +609,12 @@ function createTurtle() {
                 var tmpPendown = t.penDown;
                 t.up();
                 for (var i = jsCRiPS.rotateStep; i < deg; i += jsCRiPS.rotateStep) {
-                    draw(t);
+                    jsCRiPS.draw(t);
                     t.angle -= jsCRiPS.rotateStep;
                     Thread.sleep(jsCRiPS.sleepTime);
                 }
                 t.angle = tmpAngle - deg;
-                draw(t);
+                jsCRiPS.draw(t);
                 t.penDown = tmpPendown;
             }, deg, t);
         }
@@ -203,13 +633,13 @@ function createTurtle() {
                 for (var i = jsCRiPS.moveStep; i < d; i += jsCRiPS.moveStep) {
                     t.x = xx + dx * i;
                     t.y = yy + dy * i;
-                    draw(t);
+                    jsCRiPS.draw(t);
                     t.setRxRy();
                     Thread.sleep(jsCRiPS.sleepTime);
                 }
                 t.x = xx + dx * d;
                 t.y = yy + dy * d;
-                draw(t);
+                jsCRiPS.draw(t);
             }, d, t);
         }
     };
@@ -227,17 +657,18 @@ function createTurtle() {
                 for (var i = jsCRiPS.moveStep; i < d; i += jsCRiPS.moveStep) {
                     t.x = xx - dx * i;
                     t.y = yy - dy * i;
-                    draw(t);
+                    jsCRiPS.draw(t);
                     t.setRxRy();
                     Thread.sleep(jsCRiPS.sleepTime);
                 }
                 t.x = xx - dx * d;
                 t.y = yy - dy * d;
-                draw(t);
+                jsCRiPS.draw(t);
             }, d, t);
         }
     };
 
+    // TODO nokame時にupとdownなどがうまく動作しない問題あり(描画関係以外の命令が動かない？)
     t.up = function () {
         t.penDown = false;
     };
@@ -495,6 +926,11 @@ function createTurtle() {
         );
     };
 
+    t.strState = function () {
+        return '(x,y) = (' + parseInt(t.x) + ',' + parseInt(t.y) + ') / ' +
+            'angle = ' + t.angle + ' / ' +
+            '(width,height) = (' + t.width + ',' + t.height + ')';
+    };
 
     //　描画関係
     t.draw = function (ctx) {
@@ -510,7 +946,7 @@ function createTurtle() {
                 var nx = (kx * (-dy) + ky * (-dx)) * t.kameScale;
                 var ny = (kx * dx + ky * (-dy)) * t.kameScale;
                 if (j > 0) {
-                    drawLine(ctx, ix + px, iy + py, ix + nx, iy + ny);
+                    jsCRiPS.drawLine(ctx, ix + px, iy + py, ix + nx, iy + ny);
                 }
                 px = nx;
                 py = ny;
@@ -636,8 +1072,7 @@ function createImageTurtle(imgName) {
         };
         img.onerror = function () {
             jsCRiPS.imgLoaded = true;   // 例外投げたほうがいい？
-            document.getElementById('console').value +=
-                document.getElementById('console').value + '画像[' + imgName + ']が見つかりません\n';
+            println('画像[' + imgName + ']が見つかりません');
         };
     } else {
         t._looks = jsCRiPS.imgs[imgName];
@@ -723,7 +1158,7 @@ function createListTurtle(autoHide, name) {
 
     t.list = [];
     t.cursor = 0;
-    t.bgColor = "white";
+    t.bgColor = 'white';
 
     t.actualWidth = 0;
     t.actualHeight = 0;
@@ -769,7 +1204,7 @@ function createListTurtle(autoHide, name) {
             parentCheck(obj);
             obj.show(!autoHide);
             if (x < 0 || t.list.length < x) {
-                println("[ add(" + x + "," + obj + ") ]挿入位置が不適切なので末尾に追加しました。");
+                println('[ add(' + x + ',' + obj + ') ]挿入位置が不適切なので末尾に追加しました。');
                 t.list.push(obj);
             } else {
                 t.list.splice(x, 0, obj);
@@ -813,7 +1248,7 @@ function createListTurtle(autoHide, name) {
                 }
             }
             if (trgIdx === -1) {
-                println("remove対象が存在しません。");
+                println('remove対象が存在しません。');
                 return null;
             }
         }
@@ -1101,7 +1536,7 @@ function createInputTurtle() {
         if (e.keyCode === 8) {   // backspace
             newStr = t.str.slice(0, -1);
         } else {
-            newStr += String.fromCharCode(e.charCode);
+            newStr += String.fromCharCode(Number(e.charCode));
             if (JapaneseMode) {
                 newStr = romanConvert(newStr);
             }
@@ -1181,8 +1616,7 @@ function createSoundTurtle(path) {
     t.audio = new Audio(path);
 
     t.audio.onerror = function () {
-        document.getElementById('console').value +=
-            document.getElementById('console').value + 'サウンド[' + path + ']が見つかりません\n';
+        println('サウンド[' + path + ']が見つかりません');
     };
 
     t.play = function () {
@@ -1262,53 +1696,53 @@ function createSoundTurtle(path) {
 
 
 /* 描画関連 */
-function draw(t) {
-    clearTurtleCanvas();
+jsCRiPS.draw = function (t) {
+    jsCRiPS.clearTurtleCanvas();
     if (t) {    // t == Turtle
         t.kameType++;
     }
     for (var i = 0; i < jsCRiPS.ttls.length; i++) {
         if (jsCRiPS.ttls[i]._isShow) {
-            drawTurtle(jsCRiPS.ttls[i]);
+            jsCRiPS.drawTurtle(jsCRiPS.ttls[i]);
         }
     }
     if (t && t.penDown) {
-        drawLocus(t);
+        jsCRiPS.drawLocus(t);
     }
-}
+};
 
-function drawTurtle(t) {
+jsCRiPS.drawTurtle = function (t) {
     var ctx = jsCRiPS.tCanvas.getContext('2d');
     t.draw(ctx);
-}
+};
 
-function drawLine(ctx, x, y, dx, dy) {
+jsCRiPS.drawLine = function (ctx, x, y, dx, dy) {
     ctx.beginPath();
     ctx.moveTo(x, y);
     ctx.lineTo(dx, dy);
     ctx.closePath();
     ctx.stroke();
-}
+};
 
-function drawLocus(t) {
+jsCRiPS.drawLocus = function (t) {
     var ctx = jsCRiPS.lCanvas.getContext('2d');
     ctx.strokeStyle = t.penColor;
-    drawLine(ctx, t.rx, t.ry, t.x, t.y);
-}
+    jsCRiPS.drawLine(ctx, t.rx, t.ry, t.x, t.y);
+};
 
-function clearTurtleCanvas() {
-    clearCanvas('turtleCanvas');
-}
+jsCRiPS.clearTurtleCanvas = function () {
+    jsCRiPS.clearCanvas('turtleCanvas');
+};
 
-function clearLocusCanvas() {
-    clearCanvas('locusCanvas');
-}
+jsCRiPS.clearLocusCanvas = function () {
+    jsCRiPS.clearCanvas('locusCanvas');
+};
 
-function clearCanvas(name) {
+jsCRiPS.clearCanvas = function (name) {
     var canvas = document.getElementById(name);
     var ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-}
+};
 
 /* 一般補助メソッド */
 function deg2rad(deg) {
@@ -1316,7 +1750,7 @@ function deg2rad(deg) {
 }
 
 function isInteger(str) {
-    return (Number.isNaN(Number(str)) || Number.isNaN(parseInt(str, 10)));
+    return (!Number.isNaN(Number(str)) || !Number.isNaN(parseInt(str, 10)));
 }
 
 // ユーザー用、秒単位で指定 sleepにするとなぜかConcurrent.Thread.jsのsleepが呼ばれてしまう
@@ -1327,7 +1761,7 @@ function jsleep(s) {
 }
 
 function update() {
-    draw();
+    jsCRiPS.draw();
 }
 
 function start(f) {
@@ -1338,7 +1772,7 @@ function random(n) {
     return parseInt(Math.random() * n);
 }
 
-// CRiPS#windows.size -> jsCRiPS#canvasSize
+// CRiPS#window.size -> jsCRiPS#canvasSize
 function canvasSize(w, h) {
     var tc = jsCRiPS.tCanvas;
     var lc = jsCRiPS.lCanvas;
@@ -1351,12 +1785,12 @@ function canvasSize(w, h) {
 }
 
 /*global main*/
-function restart() {
+jsCRiPS.initProgram = function () {
     try {
         jsCRiPS.mth.kill();
         jsCRiPS.th.kill();
     } catch (e) {
-        // TODO mth,thが終了時に例外が出る、無視でok?その他エラーは例外で処理するべきか？
+        // TODO mth,thが終了時に例外が出る、無視でok?その他エラーは例外で処理するべきか？いつの間にかでなくなってる…？
         println('ERROR [ ' + e + ' ]');
     }
     jsCRiPS.mth = Thread.create(function () {
@@ -1371,9 +1805,9 @@ function restart() {
         return;
     }
 
-    clearTurtleCanvas();
-    clearLocusCanvas();
-    document.getElementById('console').value = '';
+    jsCRiPS.clearTurtleCanvas();
+    jsCRiPS.clearLocusCanvas();
+    jsCRiPS.clearConsole();
 
     jsCRiPS.parentChecker.clear();
     jsCRiPS.ttls = [];
@@ -1382,7 +1816,122 @@ function restart() {
         jsCRiPS.audios[i].src = '';
     }
     jsCRiPS.audios = [];
+};
+
+
+function restart() {
+    jsCRiPS.initProgram();
     main();
+}
+
+jsCRiPS.endRun = function () {
+    document.getElementById('runOrPauseImg').src = './img/run.png';
+    jsCRiPS.runReady = false;
+};
+jsCRiPS.runReady = false;
+
+/* htmlから呼び出される、html側へ呼ぶ関数群、外部とのAPI */
+function debugStart() {
+
+    jsCRiPS.initProgram();
+
+    jsCRiPS.PenCheckBox = document.getElementById('penCheckbox');
+    if (jsCRiPS.PenCheckBox) {  // 必要？
+        jsCRiPS.PenCheckBox.disabled = false;
+    }
+    var PenSpeedSlider = document.getElementById('movePenSpeed');
+    if (PenSpeedSlider) {  // 必要？
+        PenSpeedSlider.disabled = false;
+    }
+    jsCRiPS.AutoSpeed = (Number(PenSpeedSlider.value) * Number(PenSpeedSlider.value)) * 1000;
+
+    jsCRiPS.debugReady = false;
+    jsCRiPS.callStack = [];
+    jsCRiPS.callStack[0] = makeCallStack('');
+    jsCRiPS.functionNames = [];
+
+    makeVariableTable();
+
+    /* global debugMain */
+    debugMain();
+
+    autoStart(false);
+    jsCRiPS.runReady = true;
+
+    // debug用の変数テーブルを作成する
+    function makeVariableTable() {
+
+        // 既にテーブルが作成されている場合は何もしない
+        if (jsCRiPS.globalVariableTables.length !== 0 &&
+            typeof jsCRiPS.globalVariableTables[0].table !== 'undefined') {
+            return;
+        }
+
+        makeTableAndSettingOption(jsCRiPS.globalVariableTables);
+        makeTableAndSettingOption(jsCRiPS.localVariableTables);
+
+        function makeTableAndSettingOption(tableWrappers, className) {
+            for (var i = 0; i < tableWrappers.length; i++) {
+                tableWrappers[i].table = makeTable(tableWrappers[i].tableClassName);
+                tableWrappers[i].appendChild(tableWrappers[i].table);
+            }
+        }
+
+        // HTML要素のTableを作る
+        function makeTable(className) {
+            var table = document.createElement('table');
+            table.setAttribute('class', className);
+            table.setAttribute('width', '95%');
+            table.setAttribute('border', '1');
+            table.style.tableLayout = 'fixed';
+
+            var newRow = table.insertRow(0);
+            var thName = document.createElement('th');
+            thName.innerHTML = 'name';
+            var thValue = document.createElement('th');
+            thValue.innerHTML = 'value';
+            var thType = document.createElement('th');
+            thType.innerHTML = 'type';
+            var thPos = document.createElement('th');
+            thPos.innerHTML = 'position';
+            newRow.appendChild(thName);
+            newRow.appendChild(thValue);
+            newRow.appendChild(thType);
+            newRow.appendChild(thPos);
+
+            return table;
+        }
+
+    }
+
+}
+
+function debugNext() {
+    if (!jsCRiPS.runReady) {
+        debugStart();
+    } else {
+        jsCRiPS.debugReady = true;
+        autoStart(false);
+    }
+}
+
+function debugRun() {
+    if (!jsCRiPS.runReady) {
+        debugStart();
+        autoStart(true);
+    } else {
+        if (jsCRiPS.AutoMode) {
+            autoStart(false);
+        } else {
+            autoStart(true);
+        }
+    }
+}
+
+function autoStart(enable) {
+    jsCRiPS.AutoMode = enable;
+    document.getElementById('runOrPauseImg').src =
+        enable ? './img/pause.png' : './img/run.png';
 }
 
 // no kame時に前の描画部分が残ってしまう場合あり、example5.3.1.1_Circle.jsをno kameで実行し速度を変えて再度Runで発生
@@ -1393,18 +1942,38 @@ function changeSpeed(x) {
     jsCRiPS.withKame = Number(x) !== 0; // if(withKame === true){ joinしない }
 }
 
+// x is sec
+function changeAutoSpeed(x) {
+    jsCRiPS.AutoSpeed = (Number(x) * Number(x)) * 1000;
+}
+
+function setBreakPoint(row) {
+    jsCRiPS.breakPoints.push(row);
+}
+
+function clearBreakPoint(row) {
+    for (var i = 0; i < jsCRiPS.breakPoints.length; i++) {
+        if (jsCRiPS.breakPoints[i] === row) {
+            jsCRiPS.breakPoints.splice(i, 1);
+        }
+    }
+}
+
 function print() {
     var str = '';
     for (var i = 0; i < arguments.length - 1; i++) {
         str += arguments[i] + ',';
     }
     str += arguments[arguments.length - 1];
-    var msgArea = document.getElementById('console');
-    msgArea.value += str;
-    while (msgArea.value.length > 1000) {
-        msgArea.value = msgArea.value.split('\n').slice(1).join('\n');
+
+    for (var i = 0; i < jsCRiPS.console.length; i++) {
+        var msgArea = jsCRiPS.console[i];
+        msgArea.value += str;
+        while (msgArea.value.length > msgArea.maxLength && msgArea.maxLength !== 0) {
+            msgArea.value = msgArea.value.split('\n').slice(1).join('\n');
+        }
+        msgArea.scrollTop = msgArea.scrollHeight;
     }
-    msgArea.scrollTop = msgArea.scrollHeight;
 }
 
 function println() {
@@ -1416,6 +1985,16 @@ function println() {
     print(str + '\n');
 }
 
+jsCRiPS.clearConsole = function () {
+    for (var i = 0; i < jsCRiPS.console.length; i++) {
+        jsCRiPS.console[i].value = '';
+    }
+};
+
+function setTitle(name) {
+    var title = document.getElementById('ptitle');
+    title.innerHTML = name;
+}
 
 // イベント関係
 // リスナー登録より上で宣言する必要あり
@@ -1573,12 +2152,141 @@ function input(msg) {
                 swal.showInputError('You need to write something!');
                 return false;
             }
-            jsCRiPS.inputText = inputValue;
+            if (isInteger(inputValue)) {
+                jsCRiPS.inputText = Number(inputValue);
+            } else {
+                jsCRiPS.inputText = inputValue;
+            }
             println('INPUT [' + jsCRiPS.inputText + ']');
             jsCRiPS.inputted = true;             // th.kill(); 本当はこうしたい
             swal.close();
         }
     );
+
+}
+
+// create jsCRiPS object (like JQuery,$ method)
+// HTML要素からjsCRiPSオブジェクトを作成する
+function JCRiPS(selector) {
+    var obj = {};
+    obj.elems = [];
+    addSelectedElems();
+
+    // *****  define Components *****
+    obj.console = function (userOpts) {
+        var opts = {
+            maxLength: 10000    // テキストエリア内の最大文字数、0の場合は制限なし
+        };
+        setComponentData(jsCRiPS.console, obj.elems, userOpts, opts);
+    };
+
+    function makeVariableTable(tableKind, userOpts) {
+        var tcn = (tableKind === jsCRiPS.globalVariableTables) ?
+            'globalVariableTables' : 'localVariableTables';
+        var opts = {
+            position: 'absolute',
+            draggable: true,
+            scroll: true,
+            tableClassName: tcn
+        };
+        setComponentData(tableKind, obj.elems, userOpts, opts, function (elem) {
+            if (elem.scroll) {
+                elem.style['overflow-y'] = 'scroll';
+            }
+            if (elem.draggable) {
+                $(elem).draggable();    // require JQuery UI
+            }
+        });
+    }
+
+    obj.globalVariableTables = function (userOpts) {
+        makeVariableTable(jsCRiPS.globalVariableTables, userOpts);
+    };
+
+    obj.localVariableTables = function (userOpts) {
+        makeVariableTable(jsCRiPS.localVariableTables, userOpts);
+    };
+
+    obj.canvas = function (userOpts) {
+        var opts = {};
+        setComponentData(jsCRiPS.console, obj.elems, userOpts, opts);
+    };
+
+    obj.buttons = function (userOpts) {
+        var opts = {};
+        setComponentData(jsCRiPS.console, obj.elems, userOpts, opts);
+    };
+
+    obj.speedChangeBars = function (userOpts) {
+        var opts = {};
+        setComponentData(jsCRiPS.console, obj.elems, userOpts, opts);
+    };
+
+    obj.editor = function (userOpts) {
+        var opts = {};
+        setComponentData(jsCRiPS.console, obj.elems, userOpts, opts);
+    };
+
+
+    return obj;
+
+    // ***** 以下便利メソッド *****
+    // selectorで指定された要素をobj.elems配列に格納していく
+    function addSelectedElems() {
+        var selectors = selector.toString().split(',');
+        for (var i = 0; i < selectors.length; i++) {
+            var s = selectors[i];
+            if (s.length === 0) {
+                continue;
+            }
+            switch (s[0]) {
+                case '.':   // class
+                    pushElems(document.getElementsByClassName(s.substr(1)), s);
+                    break;
+                case '#':   // id
+                    pushElems([document.getElementById(s.substr(1))], s);
+                    break;
+                default:    // HTML Elem
+                    pushElems(document.getElementsByTagName(s), s);
+            }
+        }
+
+        function pushElems(elems, trgElem) {
+            if (elems.length === 0 || elems[0] === null) {
+                console.log(`指定した要素が見つかりません[ ${trgElem} ]`);
+            } else {
+                for (var i = 0; i < elems.length; i++) {
+                    obj.elems.push(elems[i]);
+                }
+            }
+        }
+
+    }
+
+    // fromからdstへオブジェクトを上書きする
+    function overwriteOptions(from, dst, createKeyMode) {
+        if (typeof from === 'undefined') {
+            return dst;
+        }
+        var fKeys = Object.keys(from);
+        for (var i = 0, len = fKeys.length; i < len; i++) {
+            if (typeof dst[fKeys[i]] !== 'undefined' || createKeyMode) {
+                dst[fKeys[i]] = from[fKeys[i]];
+            }
+        }
+    }
+
+    // elemsをComponentへ追加しつつオプションをセットする
+    function setComponentData(component, elems, userOptions, defaultOptions, additionalFunc) {
+        overwriteOptions(userOptions, defaultOptions);
+        for (var i = 0; i < elems.length; i++) {
+            component.push(elems[i]);
+            overwriteOptions(defaultOptions, elems[i], true);
+            if (typeof additionalFunc !== 'undefined') {
+                additionalFunc(elems[i]);
+            }
+        }
+    }
 
 }
 
