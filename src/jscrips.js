@@ -134,10 +134,10 @@ jsCRiPS.debugVariablePrint = function () {
             var prevV = stack.vDecls[i][3];
             // Turtleなら座標と角度を表示
             var valueStr = "";
-            if (v && (typeof v._looks !== 'undefined')) {
+            if (v && jsCRiPS.isDefined(v._looks)) {
                 valueStr = '<img src=\'../test/img/turtle.png\'>';
             } else {
-                valueStr = (typeof prevV === 'undefined') ? v : prevV + " -> " + v;
+                valueStr = jsCRiPS.isUndefined(prevV) ? v : prevV + " -> " + v;
             }
             tdValue.innerHTML = valueStr;
             // 初めて生成される変数なら黄色くする
@@ -192,7 +192,7 @@ jsCRiPS.addVariable = function (stmt, name, idx) {
         var lastIdx = jsCRiPS.callStack.length - 1;
         jsCRiPS.callStack[lastIdx].addVariable(name, value, true);
     };
-    if (typeof idx !== 'undefined') {
+    if (jsCRiPS.isDefined(idx)) {
         stmt.splice(idx, 0, esprima.parse('jsCRiPS.addVariableHelper(\'' + name + '\',' + name + ');').body[0]);
     } else {
         stmt.push(esprima.parse('jsCRiPS.addVariableHelper(\'' + name + '\',' + name + ');').body[0]);
@@ -204,7 +204,7 @@ jsCRiPS.addArgument = function (stmt, name, idx) {
         var lastIdx = jsCRiPS.callStack.length - 1;
         jsCRiPS.callStack[lastIdx].addArgument(name, value);
     };
-    if (typeof idx !== 'undefined') {
+    if (jsCRiPS.isDefined(idx)) {
         stmt.splice(idx, 0, esprima.parse('jsCRiPS.addArgumentHelper(\'' + name + '\',' + name + ');').body[0]);
     } else {
         stmt.push(esprima.parse('jsCRiPS.addArgumentHelper(\'' + name + '\',' + name + ');').body[0]);
@@ -216,7 +216,7 @@ jsCRiPS.updateVariable = function (stmt, name, idx) {
         var lastIdx = jsCRiPS.callStack.length - 1;
         jsCRiPS.callStack[lastIdx].updateVariable(name, value, true);
     };
-    if (typeof idx !== 'undefined') {
+    if (jsCRiPS.isDefined(idx)) {
         stmt.splice(idx, 0, esprima.parse('jsCRiPS.updateVariableHelper(\'' + name + '\',' + name + ');').body[0]);
     } else {
         stmt.push(esprima.parse('jsCRiPS.updateVariableHelper(\'' + name + '\',' + name + ');').body[0]);
@@ -234,7 +234,7 @@ jsCRiPS.popCallStack = function (stmt, idx) {
     jsCRiPS.popCallStackHelper = function () {
         jsCRiPS.callStack.pop();
     };
-    if (typeof idx !== 'undefined') {
+    if (jsCRiPS.isDefined(idx)) {
         stmt.splice(idx, 0, esprima.parse('jsCRiPS.popCallStackHelper();').body[0]);
     } else {
         stmt.push(esprima.parse('jsCRiPS.popCallStackHelper();').body[0]);
@@ -317,7 +317,7 @@ jsCRiPS.debugConverter.convert = function (source) {
         block.body.push(esprima.parse('jsCRiPS.isBreakPoint = jsCRiPS.breakPoints.indexOf(' + (line - 1) + ') !== -1;').body[0]);
         block.body.push(esprima.parse('jsCRiPS.debugWait();').body[0]);
         block.body.push(yieldAST);
-        if (typeof idx !== 'undefined') {
+        if (jsCRiPS.isDefined(idx)) {
             stmt.splice(idx, 0, block);
         } else {
             stmt.push(block);
@@ -770,7 +770,7 @@ function createTurtle() {
 
     // オブジェクトを出現/隠す命令
     t.show = function (b) {
-        if (typeof b === 'undefined') {
+        if (jsCRiPS.isUndefined(b)) {
             t._isShow = true;
         } else if (typeof b === 'boolean') {
             t._isShow = b;
@@ -790,7 +790,7 @@ function createTurtle() {
     // オブジェクトの見た目を変える命令
     // 現状ListTurtleには非対応
     t.looks = function (tt) {
-        if (typeof tt._looks !== 'undefined') {  // tt extends Turtle
+        if (jsCRiPS.isDefined(tt._looks)) {  // tt extends Turtle
             t._looks = tt._looks;
             t.str = tt.str;
             t._fontsize = tt._fontsize;
@@ -1097,7 +1097,7 @@ function createTextTurtle(str) {
 
     // テキストの中身を変える命令
     t.text = function (newStr) {
-        if (typeof newStr === 'undefined') {
+        if (jsCRiPS.isUndefined(newStr)) {
             return t.str;
         }
         t.str = newStr;
@@ -1107,7 +1107,7 @@ function createTextTurtle(str) {
 
     // TurtleCafeのマニュアルにはないがCRiPSで実装されていた関数、どうせCardTurtleで使う
     t.fontsize = function (fs) {
-        if (typeof fs === 'undefined') {
+        if (jsCRiPS.isUndefined(fs)) {
             return t._fontsize;
         }
         t._fontsize = fs;
@@ -1165,7 +1165,7 @@ function createListTurtle(autoHide, name) {
     t.width = t.height = 0; // ListTurtleではwidthとheightを追加幅として扱う
 
     t.nameWidth = 0;
-    if (typeof name !== 'undefined') {
+    if (jsCRiPS.isDefined(name)) {
         var ctx = jsCRiPS.tCanvas.getContext('2d');
         ctx.font = jsCRiPS.FONT_SIZE + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
         t.nameWidth = ctx.measureText(t.name).width;
@@ -1200,7 +1200,7 @@ function createListTurtle(autoHide, name) {
 
     // 追加と削除
     t.add = function (x, obj) { // x,objが両方要素をとり得るので注意
-        if (typeof obj !== 'undefined') { // add(n,obj)の場合
+        if (jsCRiPS.isDefined(obj)) { // add(n,obj)の場合
             parentCheck(obj);
             obj.show(!autoHide);
             if (x < 0 || t.list.length < x) {
@@ -1388,7 +1388,7 @@ function createListTurtle(autoHide, name) {
             t.actualWidth = 60;
             t.actualHeight = 30;
         }
-        if (typeof name !== 'undefined') {
+        if (jsCRiPS.isDefined(name)) {
             if ((t.nameWidth + jsCRiPS.LIST_MARGIN * 2) > t.actualWidth) {
                 t.actualWidth = t.nameWidth + jsCRiPS.LIST_MARGIN * 2;
             }
@@ -1413,7 +1413,7 @@ function createListTurtle(autoHide, name) {
         x += jsCRiPS.LIST_MARGIN;
         y += jsCRiPS.LIST_MARGIN;
         // ListTurtleの名前
-        if (typeof t.name !== 'undefined') {
+        if (jsCRiPS.isDefined(t.name)) {
             ctx.font = jsCRiPS.FONT_SIZE + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'center';
@@ -1578,7 +1578,7 @@ function createButtonTurtle(str) {
     // override
     t.draw = function (ctx) {
         var self = this;
-        if (typeof self.pressing !== 'undefined') {  // ButtonTurtleの場合
+        if (jsCRiPS.isDefined(self.pressing)) {  // ButtonTurtleの場合
             clickCheck();
         }
         ctx.font = t._fontsize + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
@@ -1863,7 +1863,7 @@ function debugStart() {
 
         // 既にテーブルが作成されている場合は何もしない
         if (jsCRiPS.globalVariableTables.length !== 0 &&
-            typeof jsCRiPS.globalVariableTables[0].table !== 'undefined') {
+            jsCRiPS.isDefined(jsCRiPS.globalVariableTables[0].table)) {
             return;
         }
 
@@ -2265,12 +2265,12 @@ function JCRiPS(selector) {
 
     // fromからdstへオブジェクトを上書きする
     function overwriteOptions(from, dst, createKeyMode) {
-        if (typeof from === 'undefined') {
-            return dst;
+        if (jsCRiPS.isUndefined(from)) {
+            return;
         }
         var fKeys = Object.keys(from);
         for (var i = 0, len = fKeys.length; i < len; i++) {
-            if (typeof dst[fKeys[i]] !== 'undefined' || createKeyMode) {
+            if (jsCRiPS.isDefined(dst[fKeys[i]]) || createKeyMode) {
                 dst[fKeys[i]] = from[fKeys[i]];
             }
         }
@@ -2282,13 +2282,22 @@ function JCRiPS(selector) {
         for (var i = 0; i < elems.length; i++) {
             component.push(elems[i]);
             overwriteOptions(defaultOptions, elems[i], true);
-            if (typeof additionalFunc !== 'undefined') {
+            if (jsCRiPS.isDefined(additionalFunc)) {
                 additionalFunc(elems[i]);
             }
         }
     }
 
 }
+
+
+// Utilities
+jsCRiPS.isDefined = function (x) {
+    return (typeof x === 'undefined');
+};
+jsCRiPS.isUndefined = function (x) {
+    return !jsCRiPS.isDefined(x);
+};
 
 // 亀描画用データ
 jsCRiPS.kameMotions = [
