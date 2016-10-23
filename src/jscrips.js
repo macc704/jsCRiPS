@@ -162,27 +162,27 @@ jsCRiPS.debugVariablePrint = function () {
 
     // 毎回テーブルを作成し直す
     // テーブルの削除
-    for (var i = 0; i < jsCRiPS.globalVariableTables.length; i++) {
-        while (jsCRiPS.globalVariableTables[i].table.rows[1]) {
-            jsCRiPS.globalVariableTables[i].table.deleteRow(1);
+    for (var i = 0; i < jsCRiPS.globalVariableTable.length; i++) {
+        while (jsCRiPS.globalVariableTable[i].table.rows[1]) {
+            jsCRiPS.globalVariableTable[i].table.deleteRow(1);
         }
     }
-    for (var i = 0; i < jsCRiPS.localVariableTables.length; i++) {
-        while (jsCRiPS.localVariableTables[i].table.rows[1]) {
-            jsCRiPS.localVariableTables[i].table.deleteRow(1);
+    for (var i = 0; i < jsCRiPS.localVariableTable.length; i++) {
+        while (jsCRiPS.localVariableTable[i].table.rows[1]) {
+            jsCRiPS.localVariableTable[i].table.deleteRow(1);
         }
     }
 
     // GlobalVariableTableの更新
-    for (var i = 0; i < jsCRiPS.globalVariableTables.length; i++) {
-        jsCRiPS.debugVariablePrintHelper(jsCRiPS.globalVariableTables[i].table, jsCRiPS.callStack[0], '#FFF');
+    for (var i = 0; i < jsCRiPS.globalVariableTable.length; i++) {
+        jsCRiPS.debugVariablePrintHelper(jsCRiPS.globalVariableTable[i].table, jsCRiPS.callStack[0], '#FFF');
     }
 
     // LocalVariableTableの更新にはコールスタック毎に行を追加してく
     for (var i = 1; i < jsCRiPS.callStack.length; i++) {
         var color = (i === jsCRiPS.callStack.length - 1) ? '#FFF' : '#CCC';
-        for (var j = 0; j < jsCRiPS.localVariableTables.length; j++) {
-            jsCRiPS.debugVariablePrintHelper(jsCRiPS.localVariableTables[j].table, jsCRiPS.callStack[i], color);
+        for (var j = 0; j < jsCRiPS.localVariableTable.length; j++) {
+            jsCRiPS.debugVariablePrintHelper(jsCRiPS.localVariableTable[j].table, jsCRiPS.callStack[i], color);
         }
     }
 };
@@ -515,8 +515,6 @@ jsCRiPS.imgs = {}; // 画像を管理するマップ
 jsCRiPS.imgLoaded = false; // 画像読み込み制御
 jsCRiPS.inputText = ''; // 入力されたテキスト
 jsCRiPS.inputted = false; // 入力制御用
-jsCRiPS.tCanvas = {};    // Turtle描画用Canvas
-jsCRiPS.lCanvas = {};   // 軌跡描画用Canvas
 
 jsCRiPS.debugReady = false; // デバッグ制御用
 jsCRiPS.callStack = [];     // デバッグ用コールスタック
@@ -548,9 +546,12 @@ jsCRiPS.breakPoints = [];
 
 // jsCRiPS Components
 jsCRiPS.console = [];
-jsCRiPS.localVariableTables = [];
-jsCRiPS.globalVariableTables = [];
-
+jsCRiPS.localVariableTable = [];
+jsCRiPS.globalVariableTable = [];
+jsCRiPS.canvas = [];
+jsCRiPS.tCanvas = [];    // Turtle描画用Canvas
+jsCRiPS.lCanvas = [];   // 軌跡描画用Canvas
+jsCRiPS.buttons = [];
 
 function createTurtle() {
     var t = {};
@@ -1712,8 +1713,9 @@ jsCRiPS.draw = function (t) {
 };
 
 jsCRiPS.drawTurtle = function (t) {
-    var ctx = jsCRiPS.tCanvas.getContext('2d');
-    t.draw(ctx);
+    for (var i = 0; i < jsCRiPS.tCanvas.length; i++) {
+        t.draw(jsCRiPS.tCanvas[i].getContext('2d'));
+    }
 };
 
 jsCRiPS.drawLine = function (ctx, x, y, dx, dy) {
@@ -1725,23 +1727,30 @@ jsCRiPS.drawLine = function (ctx, x, y, dx, dy) {
 };
 
 jsCRiPS.drawLocus = function (t) {
-    var ctx = jsCRiPS.lCanvas.getContext('2d');
-    ctx.strokeStyle = t.penColor;
-    jsCRiPS.drawLine(ctx, t.rx, t.ry, t.x, t.y);
+    for (var i = 0; i < jsCRiPS.lCanvas.length; i++) {
+        var ctx = jsCRiPS.lCanvas[i].getContext('2d');
+        ctx.strokeStyle = t.penColor;
+        jsCRiPS.drawLine(ctx, t.rx, t.ry, t.x, t.y);
+    }
 };
 
 jsCRiPS.clearTurtleCanvas = function () {
-    jsCRiPS.clearCanvas('turtleCanvas');
+    jsCRiPS.clearCanvas(jsCRiPS.tCanvas);
 };
 
 jsCRiPS.clearLocusCanvas = function () {
-    jsCRiPS.clearCanvas('locusCanvas');
+    jsCRiPS.clearCanvas(jsCRiPS.lCanvas);
 };
 
-jsCRiPS.clearCanvas = function (name) {
-    var canvas = document.getElementById(name);
-    var ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+jsCRiPS.clearAllCanvas = function () {
+    jsCRiPS.clearTurtleCanvas();
+    jsCRiPS.clearLocusCanvas();
+};
+
+jsCRiPS.clearCanvas = function (canvas) {
+    for (var i = 0; i < canvas.length; i++) {
+        canvas[i].getContext('2d').clearRect(0, 0, canvas[i].width, canvas[i].height);
+    }
 };
 
 /* 一般補助メソッド */
@@ -1774,14 +1783,18 @@ function random(n) {
 
 // CRiPS#window.size -> jsCRiPS#canvasSize
 function canvasSize(w, h) {
-    var tc = jsCRiPS.tCanvas;
-    var lc = jsCRiPS.lCanvas;
-    tc.width = w;
-    tc.height = h;
-    lc.width = w;
-    lc.height = h;
-    tc.parentNode.style.width = w + 'px';
-    tc.parentNode.style.height = h + 'px';
+    for (var i = 0; i < jsCRiPS.tCanvas.length; i++) {
+        jsCRiPS.tCanvas[i].width = w;
+        jsCRiPS.tCanvas[i].height = h;
+        jsCRiPS.tCanvas[i].parentNode.style.width = w + 'px';
+        jsCRiPS.tCanvas[i].parentNode.style.height = w + 'px';
+    }
+    for (var i = 0; i < jsCRiPS.lCanvas.length; i++) {
+        jsCRiPS.lCanvas[i].width = w;
+        jsCRiPS.lCanvas[i].height = h;
+//        jsCRiPS.lCanvas[i].parentNode.style.width = w + 'px';
+//        jsCRiPS.lCanvas[i].parentNode.style.height = w + 'px';
+    }
 }
 
 /*global main*/
@@ -1798,15 +1811,7 @@ jsCRiPS.initProgram = function () {
     jsCRiPS.th = Thread.create(function () {
     });
 
-    jsCRiPS.tCanvas = document.getElementById('turtleCanvas');
-    jsCRiPS.lCanvas = document.getElementById('locusCanvas');
-    if (!jsCRiPS.tCanvas.getContext || !jsCRiPS.lCanvas.getContext) { // 毎回チェックするのは面倒なのでここで一度だけチェックする
-        println('ERROR [ 必要なCanvasがありません ]');
-        return;
-    }
-
-    jsCRiPS.clearTurtleCanvas();
-    jsCRiPS.clearLocusCanvas();
+    jsCRiPS.clearAllCanvas();
     jsCRiPS.clearConsole();
 
     jsCRiPS.parentChecker.clear();
@@ -1862,13 +1867,13 @@ function debugStart() {
     function makeVariableTable() {
 
         // 既にテーブルが作成されている場合は何もしない
-        if (jsCRiPS.globalVariableTables.length !== 0 &&
-            jsCRiPS.isDefined(jsCRiPS.globalVariableTables[0].table)) {
+        if (jsCRiPS.globalVariableTable.length !== 0 &&
+            jsCRiPS.isDefined(jsCRiPS.globalVariableTable[0].table)) {
             return;
         }
 
-        makeTableAndSettingOption(jsCRiPS.globalVariableTables);
-        makeTableAndSettingOption(jsCRiPS.localVariableTables);
+        makeTableAndSettingOption(jsCRiPS.globalVariableTable);
+        makeTableAndSettingOption(jsCRiPS.localVariableTable);
 
         function makeTableAndSettingOption(tableWrappers, className) {
             for (var i = 0; i < tableWrappers.length; i++) {
@@ -1930,8 +1935,15 @@ function debugRun() {
 
 function autoStart(enable) {
     jsCRiPS.AutoMode = enable;
-    document.getElementById('runOrPauseImg').src =
-        enable ? './img/pause.png' : './img/run.png';
+    for (var i = 0; i < jsCRiPS.buttons.length; i++) {
+        var obj = jsCRiPS.buttons[i];
+        if(jsCRiPS.isDefined(obj.runButton)){
+            obj.runButton.img.src =  enable ? './img/pause.png' : './img/run.png';
+        }
+
+    }
+    //document.getElementById('runOrPauseImg').src =
+//        enable ? './img/pause.png' : './img/run.png';
 }
 
 // no kame時に前の描画部分が残ってしまう場合あり、example5.3.1.1_Circle.jsをno kameで実行し速度を変えて再度Runで発生
@@ -2181,8 +2193,8 @@ function JCRiPS(selector) {
     };
 
     function makeVariableTable(tableKind, userOpts) {
-        var tcn = (tableKind === jsCRiPS.globalVariableTables) ?
-            'globalVariableTables' : 'localVariableTables';
+        var tcn = (tableKind === jsCRiPS.globalVariableTable) ?
+            'globalVariableTable' : 'localVariableTable';
         var opts = {
             position: 'absolute',
             draggable: true,
@@ -2199,22 +2211,95 @@ function JCRiPS(selector) {
         });
     }
 
-    obj.globalVariableTables = function (userOpts) {
-        makeVariableTable(jsCRiPS.globalVariableTables, userOpts);
+    obj.globalVariableTable = function (userOpts) {
+        makeVariableTable(jsCRiPS.globalVariableTable, userOpts);
     };
 
-    obj.localVariableTables = function (userOpts) {
-        makeVariableTable(jsCRiPS.localVariableTables, userOpts);
+    obj.localVariableTable = function (userOpts) {
+        makeVariableTable(jsCRiPS.localVariableTable, userOpts);
     };
 
     obj.canvas = function (userOpts) {
-        var opts = {};
-        setComponentData(jsCRiPS.console, obj.elems, userOpts, opts);
+        var opts = {
+            draggable: false,
+            width: 240,
+            height: 240,
+            locusCanvasClassName: 'locusCanvas',
+            turtleCanvasClassName: 'turtleCanvas',
+            deleteAntiAliasing: true
+        };
+        setComponentData(jsCRiPS.canvas, obj.elems, userOpts, opts, function (elem) {
+
+            function setData(canvas) {
+                canvas.width = elem.width;
+                canvas.height = elem.height;
+                canvas.style.position = 'absolute';
+            }
+
+            var lc = document.createElement('canvas');
+            setData(lc);
+            lc.className = elem.locusCanvasClassName;
+
+            var tc = document.createElement('canvas');
+            setData(tc);
+            tc.className = elem.turtleCanvasClassName;
+
+            // 余計なアンチエイリアスの解除
+            if (elem.deleteAntiAliasing) {
+                lc.getContext('2d').translate(0.5, 0.5);
+            }
+
+            jsCRiPS.lCanvas.push(lc);
+            jsCRiPS.tCanvas.push(tc);
+            elem.appendChild(lc);
+            elem.appendChild(tc);
+
+            if (elem.draggable) {
+                $(elem).draggable();    // require JQuery UI
+            }
+        });
     };
 
     obj.buttons = function (userOpts) {
-        var opts = {};
-        setComponentData(jsCRiPS.console, obj.elems, userOpts, opts);
+        var opts = {
+            run: true,
+            step: true,
+            reload: true,
+            runButtonImg: "./img/run.png",
+            stopButtonImg: "./img/stop.png",
+            stepButtonImg: "./img/step.png",
+            reloadButtonImg: "./img/reload.png",
+            runButtonClassName: 'runButton',
+            stepButtonClassName: 'stepButton',
+            reloadButtonClassName: 'reloadButton'
+        };
+        setComponentData(jsCRiPS.buttons, obj.elems, userOpts, opts, function (elem) {
+
+            function createButton(onclickFun, className, img, alt) {
+                var b = document.createElement('button');
+                b.type = 'button';
+                b.onclick = onclickFun;
+                b.className = className;
+                var imgElem = document.createElement('img');
+                imgElem.src = img;
+                imgElem.alt = alt;
+                b.appendChild(imgElem);
+                elem.appendChild(b);
+                b.img = imgElem;
+                return b;
+            }
+
+            if (elem.run) {
+                elem.runButton = createButton(debugRun, elem.runButtonClassName, elem.runButtonImg, 'Run/Stop');
+            }
+            if (elem.step) {
+                elem.stepButton = createButton(debugNext, elem.stepButtonClassName, elem.stepButtonImg, 'Step');
+            }
+            if (elem.reload) {
+                elem.reloadButton = createButton(debugStart, elem.stepButtonClassName, elem.reloadButtonImg, 'Reload');
+            }
+
+        });
     };
 
     obj.speedChangeBars = function (userOpts) {
@@ -2253,7 +2338,7 @@ function JCRiPS(selector) {
 
         function pushElems(elems, trgElem) {
             if (elems.length === 0 || elems[0] === null) {
-                console.log(`指定した要素が見つかりません[ ${trgElem} ]`);
+                console.log(`Missing selector [ ${trgElem} ]`);
             } else {
                 for (var i = 0; i < elems.length; i++) {
                     obj.elems.push(elems[i]);
@@ -2293,7 +2378,7 @@ function JCRiPS(selector) {
 
 // Utilities
 jsCRiPS.isDefined = function (x) {
-    return (typeof x === 'undefined');
+    return (typeof x !== 'undefined');
 };
 jsCRiPS.isUndefined = function (x) {
     return !jsCRiPS.isDefined(x);

@@ -235,15 +235,7 @@
             </optgroup>
         </select>
     </div>
-    <div>
-        <button type="button" id="runOrPause" onclick="debugRun()"><img id="runOrPauseImg" src="./img/run.png">
-        </button>
-    </div>
-    <div>
-        <button type="button" id="next" onclick="debugNext()"><img id="nextImg" src="./img/next.png"></button>
-    </div>
-    <div>
-        <button type="button" id="restart" onclick="debugStart()"><img id="restartImg" src="./img/restart.png"></button>
+    <div id="buttons">
     </div>
     <div>
         <span style="font-weight: bold">Turtle</span>
@@ -273,8 +265,6 @@
     </div>
     <!--Canvasを一つに統一すべき？ -->
     <div id="canvases" style="float:left;">
-        <canvas id="locusCanvas" width="240" height="240"></canvas>
-        <canvas id="turtleCanvas" width="240" height="240"></canvas>
     </div>
     <div style="clear:both">
         <br>Console<br>
@@ -518,22 +508,24 @@
 </script>
 
 <script>
-    // 余計なアンチエイリアスの解除
-    var c = document.getElementById('locusCanvas');
-    c.getContext('2d').translate(0.5, 0.5);
-</script>
-<script>
     JCRiPS('textarea').console({
         maxLength: 0
     });
 
-    JCRiPS('#globalDebugView').globalVariableTables({
-        tableClassName:'myGlobalVariableTable'
+    JCRiPS('#globalDebugView').globalVariableTable({
+        tableClassName: 'myGlobalVariableTable'
 
     });
-    JCRiPS('#localDebugView').localVariableTables({
-        draggable:false
+    JCRiPS('#localDebugView').localVariableTable({
+        draggable: false
     });
+
+    JCRiPS('#canvases').canvas({
+        draggable: true
+    });
+
+    JCRiPS('#buttons').buttons({});
+
 
 </script>
 </body>
