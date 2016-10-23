@@ -531,6 +531,7 @@ jsCRiPS.sleepTime = jsCRiPS.DEFAULT_SLEEP_TIME;
 jsCRiPS.stepKinds = [100000, 1000, 20, 5, 2];
 jsCRiPS.moveStep = jsCRiPS.stepKinds[3];
 jsCRiPS.rotateStep = jsCRiPS.stepKinds[3];
+jsCRiPS.AutoSpeed = 0;
 jsCRiPS.withKame = true;
 
 jsCRiPS.DEFAULT_FONT = 'MS Gothic';
@@ -549,9 +550,11 @@ jsCRiPS.console = [];
 jsCRiPS.localVariableTable = [];
 jsCRiPS.globalVariableTable = [];
 jsCRiPS.canvas = [];
-jsCRiPS.tCanvas = [];    // Turtle描画用Canvas
+jsCRiPS.tCanvas = [];   // Turtle描画用Canvas
 jsCRiPS.lCanvas = [];   // 軌跡描画用Canvas
 jsCRiPS.buttons = [];
+jsCRiPS.turtleSpeedChanger = [];
+jsCRiPS.programSpeedChanger = [];
 
 function createTurtle() {
     var t = {};
@@ -1830,7 +1833,9 @@ function restart() {
 }
 
 jsCRiPS.endRun = function () {
-    document.getElementById('runOrPauseImg').src = './img/run.png';
+    for (var i = 0; i < jsCRiPS.buttons.length; i++) {
+        jsCRiPS.buttons[i].runButton.img.src = jsCRiPS.buttons[i].runButtonImg;
+    }
     jsCRiPS.runReady = false;
 };
 jsCRiPS.runReady = false;
@@ -1839,16 +1844,6 @@ jsCRiPS.runReady = false;
 function debugStart() {
 
     jsCRiPS.initProgram();
-
-    jsCRiPS.PenCheckBox = document.getElementById('penCheckbox');
-    if (jsCRiPS.PenCheckBox) {  // 必要？
-        jsCRiPS.PenCheckBox.disabled = false;
-    }
-    var PenSpeedSlider = document.getElementById('movePenSpeed');
-    if (PenSpeedSlider) {  // 必要？
-        PenSpeedSlider.disabled = false;
-    }
-    jsCRiPS.AutoSpeed = (Number(PenSpeedSlider.value) * Number(PenSpeedSlider.value)) * 1000;
 
     jsCRiPS.debugReady = false;
     jsCRiPS.callStack = [];
@@ -1937,8 +1932,8 @@ function autoStart(enable) {
     jsCRiPS.AutoMode = enable;
     for (var i = 0; i < jsCRiPS.buttons.length; i++) {
         var obj = jsCRiPS.buttons[i];
-        if(jsCRiPS.isDefined(obj.runButton)){
-            obj.runButton.img.src =  enable ? './img/pause.png' : './img/run.png';
+        if (jsCRiPS.isDefined(obj.runButton)) {
+            obj.runButton.img.src = enable ? obj.pauseButtonImg : obj.runButtonImg;
         }
 
     }
@@ -2262,11 +2257,11 @@ function JCRiPS(selector) {
 
     obj.buttons = function (userOpts) {
         var opts = {
-            run: true,
+            run: true,  // if false , don't create RunButton
             step: true,
             reload: true,
             runButtonImg: "./img/run.png",
-            stopButtonImg: "./img/stop.png",
+            pauseButtonImg: "./img/pause.png",
             stepButtonImg: "./img/step.png",
             reloadButtonImg: "./img/reload.png",
             runButtonClassName: 'runButton',
@@ -2302,10 +2297,63 @@ function JCRiPS(selector) {
         });
     };
 
-    obj.speedChangeBars = function (userOpts) {
-        var opts = {};
-        setComponentData(jsCRiPS.console, obj.elems, userOpts, opts);
+    obj.turtleSpeedChanger = function (userOpts) {
+        var opts = {
+            value: 3
+        };
+        setComponentData(jsCRiPS.turtleSpeedChanger, obj.elems, userOpts, opts, function (elem) {
+            elem.min = 0;
+            elem.max = 4;
+            elem.step = 1;
+            elem.setAttribute('onchange', 'changeSpeed(this.value)');
+            elem.setAttribute('oninput', 'changeSpeed(this.value)');
+            changeSpeed(elem.value);
+        });
     };
+
+    obj.programSpeedChanger = function (userOpts) {
+        var opts = {
+            value: 0
+        };
+        setComponentData(jsCRiPS.programSpeedChanger, obj.elems, userOpts, opts, function (elem) {
+            elem.min = 0;
+            elem.max = 1.414;
+            elem.step = 0.1;
+            elem.setAttribute('onchange', 'changeAutoSpeed(this.value)');
+            elem.setAttribute('oninput', 'changeAutoSpeed(this.value)');
+            changeAutoSpeed(elem.value);
+        });
+    };
+
+    // buttons系のものを作ろうと思ったが、途中で不便そうに思ったので一時中断
+    //obj.speedChangeBars = function (userOpts) {
+    //    var opts = {
+    //        turtleSlider: true,
+    //        programSlider: true,
+    //        turtleSliderClassName: 'turtleSlider',
+    //        programSliderClassName: 'programSlider'
+    //    };
+    //    setComponentData(jsCRiPS.console, obj.elems, userOpts, opts, function (elem) {
+    //
+    //        function createSlider(onchange, className) {
+    //            var input = document.createElement('input');
+    //            input.type = 'range';
+    //            input.onchange = onchange;
+    //            input.oninput = onchange;
+    //            input.className = className;
+    //            elem.appendChild(input);
+    //            return input;
+    //        }
+    //
+    //        if (elem.turtleSlider) {
+    //            elem.turtleSpeedChanger = createSlider(changeSpeed('this.value'), elem.turtleSliderClassName);
+    //        }
+    //        if (elem.programSlider) {
+    //            elem.programSpeedChanger = createSlider(changeAutoSpeed('this.value'), elem.programSliderClassName);
+    //        }
+    //
+    //    });
+    //};
 
     obj.editor = function (userOpts) {
         var opts = {};
