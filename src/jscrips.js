@@ -89,24 +89,30 @@ jsCRiPS.converter.convert = function (source) {
 jsCRiPS.debugConverter = {};
 jsCRiPS.debugWait = function () {
     jsCRiPS.th = Thread.create(function () {    //  入力待ち用にスレッドを生成
-        var nextButton = document.getElementById('next');
+        if (!jsCRiPS.withKame) {
+            return;
+        }
         var startTime = new Date();
         if (jsCRiPS.isBreakPoint) {
             autoStart(false);
         }
         while (!jsCRiPS.debugReady) {
             Thread.sleep(1);
-            if (nextButton && !jsCRiPS.AutoMode) {
-                nextButton.disabled = false;
-                nextButton.style.opacity = 1;
+            if (!jsCRiPS.AutoMode) {
+                for (var i = 0; i < jsCRiPS.stepButton.length; i++) {
+                    jsCRiPS.stepButton[i].disabled = false;
+                    jsCRiPS.stepButton[i].style.opacity = 1;
+                }
             } else if (jsCRiPS.AutoMode && ((new Date() - startTime) >= jsCRiPS.AutoSpeed)) {
                 jsCRiPS.debugReady = true;
             }
         }
         jsCRiPS.debugReady = false;
-        if (nextButton && !jsCRiPS.AutoMode) {
-            nextButton.disabled = true;
-            nextButton.style.opacity = 0.7;
+        if (!jsCRiPS.AutoMode) {
+            for (var i = 0; i < jsCRiPS.stepButton.length; i++) {
+                jsCRiPS.stepButton[i].disabled = true;
+                jsCRiPS.stepButton[i].style.opacity = 0.7;
+            }
         }
     });
 };
@@ -163,26 +169,26 @@ jsCRiPS.debugVariablePrint = function () {
     // 毎回テーブルを作成し直す
     // テーブルの削除
     for (var i = 0; i < jsCRiPS.globalVariableTable.length; i++) {
-        while (jsCRiPS.globalVariableTable[i].table.rows[1]) {
-            jsCRiPS.globalVariableTable[i].table.deleteRow(1);
+        while (jsCRiPS.globalVariableTable[i].rows[1]) {
+            jsCRiPS.globalVariableTable[i].deleteRow(1);
         }
     }
     for (var i = 0; i < jsCRiPS.localVariableTable.length; i++) {
-        while (jsCRiPS.localVariableTable[i].table.rows[1]) {
-            jsCRiPS.localVariableTable[i].table.deleteRow(1);
+        while (jsCRiPS.localVariableTable[i].rows[1]) {
+            jsCRiPS.localVariableTable[i].deleteRow(1);
         }
     }
 
     // GlobalVariableTableの更新
     for (var i = 0; i < jsCRiPS.globalVariableTable.length; i++) {
-        jsCRiPS.debugVariablePrintHelper(jsCRiPS.globalVariableTable[i].table, jsCRiPS.callStack[0], '#FFF');
+        jsCRiPS.debugVariablePrintHelper(jsCRiPS.globalVariableTable[i], jsCRiPS.callStack[0], '#FFF');
     }
 
     // LocalVariableTableの更新にはコールスタック毎に行を追加してく
     for (var i = 1; i < jsCRiPS.callStack.length; i++) {
         var color = (i === jsCRiPS.callStack.length - 1) ? '#FFF' : '#CCC';
         for (var j = 0; j < jsCRiPS.localVariableTable.length; j++) {
-            jsCRiPS.debugVariablePrintHelper(jsCRiPS.localVariableTable[j].table, jsCRiPS.callStack[i], color);
+            jsCRiPS.debugVariablePrintHelper(jsCRiPS.localVariableTable[j], jsCRiPS.callStack[i], color);
         }
     }
 };
@@ -192,7 +198,9 @@ jsCRiPS.addVariable = function (stmt, name, idx) {
         var lastIdx = jsCRiPS.callStack.length - 1;
         jsCRiPS.callStack[lastIdx].addVariable(name, value, true);
     };
-    if (jsCRiPS.isDefined(idx)) {
+    if (!jsCRiPS.withDebug) {
+        return;
+    } else if (jsCRiPS.isDefined(idx)) {
         stmt.splice(idx, 0, esprima.parse('jsCRiPS.addVariableHelper(\'' + name + '\',' + name + ');').body[0]);
     } else {
         stmt.push(esprima.parse('jsCRiPS.addVariableHelper(\'' + name + '\',' + name + ');').body[0]);
@@ -216,7 +224,9 @@ jsCRiPS.updateVariable = function (stmt, name, idx) {
         var lastIdx = jsCRiPS.callStack.length - 1;
         jsCRiPS.callStack[lastIdx].updateVariable(name, value, true);
     };
-    if (jsCRiPS.isDefined(idx)) {
+    if (!jsCRiPS.withDebug) {
+        return;
+    } else if (jsCRiPS.isDefined(idx)) {
         stmt.splice(idx, 0, esprima.parse('jsCRiPS.updateVariableHelper(\'' + name + '\',' + name + ');').body[0]);
     } else {
         stmt.push(esprima.parse('jsCRiPS.updateVariableHelper(\'' + name + '\',' + name + ');').body[0]);
@@ -310,6 +320,9 @@ jsCRiPS.debugConverter.convert = function (source) {
         esprima.parse('jsCRiPS.th.join();').body[0] : esprima.parse(';').body[0];
 
     function pushDebugStatement(stmt, line, end, idx) {
+        if (!jsCRiPS.withDebug) {
+            return;
+        }
         var block = esprima.parse('{}').body[0];
         block.body.push(esprima.parse('setHighlight(' + (line - 1) + ',' + (end - 1) + ');').body[0]);
         block.body.push(esprima.parse('jsCRiPS.debugVariablePrint();').body[0]);
@@ -528,11 +541,12 @@ jsCRiPS.audios = [];
 var Thread = Concurrent.Thread;
 jsCRiPS.DEFAULT_SLEEP_TIME = 20;
 jsCRiPS.sleepTime = jsCRiPS.DEFAULT_SLEEP_TIME;
-jsCRiPS.stepKinds = [100000, 1000, 20, 5, 2];
-jsCRiPS.moveStep = jsCRiPS.stepKinds[3];
-jsCRiPS.rotateStep = jsCRiPS.stepKinds[3];
+jsCRiPS.stepKinds = [100000, 100000, 1000, 20, 5, 2];
+jsCRiPS.moveStep = jsCRiPS.stepKinds[4];
+jsCRiPS.rotateStep = jsCRiPS.stepKinds[4];
 jsCRiPS.AutoSpeed = 0;
 jsCRiPS.withKame = true;
+jsCRiPS.withDebug = true;
 
 jsCRiPS.DEFAULT_FONT = 'MS Gothic';
 jsCRiPS.FONT_SIZE = 16;
@@ -552,7 +566,9 @@ jsCRiPS.globalVariableTable = [];
 jsCRiPS.canvas = [];
 jsCRiPS.tCanvas = [];   // Turtle描画用Canvas
 jsCRiPS.lCanvas = [];   // 軌跡描画用Canvas
-jsCRiPS.buttons = [];
+jsCRiPS.runButton = [];
+jsCRiPS.stepButton = [];
+jsCRiPS.reloadButton = [];
 jsCRiPS.turtleSpeedChanger = [];
 jsCRiPS.programSpeedChanger = [];
 
@@ -1833,8 +1849,13 @@ function restart() {
 }
 
 jsCRiPS.endRun = function () {
-    for (var i = 0; i < jsCRiPS.buttons.length; i++) {
-        jsCRiPS.buttons[i].runButton.img.src = jsCRiPS.buttons[i].runButtonImg;
+    for (var i = 0; i < jsCRiPS.runButton.length; i++) {
+        var rb = jsCRiPS.runButton[i];
+        if (jsCRiPS.isDefined(rb.img)) {
+            rb.img.src = rb.parent.runButtonImg;
+        }
+        rb.classList.remove(rb.parent.pauseButtonClassName);
+        rb.classList.add(rb.parent.runButtonClassName);
     }
     jsCRiPS.runReady = false;
 };
@@ -1850,59 +1871,11 @@ function debugStart() {
     jsCRiPS.callStack[0] = makeCallStack('');
     jsCRiPS.functionNames = [];
 
-    makeVariableTable();
-
     /* global debugMain */
     debugMain();
 
     autoStart(false);
     jsCRiPS.runReady = true;
-
-    // debug用の変数テーブルを作成する
-    function makeVariableTable() {
-
-        // 既にテーブルが作成されている場合は何もしない
-        if (jsCRiPS.globalVariableTable.length !== 0 &&
-            jsCRiPS.isDefined(jsCRiPS.globalVariableTable[0].table)) {
-            return;
-        }
-
-        makeTableAndSettingOption(jsCRiPS.globalVariableTable);
-        makeTableAndSettingOption(jsCRiPS.localVariableTable);
-
-        function makeTableAndSettingOption(tableWrappers, className) {
-            for (var i = 0; i < tableWrappers.length; i++) {
-                tableWrappers[i].table = makeTable(tableWrappers[i].tableClassName);
-                tableWrappers[i].appendChild(tableWrappers[i].table);
-            }
-        }
-
-        // HTML要素のTableを作る
-        function makeTable(className) {
-            var table = document.createElement('table');
-            table.setAttribute('class', className);
-            table.setAttribute('width', '95%');
-            table.setAttribute('border', '1');
-            table.style.tableLayout = 'fixed';
-
-            var newRow = table.insertRow(0);
-            var thName = document.createElement('th');
-            thName.innerHTML = 'name';
-            var thValue = document.createElement('th');
-            thValue.innerHTML = 'value';
-            var thType = document.createElement('th');
-            thType.innerHTML = 'type';
-            var thPos = document.createElement('th');
-            thPos.innerHTML = 'position';
-            newRow.appendChild(thName);
-            newRow.appendChild(thValue);
-            newRow.appendChild(thType);
-            newRow.appendChild(thPos);
-
-            return table;
-        }
-
-    }
 
 }
 
@@ -1930,15 +1903,23 @@ function debugRun() {
 
 function autoStart(enable) {
     jsCRiPS.AutoMode = enable;
-    for (var i = 0; i < jsCRiPS.buttons.length; i++) {
-        var obj = jsCRiPS.buttons[i];
-        if (jsCRiPS.isDefined(obj.runButton)) {
-            obj.runButton.img.src = enable ? obj.pauseButtonImg : obj.runButtonImg;
+    for (var i = 0; i < jsCRiPS.runButton.length; i++) {
+        var rb = jsCRiPS.runButton[i];
+        if (enable) {
+            if (jsCRiPS.isDefined(rb.img)) {
+                rb.img.src = rb.parent.pauseButtonImg;
+            }
+            rb.classList.remove(rb.parent.runButtonClassName);
+            rb.classList.add(rb.parent.pauseButtonClassName);
+        } else {
+            if (jsCRiPS.isDefined(rb.img)) {
+                rb.img.src = rb.parent.runButtonImg;
+            }
+            rb.classList.add(rb.parent.runButtonClassName);
+            rb.classList.remove(rb.parent.pauseButtonClassName);
         }
 
     }
-    //document.getElementById('runOrPauseImg').src =
-//        enable ? './img/pause.png' : './img/run.png';
 }
 
 // no kame時に前の描画部分が残ってしまう場合あり、example5.3.1.1_Circle.jsをno kameで実行し速度を変えて再度Runで発生
@@ -1946,7 +1927,8 @@ function changeSpeed(x) {
     jsCRiPS.moveStep = jsCRiPS.stepKinds[Number(x)];
     jsCRiPS.rotateStep = jsCRiPS.stepKinds[Number(x)];
 
-    jsCRiPS.withKame = Number(x) !== 0; // if(withKame === true){ joinしない }
+    jsCRiPS.withKame = Number(x) > 1; // if(withKame === true){ joinしない }
+    jsCRiPS.withDebug = Number(x) !== 0; // if(withDebug === true){ debug表示をしない }
 }
 
 // x is sec
@@ -2179,12 +2161,38 @@ function JCRiPS(selector) {
     obj.elems = [];
     addSelectedElems();
 
-    // *****  define Components *****
+    //    *****       define Components      *****
+    // obj.xxx make element change jsCRiPS component
+    // obj.xxxIn create jsCRiPS component in element
+    // some components only have one generation method (e.g. canvas)
     obj.console = function (userOpts) {
         var opts = {
             maxLength: 10000    // テキストエリア内の最大文字数、0の場合は制限なし
         };
         setComponentData(jsCRiPS.console, obj.elems, userOpts, opts);
+    };
+
+    obj.consoleIn = function (userOpts) {
+        wrapElem('textarea');
+        obj.console(userOpts);
+    };
+
+    obj.globalVariableTable = function (userOpts) {
+        makeVariableTable(jsCRiPS.globalVariableTable, userOpts);
+    };
+
+    obj.globalVariableTableIn = function (userOpts) {
+        wrapElem('table');
+        makeVariableTable(jsCRiPS.globalVariableTable, userOpts);
+    };
+
+    obj.localVariableTable = function (userOpts) {
+        makeVariableTable(jsCRiPS.localVariableTable, userOpts);
+    };
+
+    obj.localVariableTableIn = function (userOpts) {
+        wrapElem('table');
+        makeVariableTable(jsCRiPS.localVariableTable, userOpts);
     };
 
     function makeVariableTable(tableKind, userOpts) {
@@ -2194,27 +2202,50 @@ function JCRiPS(selector) {
             position: 'absolute',
             draggable: true,
             scroll: true,
-            tableClassName: tcn
+            tableClassName: tcn,
+            thName: 'name',
+            thValue: 'value',
+            thType: 'type',
+            thPos: 'position'
         };
         setComponentData(tableKind, obj.elems, userOpts, opts, function (elem) {
             if (elem.scroll) {
                 elem.style['overflow-y'] = 'scroll';
             }
             if (elem.draggable) {
-                $(elem).draggable();    // require JQuery UI
+                if(jsCRiPS.isDefined(elem.parent)){
+                    $(elem.parent).draggable();    // require JQuery UI
+                }else{
+                    $(elem).draggable();    // require JQuery UI
+                }
             }
+            setData(elem, tcn);
         });
+
+        // HTML要素のTableを作る
+        function setData(table, className) {
+            table.setAttribute('class', className);
+            table.setAttribute('width', '95%');
+            table.setAttribute('border', '1');
+            table.style.tableLayout = 'fixed';
+
+            var newRow = table.insertRow(0);
+            var thName = document.createElement('th');
+            thName.innerHTML = table.thName;
+            var thValue = document.createElement('th');
+            thValue.innerHTML = table.thValue;
+            var thType = document.createElement('th');
+            thType.innerHTML = table.thType;
+            var thPos = document.createElement('th');
+            thPos.innerHTML = table.thPos;
+            newRow.appendChild(thName);
+            newRow.appendChild(thValue);
+            newRow.appendChild(thType);
+            newRow.appendChild(thPos);
+        }
     }
 
-    obj.globalVariableTable = function (userOpts) {
-        makeVariableTable(jsCRiPS.globalVariableTable, userOpts);
-    };
-
-    obj.localVariableTable = function (userOpts) {
-        makeVariableTable(jsCRiPS.localVariableTable, userOpts);
-    };
-
-    obj.canvas = function (userOpts) {
+    obj.canvasIn = function (userOpts) {
         var opts = {
             draggable: false,
             width: 240,
@@ -2255,9 +2286,38 @@ function JCRiPS(selector) {
         });
     };
 
-    obj.buttons = function (userOpts) {
+    obj.runButton = function (userOpts) {
         var opts = {
-            run: true,  // if false , don't create RunButton
+            runButtonClassName: 'runButton',
+            pauseButtonClassName: 'pauseButton'
+        };
+        setComponentData([], obj.elems, userOpts, opts, function (elem) {
+            elem.onclick = debugRun;
+        });
+    };
+
+    // disable時の画像やopacity値などを変えたい場合は、属性セレクタを使えば可能
+    obj.stepButton = function (userOpts) {
+        var opts = {
+            stepButtonClassName: 'stepButton'
+        };
+        setComponentData([], obj.elems, userOpts, opts, function (elem) {
+            elem.onclick = debugNext;
+        });
+    };
+
+    obj.reloadButton = function (userOpts) {
+        var opts = {
+            reloadButtonClassName: 'reloadButton'
+        };
+        setComponentData([], obj.elems, userOpts, opts, function (elem) {
+            elem.onclick = debugStart;
+        });
+    };
+
+    obj.buttonsIn = function (userOpts) {
+        var opts = {
+            run: true,  // if false, don't create RunButton
             step: true,
             reload: true,
             runButtonImg: "./img/run.png",
@@ -2266,9 +2326,11 @@ function JCRiPS(selector) {
             reloadButtonImg: "./img/reload.png",
             runButtonClassName: 'runButton',
             stepButtonClassName: 'stepButton',
-            reloadButtonClassName: 'reloadButton'
+            reloadButtonClassName: 'reloadButton',
+            pauseButtonClassName: 'pauseButton'
         };
-        setComponentData(jsCRiPS.buttons, obj.elems, userOpts, opts, function (elem) {
+
+        setComponentData([], obj.elems, userOpts, opts, function (elem) {
 
             function createButton(onclickFun, className, img, alt) {
                 var b = document.createElement('button');
@@ -2281,34 +2343,42 @@ function JCRiPS(selector) {
                 b.appendChild(imgElem);
                 elem.appendChild(b);
                 b.img = imgElem;
+                b.parent = elem;
                 return b;
             }
 
             if (elem.run) {
-                elem.runButton = createButton(debugRun, elem.runButtonClassName, elem.runButtonImg, 'Run/Stop');
+                jsCRiPS.runButton.push(createButton(debugRun, elem.runButtonClassName, elem.runButtonImg, 'Run/Stop'));
             }
             if (elem.step) {
-                elem.stepButton = createButton(debugNext, elem.stepButtonClassName, elem.stepButtonImg, 'Step');
+                jsCRiPS.stepButton.push(createButton(debugNext, elem.stepButtonClassName, elem.stepButtonImg, 'Step'));
             }
             if (elem.reload) {
-                elem.reloadButton = createButton(debugStart, elem.stepButtonClassName, elem.reloadButtonImg, 'Reload');
+                jsCRiPS.reloadButton.push(createButton(debugStart, elem.reloadButtonClassName, elem.reloadButtonImg, 'Reload'));
             }
-
         });
     };
 
     obj.turtleSpeedChanger = function (userOpts) {
         var opts = {
-            value: 3
+            value: 4,
+            noDebug: false
         };
         setComponentData(jsCRiPS.turtleSpeedChanger, obj.elems, userOpts, opts, function (elem) {
-            elem.min = 0;
-            elem.max = 4;
+            elem.min = elem.noDebug ? 0 : 1;
+            elem.max = 5;
             elem.step = 1;
             elem.setAttribute('onchange', 'changeSpeed(this.value)');
             elem.setAttribute('oninput', 'changeSpeed(this.value)');
             changeSpeed(elem.value);
         });
+    };
+
+    obj.turtleSpeedChangerIn = function (userOpts) {
+        wrapElem('input', function (ne) {
+            ne.type = 'range';
+        });
+        obj.turtleSpeedChanger(userOpts);
     };
 
     obj.programSpeedChanger = function (userOpts) {
@@ -2325,41 +2395,22 @@ function JCRiPS(selector) {
         });
     };
 
-    // buttons系のものを作ろうと思ったが、途中で不便そうに思ったので一時中断
-    //obj.speedChangeBars = function (userOpts) {
-    //    var opts = {
-    //        turtleSlider: true,
-    //        programSlider: true,
-    //        turtleSliderClassName: 'turtleSlider',
-    //        programSliderClassName: 'programSlider'
-    //    };
-    //    setComponentData(jsCRiPS.console, obj.elems, userOpts, opts, function (elem) {
-    //
-    //        function createSlider(onchange, className) {
-    //            var input = document.createElement('input');
-    //            input.type = 'range';
-    //            input.onchange = onchange;
-    //            input.oninput = onchange;
-    //            input.className = className;
-    //            elem.appendChild(input);
-    //            return input;
-    //        }
-    //
-    //        if (elem.turtleSlider) {
-    //            elem.turtleSpeedChanger = createSlider(changeSpeed('this.value'), elem.turtleSliderClassName);
-    //        }
-    //        if (elem.programSlider) {
-    //            elem.programSpeedChanger = createSlider(changeAutoSpeed('this.value'), elem.programSliderClassName);
-    //        }
-    //
-    //    });
-    //};
+    obj.programSpeedChangerIn = function (userOpts) {
+        wrapElem('input', function (ne) {
+            ne.type = 'range';
+        });
+        obj.programSpeedChanger(userOpts);
+    };
 
     obj.editor = function (userOpts) {
         var opts = {};
         setComponentData(jsCRiPS.console, obj.elems, userOpts, opts);
     };
 
+    obj.editorIn = function (userOpts) {
+        var opts = {};
+        setComponentData(jsCRiPS.console, obj.elems, userOpts, opts);
+    };
 
     return obj;
 
@@ -2419,6 +2470,21 @@ function JCRiPS(selector) {
                 additionalFunc(elems[i]);
             }
         }
+    }
+
+    // セレクターで指定された要素(a)の中に、引数で指定された新しい要素(b)を作成し、bをaとする。
+    function wrapElem(elemName, elemOptsFunc) {
+        var newElems = [];
+        for (var i = 0; i < obj.elems.length; i++) {
+            var ne = document.createElement(elemName);
+            if (jsCRiPS.isDefined(elemOptsFunc)) {
+                elemOptsFunc(ne);
+            }
+            obj.elems[i].appendChild(ne);
+            ne.parent = obj.elems[i];
+            newElems.push(ne);
+        }
+        obj.elems = newElems;
     }
 
 }

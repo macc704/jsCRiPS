@@ -505,33 +505,37 @@
 </script>
 
 <script>
+    JCRiPS('table').globalVariableTable({
+    });
+
     JCRiPS('textarea').console({
         maxLength: 0
     });
 
-    JCRiPS('#globalDebugView').globalVariableTable({
+    JCRiPS('#globalDebugView').globalVariableTableIn({
         tableClassName: 'myGlobalVariableTable'
-
     });
-    JCRiPS('#localDebugView').localVariableTable({
+    JCRiPS('#localDebugView').localVariableTableIn({
         draggable: false
     });
 
-    JCRiPS('#canvases').canvas({
+    JCRiPS('#canvases').canvasIn({
         draggable: true
     });
 
-    JCRiPS('#buttons').buttons({
+    JCRiPS('#buttons').buttonsIn({
         //runButtonImg:"./img/man2.gif"
     });
 
     JCRiPS('.turtleSlider').turtleSpeedChanger({
-        value: 2
+        noDebug:true
     });
     JCRiPS('.programSlider').programSpeedChanger();
 
 
+
 </script>
+
 </body>
 
 
