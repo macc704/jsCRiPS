@@ -27,23 +27,25 @@
     </style>
     <script>
         function resizeFrame() {
-            var PageHight = document.body.scrollHeight; // ページの高さを取得
-            window.parent.document.getElementById('editorFrame').style.height = PageHight + 'px';
+            var PageHeight = document.body.scrollHeight; // ページの高さを取得
+            window.parent.document.getElementById('editorFrame').style.height = PageHeight + 'px';
         }
     </script>
-    <script src='http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js'></script>
+    <script src="../lib/jquery-2.1.4.min.js"></script>
 </head>
 <body>
 <div id='editor'>var t = createTurtle();
-for(var i=0;i<12;i++){
+    for(var i=0;i<12;i++){
     t.fd(10);
     t.rt(30);
-}
+    }
 </div>
 
 <div id='dummy' style='display: none'>dummy</div>
 
 <script src='../lib/src-noconflict/ace.js'></script>
+<script src='../lib/js-beautify/lib/beautify.js'></script>
+
 <script>
     var editor = ace.edit('editor');
     editor.setTheme('ace/theme/monokai');
@@ -61,28 +63,30 @@ for(var i=0;i<12;i++){
                         }
                     });
         };
-        loadFile('file:///C:/Users/cs11054/Documents/jsCRiPS/test/examples/2.2.1.1_House.js');
+        loadFile('./examples/2.2.1.1_House.js');
     });
 
-    // 自動でリサイズする設定だったもの
-    // function heightUpdateFunction() {
-    //     // http://stackoverflow.com/questions/11584061/
-    //     var newHeight = editor.getSession().getScreenLength()
-    //             * editor.renderer.lineHeight + 20;
-    //     window.parent.$('#editorFrame').height(newHeight.toString() + 'px');
-    //     //  いらない？  $('#editor-section').height(newHeight.toString() + 'px');
 
-    //     // This call is required for the editor to fix all of
-    //     // its inner structure for adapting to a change in size
-    //     editor.resize();
-    // }
+    function autoResize(maxLen) {
+        //自動でリサイズする設定だったもの
+        function heightUpdateFunction() {
+            // http://stackoverflow.com/questions/11584061/
+            var newHeight = editor.getSession().getScreenLength()
+                    * editor.renderer.lineHeight + 20;
+            if (maxLen < newHeight) {
+                window.parent.$('#editorFrame').height(newHeight.toString() + 'px');
+                // This call is required for the editor to fix all of
+                // its inner structure for adapting to a change in size
+                editor.resize();
+                //  いらない？  $('#editor-section').height(newHeight.toString() + 'px');
+            }
+        }
 
-    // Set initial size to match initial content
-    //  heightUpdateFunction();
-    // Whenever a change happens inside the ACE editor, update
-    // the size again
-    //editor.getSession().on('change', heightUpdateFunction);
-
+        // Set initial size to match initial content
+        heightUpdateFunction();
+        // Whenever a change happens inside the ACE editor, update the size again
+        editor.getSession().on('change', heightUpdateFunction);
+    }
 
     function getSource() {
         return editor.getValue();
@@ -157,11 +161,29 @@ for(var i=0;i<12;i++){
 
 
     // TODO いいライブラリが見つからない
-    function format() {
-//        var input = editor.getValue();
-//        editor.getSession().setValue();
+
+    function format(userOpts) {
+        var input = editor.getValue();
+        var opts = (typeof userOpts === 'undefined') ? {} : userOpts;
+        editor.getSession().doc.setValue(js_beautify(input, opts));
     }
-    format();
+
+    document.addEventListener('keydown', function(e){
+        // key bind
+        if (e.ctrlKey && e.keyCode === 83) { // key = [S] (83)
+            console.log('Ctrl+S!');
+            format();
+            e.preventDefault();
+            return false;
+        }
+
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 70) { // key = [F] (70)
+            format();
+            e.preventDefault();
+            return false;
+        }
+    });
+
 </script>
 </body>
 </html>

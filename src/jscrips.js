@@ -94,7 +94,7 @@ jsCRiPS.debugWait = function () {
         }
         var startTime = new Date();
         if (jsCRiPS.isBreakPoint) {
-            autoStart(false);
+            jsCRiPS.autoStart(false);
         }
         while (!jsCRiPS.debugReady) {
             Thread.sleep(1);
@@ -249,7 +249,6 @@ jsCRiPS.popCallStack = function (stmt, idx) {
     } else {
         stmt.push(esprima.parse('jsCRiPS.popCallStackHelper();').body[0]);
     }
-
 };
 
 function makeCallStack(path) {
@@ -306,6 +305,14 @@ function makeCallStack(path) {
     return ret;
 }
 
+jsCRiPS.setHighlight = function (startLine, endLine, type) {
+    document.getElementById('editorFrame').contentWindow.setHighlight(startLine, endLine, type);
+};
+
+jsCRiPS.removeHighlight = function () {
+    document.getElementById('editorFrame').contentWindow.removeHighlight();
+};
+
 jsCRiPS.debugConverter.convert = function (source) {
     // 空白行に対するBreakpointへ対応する場合、ただし"{"のみの行など空白行以外でも対応できないBreakpointが発生してしまうので中途半端
     //var lines = source.split(/\r\n|\r|\n/);
@@ -324,7 +331,7 @@ jsCRiPS.debugConverter.convert = function (source) {
             return;
         }
         var block = esprima.parse('{}').body[0];
-        block.body.push(esprima.parse('setHighlight(' + (line - 1) + ',' + (end - 1) + ');').body[0]);
+        block.body.push(esprima.parse('jsCRiPS.setHighlight(' + (line - 1) + ',' + (end - 1) + ');').body[0]);
         block.body.push(esprima.parse('jsCRiPS.debugVariablePrint();').body[0]);
         // なぜかdebugWaitの引数として渡せない(undefinedになる)ので、グローバル変数にbreakpointの情報を持たせる
         block.body.push(esprima.parse('jsCRiPS.isBreakPoint = jsCRiPS.breakPoints.indexOf(' + (line - 1) + ') !== -1;').body[0]);
@@ -508,7 +515,7 @@ jsCRiPS.debugConverter.convert = function (source) {
     };
     ast.body = processStatements(ast.body);
     ast.body.push(esprima.parse('jsCRiPS.debugVariablePrint();').body[0]);
-    ast.body.push(esprima.parse('setHighlight(' + (ast.loc.end.line) + ',' + (ast.loc.end.line) + ');').body[0]);
+    ast.body.push(esprima.parse('jsCRiPS.setHighlight(' + (ast.loc.end.line) + ',' + (ast.loc.end.line) + ');').body[0]);
     ast.body.push(esprima.parse('jsCRiPS.endRun();').body[0]);
 
     return escodegen.generate(ast);
@@ -1114,7 +1121,6 @@ function createImageTurtle(imgName) {
 function createTextTurtle(str) {
     var t = createObjectTurtle();
     t.str = str;
-
     // テキストの中身を変える命令
     t.text = function (newStr) {
         if (jsCRiPS.isUndefined(newStr)) {
@@ -1123,7 +1129,6 @@ function createTextTurtle(str) {
         t.str = newStr;
         t.resize();
     };
-
 
     // TurtleCafeのマニュアルにはないがCRiPSで実装されていた関数、どうせCardTurtleで使う
     t.fontsize = function (fs) {
@@ -1145,8 +1150,11 @@ function createTextTurtle(str) {
     // 描画関係
     t.resize = function () {
         var cx = t.x - t.width / 2;
-        var ctx = jsCRiPS.tCanvas.getContext('2d');
-        ctx.font = t._fontsize + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
+        var ctx;
+        for (var i = 0; i < jsCRiPS.tCanvas.length; i++) {
+            ctx = jsCRiPS.tCanvas[i].getContext('2d');
+            ctx.font = t._fontsize + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
+        }
         t.width = ctx.measureText(str).width;
         t.height = t._fontsize;
         t.x = cx + t.width / 2;
@@ -1186,8 +1194,11 @@ function createListTurtle(autoHide, name) {
 
     t.nameWidth = 0;
     if (jsCRiPS.isDefined(name)) {
-        var ctx = jsCRiPS.tCanvas.getContext('2d');
-        ctx.font = jsCRiPS.FONT_SIZE + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
+        var ctx;
+        for (var i = 0; i < jsCRiPS.tCanvas.length; i++) {
+            ctx = jsCRiPS.tCanvas[i].getContext('2d');
+            ctx.font = jsCRiPS.FONT_SIZE + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
+        }
         t.nameWidth = ctx.measureText(t.name).width;
     }
 
@@ -1487,8 +1498,11 @@ function createCardTurtle(str) {
     // override
     t.resize = function () {
         var cx = t.x - t.width / 2;
-        var ctx = jsCRiPS.tCanvas.getContext('2d');
-        ctx.font = t._fontsize + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
+        var ctx;
+        for (var i = 0; i < jsCRiPS.tCanvas.length; i++) {
+            ctx = jsCRiPS.tCanvas[i].getContext('2d');
+            ctx.font = jsCRiPS.FONT_SIZE + 'px \'' + jsCRiPS.DEFAULT_FONT + '\'';
+        }
         t.width = ctx.measureText(t.str).width + t.margin2;
         t.height = t._fontsize + t.margin2;
         t.x = cx + t.width / 2;
@@ -1796,6 +1810,11 @@ function start(f) {
     jsCRiPS.mth = Thread.create(f);
 }
 
+function restart() {
+    jsCRiPS.initProgram();
+    main();
+}
+
 function random(n) {
     return parseInt(Math.random() * n);
 }
@@ -1816,13 +1835,11 @@ function canvasSize(w, h) {
     }
 }
 
-/*global main*/
 jsCRiPS.initProgram = function () {
     try {
         jsCRiPS.mth.kill();
         jsCRiPS.th.kill();
     } catch (e) {
-        // TODO mth,thが終了時に例外が出る、無視でok?その他エラーは例外で処理するべきか？いつの間にかでなくなってる…？
         println('ERROR [ ' + e + ' ]');
     }
     jsCRiPS.mth = Thread.create(function () {
@@ -1842,12 +1859,6 @@ jsCRiPS.initProgram = function () {
     jsCRiPS.audios = [];
 };
 
-
-function restart() {
-    jsCRiPS.initProgram();
-    main();
-}
-
 jsCRiPS.endRun = function () {
     for (var i = 0; i < jsCRiPS.runButton.length; i++) {
         var rb = jsCRiPS.runButton[i];
@@ -1862,7 +1873,7 @@ jsCRiPS.endRun = function () {
 jsCRiPS.runReady = false;
 
 /* htmlから呼び出される、html側へ呼ぶ関数群、外部とのAPI */
-function debugStart() {
+jsCRiPS.debugStart = function () {
 
     jsCRiPS.initProgram();
 
@@ -1874,34 +1885,34 @@ function debugStart() {
     /* global debugMain */
     debugMain();
 
-    autoStart(false);
+    jsCRiPS.autoStart(false);
     jsCRiPS.runReady = true;
 
-}
+};
 
-function debugNext() {
+jsCRiPS.debugNext = function () {
     if (!jsCRiPS.runReady) {
-        debugStart();
+        jsCRiPS.debugStart();
     } else {
         jsCRiPS.debugReady = true;
-        autoStart(false);
+        jsCRiPS.autoStart(false);
     }
-}
+};
 
-function debugRun() {
+jsCRiPS.debugRun = function () {
     if (!jsCRiPS.runReady) {
-        debugStart();
-        autoStart(true);
+        jsCRiPS.debugStart();
+        jsCRiPS.autoStart(true);
     } else {
         if (jsCRiPS.AutoMode) {
-            autoStart(false);
+            jsCRiPS.autoStart(false);
         } else {
-            autoStart(true);
+            jsCRiPS.autoStart(true);
         }
     }
-}
+};
 
-function autoStart(enable) {
+jsCRiPS.autoStart = function (enable) {
     jsCRiPS.AutoMode = enable;
     for (var i = 0; i < jsCRiPS.runButton.length; i++) {
         var rb = jsCRiPS.runButton[i];
@@ -1920,33 +1931,33 @@ function autoStart(enable) {
         }
 
     }
-}
+};
 
 // no kame時に前の描画部分が残ってしまう場合あり、example5.3.1.1_Circle.jsをno kameで実行し速度を変えて再度Runで発生
-function changeSpeed(x) {
+jsCRiPS.changeSpeed = function (x) {
     jsCRiPS.moveStep = jsCRiPS.stepKinds[Number(x)];
     jsCRiPS.rotateStep = jsCRiPS.stepKinds[Number(x)];
 
     jsCRiPS.withKame = Number(x) > 1; // if(withKame === true){ joinしない }
     jsCRiPS.withDebug = Number(x) !== 0; // if(withDebug === true){ debug表示をしない }
-}
+};
 
 // x is sec
-function changeAutoSpeed(x) {
+jsCRiPS.changeAutoSpeed = function (x) {
     jsCRiPS.AutoSpeed = (Number(x) * Number(x)) * 1000;
-}
+};
 
-function setBreakPoint(row) {
+jsCRiPS.setBreakPoint = function (row) {
     jsCRiPS.breakPoints.push(row);
-}
+};
 
-function clearBreakPoint(row) {
+jsCRiPS.clearBreakPoint = function (row) {
     for (var i = 0; i < jsCRiPS.breakPoints.length; i++) {
         if (jsCRiPS.breakPoints[i] === row) {
             jsCRiPS.breakPoints.splice(i, 1);
         }
     }
-}
+};
 
 function print() {
     var str = '';
@@ -1980,10 +1991,6 @@ jsCRiPS.clearConsole = function () {
     }
 };
 
-function setTitle(name) {
-    var title = document.getElementById('ptitle');
-    title.innerHTML = name;
-}
 
 // イベント関係
 // リスナー登録より上で宣言する必要あり
@@ -1997,6 +2004,22 @@ jsCRiPS.keyDown = function (e) {
             }
         }
     }
+
+    // key bind
+    // 必要に応じてeditor.htmlにも記述する必要あり
+    if (e.ctrlKey && e.keyCode === 83) { // key = [S] (83)
+        console.log('Ctrl+S!');
+        jsCRiPS.editor.format();
+        e.preventDefault();
+        return false;
+    }
+
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 70) { // key = [F] (70)
+        jsCRiPS.editor.format();
+        e.preventDefault();
+        return false;
+    }
+
 };
 
 jsCRiPS.keyPress = function (e) {
@@ -2130,32 +2153,40 @@ function input(msg) {
         jsCRiPS.inputted = false;
     });
 
-    swal({
-            title: msg ? msg : 'An input!',
-            type: 'input',
-            allowEscapeKey: false,
-            closeOnConfirm: false
-        },
-        function (inputValue) {
-            if (inputValue === '') {
-                swal.showInputError('You need to write something!');
-                return false;
+    if (typeof swal === 'function') {
+        swal({
+                title: msg ? msg : 'An input!',
+                type: 'input',
+                allowEscapeKey: false,
+                closeOnConfirm: false
+            },
+            function (inputValue) {
+                if (inputValue === '') {
+                    swal.showInputError('You need to write something!');
+                    return false;
+                }
+                jsCRiPS.inputText = isInteger(inputValue) ?
+                    Number(inputValue) : inputValue;
+
+                println('INPUT [' + jsCRiPS.inputText + ']');
+                jsCRiPS.inputted = true;             // th.kill(); 本当はこうしたい
+                swal.close();
             }
-            if (isInteger(inputValue)) {
-                jsCRiPS.inputText = Number(inputValue);
-            } else {
-                jsCRiPS.inputText = inputValue;
-            }
-            println('INPUT [' + jsCRiPS.inputText + ']');
-            jsCRiPS.inputted = true;             // th.kill(); 本当はこうしたい
-            swal.close();
-        }
-    );
+        );
+    } else {
+        console.log('You can use sweet alert library');
+        jsCRiPS.inputText = prompt(msg ? msg : 'An input!');
+        jsCRiPS.inputText = isInteger(jsCRiPS.inputText) ?
+            Number(jsCRiPS.inputText) : jsCRiPS.inputText;
+        println('INPUT [' + jsCRiPS.inputText + ']');
+        jsCRiPS.inputted = true;
+    }
 
 }
 
 // create jsCRiPS object (like JQuery,$ method)
 // HTML要素からjsCRiPSオブジェクトを作成する
+// TODO page load 前(要素を読むこむまで)は使えない $やonloadイベントに追加する形で改善可能？
 function JCRiPS(selector) {
     var obj = {};
     obj.elems = [];
@@ -2212,12 +2243,14 @@ function JCRiPS(selector) {
             if (elem.scroll) {
                 elem.style['overflow-y'] = 'scroll';
             }
-            if (elem.draggable) {
-                if(jsCRiPS.isDefined(elem.parent)){
+            if (elem.draggable && jsCRiPS.isDefined($)) {
+                if (jsCRiPS.isDefined(elem.parent)) {
                     $(elem.parent).draggable();    // require JQuery UI
-                }else{
+                } else {
                     $(elem).draggable();    // require JQuery UI
                 }
+            } else if (elem.draggable && jsCRiPS.isUndefined($)) {
+                console.log('require JQuery UI');
             }
             setData(elem, tcn);
         });
@@ -2280,8 +2313,10 @@ function JCRiPS(selector) {
             elem.appendChild(lc);
             elem.appendChild(tc);
 
-            if (elem.draggable) {
+            if (elem.draggable && jsCRiPS.isDefined($)) {
                 $(elem).draggable();    // require JQuery UI
+            } else if (elem.draggable && jsCRiPS.isUndefined($)) {
+                console.log('require JQuery UI');
             }
         });
     };
@@ -2292,7 +2327,7 @@ function JCRiPS(selector) {
             pauseButtonClassName: 'pauseButton'
         };
         setComponentData([], obj.elems, userOpts, opts, function (elem) {
-            elem.onclick = debugRun;
+            elem.onclick = jsCRiPS.debugRun;
         });
     };
 
@@ -2302,7 +2337,7 @@ function JCRiPS(selector) {
             stepButtonClassName: 'stepButton'
         };
         setComponentData([], obj.elems, userOpts, opts, function (elem) {
-            elem.onclick = debugNext;
+            elem.onclick = jsCRiPS.debugNext;
         });
     };
 
@@ -2311,7 +2346,7 @@ function JCRiPS(selector) {
             reloadButtonClassName: 'reloadButton'
         };
         setComponentData([], obj.elems, userOpts, opts, function (elem) {
-            elem.onclick = debugStart;
+            elem.onclick = jsCRiPS.debugStart;
         });
     };
 
@@ -2348,13 +2383,13 @@ function JCRiPS(selector) {
             }
 
             if (elem.run) {
-                jsCRiPS.runButton.push(createButton(debugRun, elem.runButtonClassName, elem.runButtonImg, 'Run/Stop'));
+                jsCRiPS.runButton.push(createButton(jsCRiPS.debugRun, elem.runButtonClassName, elem.runButtonImg, 'Run/Stop'));
             }
             if (elem.step) {
-                jsCRiPS.stepButton.push(createButton(debugNext, elem.stepButtonClassName, elem.stepButtonImg, 'Step'));
+                jsCRiPS.stepButton.push(createButton(jsCRiPS.debugNext, elem.stepButtonClassName, elem.stepButtonImg, 'Step'));
             }
             if (elem.reload) {
-                jsCRiPS.reloadButton.push(createButton(debugStart, elem.reloadButtonClassName, elem.reloadButtonImg, 'Reload'));
+                jsCRiPS.reloadButton.push(createButton(jsCRiPS.debugStart, elem.reloadButtonClassName, elem.reloadButtonImg, 'Reload'));
             }
         });
     };
@@ -2368,9 +2403,9 @@ function JCRiPS(selector) {
             elem.min = elem.noDebug ? 0 : 1;
             elem.max = 5;
             elem.step = 1;
-            elem.setAttribute('onchange', 'changeSpeed(this.value)');
-            elem.setAttribute('oninput', 'changeSpeed(this.value)');
-            changeSpeed(elem.value);
+            elem.setAttribute('onchange', 'jsCRiPS.changeSpeed(this.value)');
+            elem.setAttribute('oninput', 'jsCRiPS.changeSpeed(this.value)');
+            jsCRiPS.changeSpeed(elem.value);
         });
     };
 
@@ -2389,9 +2424,9 @@ function JCRiPS(selector) {
             elem.min = 0;
             elem.max = 1.414;
             elem.step = 0.1;
-            elem.setAttribute('onchange', 'changeAutoSpeed(this.value)');
-            elem.setAttribute('oninput', 'changeAutoSpeed(this.value)');
-            changeAutoSpeed(elem.value);
+            elem.setAttribute('onchange', 'jsCRiPS.changeAutoSpeed(this.value)');
+            elem.setAttribute('oninput', 'jsCRiPS.changeAutoSpeed(this.value)');
+            jsCRiPS.changeAutoSpeed(elem.value);
         });
     };
 
@@ -2403,18 +2438,52 @@ function JCRiPS(selector) {
     };
 
     obj.editor = function (userOpts) {
-        var opts = {};
-        setComponentData(jsCRiPS.console, obj.elems, userOpts, opts);
+        var opts = {
+            autoResize: false,
+            autoFormat: false,
+            resizeMaxLen: 200
+        };
+        setComponentData(jsCRiPS.console, obj.elems, userOpts, opts, function (elem) {
+            elem.src = 'editor.html';
+            jsCRiPS.editor = elem.contentWindow;
+            elem.onload = function () {
+                if (elem.autoResize) {
+                    jsCRiPS.editor.autoResize(elem.resizeMaxLen);
+                }
+            };
+
+        });
     };
 
     obj.editorIn = function (userOpts) {
-        var opts = {};
-        setComponentData(jsCRiPS.console, obj.elems, userOpts, opts);
+        var opts = {
+            width: "400px",
+            height: "480px",
+            autoResize: false,
+            autoFormat: false,
+            formatOpts: {}
+        };
+        overwriteOptions(userOpts, opts);
+        wrapElem('iframe', function (ne) {
+            ne.width = opts.width;
+            ne.height = opts.height;
+        });
+        obj.editor(userOpts);
     };
 
     return obj;
 
     // ***** 以下便利メソッド *****
+    // onloadイベントを追加する。
+    function addOnload(func) {
+        try {
+            window.addEventListener("load", func, false);
+        } catch (e) {
+            // IE用
+            window.attachEvent("onload", func);
+        }
+    }
+
     // selectorで指定された要素をobj.elems配列に格納していく
     function addSelectedElems() {
         var selectors = selector.toString().split(',');

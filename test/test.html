@@ -12,40 +12,13 @@
     <script src="../src/jscrips.js"></script>
     <link rel="stylesheet" href="../lib/Slidebars-0.10.3/dist/slidebars.min.css">
     <link rel="stylesheet" href="../lib/sweetalert-master/dist/sweetalert.css">
-    <link rel="stylesheet" href="../lib/animate.min.css">
     <link rel="stylesheet" href="../lib/jquery-ui.min.css">
     <!--  <link rel="stylesheet" href="../lib/bootstrap-3.3.5-dist/css/bootstrap.min.css">
       <link rel="stylesheet" href="../lib/bootstrap-3.3.5-dist/css/bootstrap-theme.css"> -->
     <script src="../lib/sweetalert-master/dist/sweetalert.min.js"></script>
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <script>
 
-        function main() {
-            var source = document.getElementById('editorFrame').contentWindow.getSource();
-            var converted = jsCRiPS.converter.convert(source);
-            document.getElementById('result').value = converted;
-            eval('var func = function(){' + converted + '}');
-            start(func);
-        }
-
-        function debugMain() {
-            var source = document.getElementById('editorFrame').contentWindow.getSource();
-            var converted = jsCRiPS.debugConverter.convert(source);
-            document.getElementById('result').value = converted;
-            eval('var func = function(){' + converted + '}');
-            start(func);
-        }
-
-        function setHighlight(startLine, endLine, type) {
-            document.getElementById('editorFrame').contentWindow.setHighlight(startLine, endLine, type);
-        }
-
-        function removeHighlight() {
-            document.getElementById('editorFrame').contentWindow.removeHighlight();
-        }
-
-    </script>
     <style type="text/css">
 
         canvas {
@@ -96,12 +69,6 @@
 
         #sb-site {
             height: 100%;
-        }
-
-        #editorFrame {
-            width: 400px;
-            height: 480px;
-            display: block;
         }
 
         ul {
@@ -258,7 +225,8 @@
     <!--が、ConcurrentThread.jsに関数が汚染されているためiframeで実装中-->
     <!--エラーチェックしてくれる場合、Windowで定義されてるlengthやnameで警告がでる-->
     <div id="editor">
-        <iframe id="editorFrame" src="editor.html" width="400px" frameborder="0" style="float:left"></iframe>
+        <iframe id="editorFrame" width="400px" height="480px" frameborder="0"
+                style="float:left;display:block"></iframe>
     </div>
     <!--Canvasを一つに統一すべき？ -->
     <div id="canvases" style="float:left;">
@@ -461,7 +429,7 @@
     (function ($) {
         $(document).ready(function () {
             var loadfile = function (path) {
-                removeHighlight();
+                jsCRiPS.removeHighlight();
                 $('#ptitle').html(path);
                 $('#editorFrame').contents().find("#dummy").load(path,
                         function (response, status) {
@@ -469,7 +437,7 @@
                                 println("ERROR ファイル[" + path + "]が見つかりません")
                             } else {
                                 document.getElementById('editorFrame').contentWindow.paste(response);
-                                debugStart();
+                                jsCRiPS.debugStart();
                                 document.getElementById('editorFrame').contentWindow.clearAllBreakPoints();
                             }
                         });
@@ -505,8 +473,14 @@
 </script>
 
 <script>
-    JCRiPS('table').globalVariableTable({
-    });
+
+    function debugMain() {
+        var source = jsCRiPS.editor.getSource();
+        var converted = jsCRiPS.debugConverter.convert(source);
+        document.getElementById('result').value = converted;
+        eval('var func = function(){' + converted + '}');
+        start(func);
+    }
 
     JCRiPS('textarea').console({
         maxLength: 0
@@ -528,11 +502,13 @@
     });
 
     JCRiPS('.turtleSlider').turtleSpeedChanger({
-        noDebug:true
+        noDebug: true
     });
     JCRiPS('.programSlider').programSpeedChanger();
 
-
+    JCRiPS('#editorFrame').editor({
+        //autoResize:true
+    });
 
 </script>
 
