@@ -1,4 +1,4 @@
-canvasSize(1100,500);
+canvasSize(400,400);
 var turtles = createListTurtle();
 turtles.warpByTopLeft(100,300);
 {	//c//タートルを4匹作成する

@@ -3,7 +3,7 @@ var t = createTurtle();
 var handNumber;// じゃんけんの手
 
 // じゃんけんの手は　1をグー,2をチョキ,3をパーとする
-handNumber = random(3) + 1;// random(3)は0から2までの値を発生するので1を足す
+handNumber = random(3) + 1; // random(3)は0から2までの値を発生するので1を足す
 
 if (handNumber == 1) {
     {// c//グーを書く

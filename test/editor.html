@@ -94,6 +94,7 @@
 
     function paste(str) {
         editor.getSession().setValue(str);
+        format();
     }
 
     function setFontSize(n) {
@@ -159,16 +160,17 @@
         e.stop();
     });
 
-
-    // TODO いいライブラリが見つからない
-
     function format(userOpts) {
         var input = editor.getValue();
-        var opts = (typeof userOpts === 'undefined') ? {} : userOpts;
+        var defaultOpts ={
+            'indent_size': 2,
+            'brace_style' : 'none'
+        };
+        var opts = (typeof userOpts === 'undefined') ? defaultOpts : userOpts;
         editor.getSession().doc.setValue(js_beautify(input, opts));
     }
 
-    document.addEventListener('keydown', function(e){
+    document.addEventListener('keydown', function (e) {
         // key bind
         if (e.ctrlKey && e.keyCode === 83) { // key = [S] (83)
             console.log('Ctrl+S!');

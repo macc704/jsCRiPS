@@ -4,87 +4,88 @@ var jsCRiPS = {};
 
 /*global esprima,console,escodegen*/
 jsCRiPS.converter = {};
-jsCRiPS.converter.convert = function (source) {
-    var ast = esprima.parse(source);
-    var yieldAST = jsCRiPS.withKame ?
-        esprima.parse('jsCRiPS.th.join();').body[0] : esprima.parse(';').body[0];
-
-    //for debug
-    document.getElementById('ast').value = JSON.stringify(ast, null, 4);
-
-    var processStatement = function (stmt) {
-        if (stmt.type === 'BlockStatement') {
-            stmt.body = processStatements(stmt.body);
-        } else if (stmt.type === 'IfStatement') {  // else if
-            if (stmt.consequent) {
-                stmt.consequent = processStatement(stmt.consequent);
-            }
-            if (stmt.alternate) {
-                stmt.alternate = processStatement(stmt.alternate);
-            }
-        } else if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'CallExpression') {
-            return newAssignmentBlock();
-        } else if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'AssignmentExpression' &&
-            stmt.expression.right.type === 'CallExpression') {
-            return newAssignmentBlock(stmt.expression.left.name, stmt.expression.right.callee.name === 'input');
-        } else if (stmt.type === 'VariableDeclaration' && stmt.declarations[0].init &&
-            stmt.declarations[0].init.type === 'CallExpression') {
-            return newAssignmentBlock(stmt.declarations[0].id.name, stmt.declarations[0].init.callee.name === 'input');
-        }
-        return stmt;
-
-        function newAssignmentBlock(left, isInput) {
-            var block = esprima.parse('{}').body[0];
-            block.body.push(stmt);
-            block.body.push(yieldAST);
-            if (isInput && left) {
-                block.body.push(esprima.parse(left + ' = jsCRiPS.inputText;').body[0]);
-            }
-            return block;
-        }
-
-    };
-
-    var processStatements = function (stmts) {
-        var newStmts = [];
-        stmts.forEach(function (each) {
-            if (each.type === 'BlockStatement') {
-                each.body = processStatements(each.body);
-            } else if (each.type === 'IfStatement') {
-                if (each.consequent) {
-                    each.consequent = processStatement(each.consequent);
-                }
-                if (each.alternate) {
-                    each.alternate = processStatement(each.alternate);
-                }
-            }
-            if (each.body) { //while series
-                each.body = processStatement(each.body);
-            }
-            newStmts.push(each);
-            if (each.type === 'ExpressionStatement' && each.expression.type === 'CallExpression') {
-                newStmts.push(yieldAST);
-            } else if (each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
-                each.expression.right.type === 'CallExpression') {
-                // var x=input(),y=input() や f(input()) や if(input()=='abc')などには未対応
-                newStmts.push(yieldAST);
-                if (each.expression.right.callee.name === 'input') {
-                    newStmts.push(esprima.parse(each.expression.left.name + ' = jsCRiPS.inputText;').body[0]);
-                }
-            } else if (each.type === 'VariableDeclaration' && each.declarations[0].init &&
-                each.declarations[0].init.type === 'CallExpression') {
-                newStmts.push(yieldAST);
-                if (each.declarations[0].init.callee.name === 'input') {
-                    newStmts.push(esprima.parse(each.declarations[0].id.name + ' = jsCRiPS.inputText;').body[0]);
-                }
-            }
-        });
-        return newStmts;
-    };
-
-    ast.body = processStatements(ast.body);
-    return escodegen.generate(ast);
-};
+//jsCRiPS.converter.convert = function (source) {
+//    var ast = esprima.parse(source);
+//    var yieldAST = jsCRiPS.withKame ?
+//        esprima.parse('jsCRiPS.th.join();').body[0] : esprima.parse(';').body[0];
+//
+//
+//    //for debug
+//    document.getElementById('ast').value = JSON.stringify(ast, null, 4);
+//
+//    var processStatement = function (stmt) {
+//        if (stmt.type === 'BlockStatement') {
+//            stmt.body = processStatements(stmt.body);
+//        } else if (stmt.type === 'IfStatement') {  // else if
+//            if (stmt.consequent) {
+//                stmt.consequent = processStatement(stmt.consequent);
+//            }
+//            if (stmt.alternate) {
+//                stmt.alternate = processStatement(stmt.alternate);
+//            }
+//        } else if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'CallExpression') {
+//            return newAssignmentBlock();
+//        } else if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'AssignmentExpression' &&
+//            stmt.expression.right.type === 'CallExpression') {
+//            return newAssignmentBlock(stmt.expression.left.name, stmt.expression.right.callee.name === 'input');
+//        } else if (stmt.type === 'VariableDeclaration' && stmt.declarations[0].init &&
+//            stmt.declarations[0].init.type === 'CallExpression') {
+//            return newAssignmentBlock(stmt.declarations[0].id.name, stmt.declarations[0].init.callee.name === 'input');
+//        }
+//        return stmt;
+//
+//        function newAssignmentBlock(left, isInput) {
+//            var block = esprima.parse('{}').body[0];
+//            block.body.push(stmt);
+//            block.body.push(yieldAST);
+//            if (isInput && left) {
+//                block.body.push(esprima.parse(left + ' = jsCRiPS.inputText;').body[0]);
+//            }
+//            return block;
+//        }
+//
+//    };
+//
+//    var processStatements = function (stmts) {
+//        var newStmts = [];
+//        stmts.forEach(function (each) {
+//            if (each.type === 'BlockStatement') {
+//                each.body = processStatements(each.body);
+//            } else if (each.type === 'IfStatement') {
+//                if (each.consequent) {
+//                    each.consequent = processStatement(each.consequent);
+//                }
+//                if (each.alternate) {
+//                    each.alternate = processStatement(each.alternate);
+//                }
+//            }
+//            if (each.body) { //while series
+//                each.body = processStatement(each.body);
+//            }
+//            newStmts.push(each);
+//            if (each.type === 'ExpressionStatement' && each.expression.type === 'CallExpression') {
+//                newStmts.push(yieldAST);
+//            } else if (each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
+//                each.expression.right.type === 'CallExpression') {
+//                // var x=input(),y=input() や f(input()) や if(input()=='abc')などには未対応
+//                newStmts.push(yieldAST);
+//                if (each.expression.right.callee.name === 'input') {
+//                    newStmts.push(esprima.parse(each.expression.left.name + ' = jsCRiPS.inputText;').body[0]);
+//                }
+//            } else if (each.type === 'VariableDeclaration' && each.declarations[0].init &&
+//                each.declarations[0].init.type === 'CallExpression') {
+//                newStmts.push(yieldAST);
+//                if (each.declarations[0].init.callee.name === 'input') {
+//                    newStmts.push(esprima.parse(each.declarations[0].id.name + ' = jsCRiPS.inputText;').body[0]);
+//                }
+//            }
+//        });
+//        return newStmts;
+//    };
+//
+//    ast.body = processStatements(ast.body);
+//    return escodegen.generate(ast);
+//};
 
 jsCRiPS.debugConverter = {};
 jsCRiPS.debugWait = function () {
@@ -313,6 +314,7 @@ jsCRiPS.removeHighlight = function () {
     document.getElementById('editorFrame').contentWindow.removeHighlight();
 };
 
+// 高速化のため、汚いコード
 jsCRiPS.debugConverter.convert = function (source) {
     // 空白行に対するBreakpointへ対応する場合、ただし"{"のみの行など空白行以外でも対応できないBreakpointが発生してしまうので中途半端
     //var lines = source.split(/\r\n|\r|\n/);
@@ -321,22 +323,181 @@ jsCRiPS.debugConverter.convert = function (source) {
     //for (var i = 0; i < lines.length; i++) {
     //    source += ((lines[i] === '') ? 'jsCRiPS.dummy();' : lines[i]) + '\r\n';
     //}
-
     var ast = esprima.parse(source, {loc: true});
-    var yieldAST = jsCRiPS.withKame ?
-        esprima.parse('jsCRiPS.th.join();').body[0] : esprima.parse(';').body[0];
+    var yieldAST = jsCRiPS.withKame ? {
+        "type": "ExpressionStatement",
+        "expression": {
+            "type": "CallExpression",
+            "callee": {
+                "type": "MemberExpression",
+                "computed": false,
+                "object": {
+                    "type": "MemberExpression",
+                    "computed": false,
+                    "object": {
+                        "type": "Identifier",
+                        "name": "jsCRiPS"
+                    },
+                    "property": {
+                        "type": "Identifier",
+                        "name": "th"
+                    }
+                },
+                "property": {
+                    "type": "Identifier",
+                    "name": "join"
+                }
+            },
+            "arguments": []
+        }
+    } : {
+        "type": "EmptyStatement"
+    };
+    // esprima.parse('jsCRiPS.th.join();').body[0] : esprima.parse(';').body[0]
+    var debugVariablePrint = {
+        "type": "ExpressionStatement",
+        "expression": {
+            "type": "CallExpression",
+            "callee": {
+                "type": "MemberExpression",
+                "computed": false,
+                "object": {
+                    "type": "Identifier",
+                    "name": "jsCRiPS"
+                },
+                "property": {
+                    "type": "Identifier",
+                    "name": "debugVariablePrint"
+                }
+            },
+            "arguments": []
+        }
+    }; // esprima.parse('jsCRiPS.debugVariablePrint();').body[0];
+    var debugWait = {
+        "type": "ExpressionStatement",
+        "expression": {
+            "type": "CallExpression",
+            "callee": {
+                "type": "MemberExpression",
+                "computed": false,
+                "object": {
+                    "type": "Identifier",
+                    "name": "jsCRiPS"
+                },
+                "property": {
+                    "type": "Identifier",
+                    "name": "debugWait"
+                }
+            },
+            "arguments": []
+        }
+    }; // esprima.parse('jsCRiPS.debugWait();').body[0];
 
     function pushDebugStatement(stmt, line, end, idx) {
-        if (!jsCRiPS.withDebug) {
-            return;
+
+        var block;
+        if (jsCRiPS.withDebug) {
+            // pushを回避することで、1回あたり0.01ms程度速度改善
+            block = {
+                "type": "BlockStatement",
+                "body": [{
+                    "type": "ExpressionStatement",
+                    "expression": {
+                        "type": "CallExpression",
+                        "callee": {
+                            "type": "MemberExpression",
+                            "computed": false,
+                            "object": {
+                                "type": "Identifier",
+                                "name": "jsCRiPS"
+                            },
+                            "property": {
+                                "type": "Identifier",
+                                "name": "setHighlight"
+                            }
+                        },
+                        "arguments": [
+                            {
+                                "type": "Literal",
+                                "value": line - 1
+                            },
+                            {
+                                "type": "Literal",
+                                "value": end - 1
+                            }
+                        ]
+                    }
+                }, debugVariablePrint, {
+                    "type": "ExpressionStatement",
+                    "expression": {
+                        "type": "AssignmentExpression",
+                        "operator": "=",
+                        "left": {
+                            "type": "MemberExpression",
+                            "computed": false,
+                            "object": {
+                                "type": "Identifier",
+                                "name": "jsCRiPS"
+                            },
+                            "property": {
+                                "type": "Identifier",
+                                "name": "isBreakPoint"
+                            }
+                        },
+                        "right": {
+                            "type": "BinaryExpression",
+                            "operator": "!==",
+                            "left": {
+                                "type": "CallExpression",
+                                "callee": {
+                                    "type": "MemberExpression",
+                                    "computed": false,
+                                    "object": {
+                                        "type": "MemberExpression",
+                                        "computed": false,
+                                        "object": {
+                                            "type": "Identifier",
+                                            "name": "jsCRiPS"
+                                        },
+                                        "property": {
+                                            "type": "Identifier",
+                                            "name": "breakPoints"
+                                        }
+                                    },
+                                    "property": {
+                                        "type": "Identifier",
+                                        "name": "indexOf"
+                                    }
+                                },
+                                "arguments": [
+                                    {
+                                        "type": "Literal",
+                                        "value": line - 1
+                                    }
+                                ]
+                            },
+                            "right": {
+                                "type": "UnaryExpression",
+                                "operator": "-",
+                                "argument": {
+                                    "type": "Literal",
+                                    "value": 1
+                                },
+                                "prefix": true
+                            }
+                        }
+                    }
+                }, debugWait, yieldAST]
+            };
+            // var block = esprima.parse('{}').body[0]
+            // block.body.push(esprima.parse('jsCRiPS.setHighlight(' + (line - 1) + ',' + (end - 1) + ');').body[0]);
+            // block.body.push(debugVariablePrint);
+            // なぜかdebugWaitの引数として渡せない(undefinedになる)ので、グローバル変数にbreakpointの情報を持たせる
+            // block.body.push(esprima.parse('jsCRiPS.isBreakPoint = jsCRiPS.breakPoints.indexOf(' + (line - 1) + ') !== -1;').body[0]);
+            // block.body.push(debugWait);
+            // block.body.push(yieldAST);
+
         }
-        var block = esprima.parse('{}').body[0];
-        block.body.push(esprima.parse('jsCRiPS.setHighlight(' + (line - 1) + ',' + (end - 1) + ');').body[0]);
-        block.body.push(esprima.parse('jsCRiPS.debugVariablePrint();').body[0]);
-        // なぜかdebugWaitの引数として渡せない(undefinedになる)ので、グローバル変数にbreakpointの情報を持たせる
-        block.body.push(esprima.parse('jsCRiPS.isBreakPoint = jsCRiPS.breakPoints.indexOf(' + (line - 1) + ') !== -1;').body[0]);
-        block.body.push(esprima.parse('jsCRiPS.debugWait();').body[0]);
-        block.body.push(yieldAST);
         if (jsCRiPS.isDefined(idx)) {
             stmt.splice(idx, 0, block);
         } else {
@@ -345,7 +506,33 @@ jsCRiPS.debugConverter.convert = function (source) {
     }
 
     function pushInputExpression(pushed, left) {
-        pushed.push(esprima.parse('jsCRiPS.th.join();').body[0]);
+        pushed.push({
+            "type": "ExpressionStatement",
+            "expression": {
+                "type": "CallExpression",
+                "callee": {
+                    "type": "MemberExpression",
+                    "computed": false,
+                    "object": {
+                        "type": "MemberExpression",
+                        "computed": false,
+                        "object": {
+                            "type": "Identifier",
+                            "name": "jsCRiPS"
+                        },
+                        "property": {
+                            "type": "Identifier",
+                            "name": "th"
+                        }
+                    },
+                    "property": {
+                        "type": "Identifier",
+                        "name": "join"
+                    }
+                },
+                "arguments": []
+            }
+        }); // esprima.parse('jsCRiPS.th.join();').body[0]
         pushed.push(esprima.parse(left + ' = jsCRiPS.inputText;').body[0]);
     }
 
@@ -358,14 +545,20 @@ jsCRiPS.debugConverter.convert = function (source) {
         } else if (stmt.type === 'IfStatement') {
             if (stmt.consequent) {  // if
                 stmt.consequent = processStatement(stmt.consequent);
-                var block1 = esprima.parse('{}').body[0];
+                var block1 = {
+                    "type": "BlockStatement",
+                    "body": []
+                }; // esprima.parse('{}').body[0]
                 pushDebugStatement(block1.body, stmt.test.loc.start.line, stmt.test.loc.end.line);
                 block1.body.push(stmt);
                 stmt = block1;
             }
             if (stmt.alternate) {   // else
                 stmt.alternate = processStatement(stmt.alternate);
-                var block2 = esprima.parse('{}').body[0];
+                var block2 = {
+                    "type": "BlockStatement",
+                    "body": []
+                }; // esprima.parse('{}').body[0]
                 pushDebugStatement(block2.body, stmt.test.loc.start.line, stmt.test.loc.end.line);
                 block2.body.push(stmt);
                 stmt = block2;
@@ -374,26 +567,28 @@ jsCRiPS.debugConverter.convert = function (source) {
                 stmt.body[1].alternate = processStatement(stmt.body[1].alternate);
             }
         } else if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'CallExpression') {
-            return newAssignmentBlock();
+            return newAssignmentBlock(stmt);
         } else if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'AssignmentExpression' &&
             stmt.expression.right.type === 'CallExpression') {
-            return newAssignmentBlock(stmt.expression.left.name, stmt.expression.right.callee.name === 'input');
+            return newAssignmentBlock(stmt, stmt.expression.left.name, stmt.expression.right.callee.name === 'input');
         } else if (stmt.type === 'VariableDeclaration' && stmt.declarations[0].init &&
             stmt.declarations[0].init.type === 'CallExpression') {
-            return newAssignmentBlock(stmt.declarations[0].id.name, stmt.declarations[0].init.callee.name === 'input');
+            return newAssignmentBlock(stmt, stmt.declarations[0].id.name, stmt.declarations[0].init.callee.name === 'input');
         }
         return stmt;
 
-        function newAssignmentBlock(left, isInput) {
-            var block = esprima.parse('{}').body[0];
-            block.body.push(stmt);
+        function newAssignmentBlock(node, left, isInput) {
+            var block = {
+                "type": "BlockStatement",
+                "body": [stmt]
+            };
             if (isInput && left) {
                 pushInputExpression(block.body, left);
             } else {
                 block.body.push(yieldAST);
             }
             jsCRiPS.updateVariable(block.body, left);
-            pushDebugStatement(block.body);
+            pushDebugStatement(block.body, node.loc.start.line, node.loc.end.line);
             return block;
         }
 
@@ -402,7 +597,8 @@ jsCRiPS.debugConverter.convert = function (source) {
     var processStatements = function (stmts) {
         var newStmts = [];
         var updateVars = new Set();// 同じ変数を2回更新しないようにするため
-        for (var i = 0; i < stmts.length; i++) {
+        var i, j;
+        for (i = 0; i < stmts.length; i = (i + 1) | 0) {
             var each = stmts[i];
             if (each.type === 'BlockStatement') {
                 each.body = processStatements(each.body);
@@ -419,22 +615,25 @@ jsCRiPS.debugConverter.convert = function (source) {
             } else if (each.type === 'ForStatement') {
                 pushDebugStatement(newStmts, each.loc.start.line, each.loc.end.line);
                 if (each.init.type === 'VariableDeclaration') { // for(var i = 0,j = 0; ....)
-                    for (var j = 0; j < each.init.declarations.length; j++) {
+                    for (j = 0; j < each.init.declarations.length; j = (j + 1) | 0) {
                         jsCRiPS.addVariable(newStmts, each.init.declarations[j].id.name);
                     }
                 }
                 each.body = processStatement(each.body);
-                var block = esprima.parse('{}').body[0];
+                var block = {
+                    "type": "BlockStatement",
+                    "body": []
+                };
 
                 if (each.init.type === 'VariableDeclaration') { // for(var i = 0,j = 0; ....)
-                    for (var j = 0; j < each.init.declarations.length; j++) {
+                    for (j = 0; j < each.init.declarations.length; j = (j + 1) | 0) {
                         updateVars.add(each.init.declarations[j].id.name);
                     }
                 }
                 if (each.update.type === 'UpdateExpression') {
                     updateVars.add(each.update.argument.name);
                 } else if (each.update.type === 'SequenceExpression') {
-                    for (var j = 0; j < each.update.expressions.length; j++) {
+                    for (j = 0; j < each.update.expressions.length; j = (j + 1) | 0) {
                         if (each.update.expressions[j].type === 'UpdateExpression') {
                             updateVars.add(each.update.expressions[j].argument.name);
                         } else if (each.update.expressions[j].type === 'AssignmentExpression') {
@@ -453,7 +652,7 @@ jsCRiPS.debugConverter.convert = function (source) {
                     var lastLine = (each.params.length === 0) ?
                         each.id.loc.end.line : each.params[each.params.length - 1].loc.end.line;
                     if (each.params.length !== 0) {
-                        for (var j = 0; j < each.params.length; j++) {
+                        for (j = 0; j < each.params.length; j = (j + 1) | 0) {
                             jsCRiPS.addArgument(each.body.body, each.params[j].name, j);
                             lastLine = each.params[j].loc.end.line;
                         }
@@ -464,11 +663,13 @@ jsCRiPS.debugConverter.convert = function (source) {
                     jsCRiPS.pushCallStack(each.body.body, each.id.name);
                 }
             }
+
             newStmts.push(each);
             for (let vName of updateVars) {
                 jsCRiPS.updateVariable(newStmts, vName);
             }
             updateVars.clear();
+
             if (each.type === 'ExpressionStatement' && each.expression.type === 'CallExpression') {
                 pushDebugStatement(newStmts, each.expression.callee.loc.start.line, each.expression.callee.loc.end.line, newStmts.length - 1);
                 newStmts.push(yieldAST);
@@ -493,15 +694,13 @@ jsCRiPS.debugConverter.convert = function (source) {
                 } else {
                     pushDebugStatement(newStmts, each.declarations[0].loc.start.line, each.declarations[each.declarations.length - 1].loc.end.line, newStmts.length - 1);
                 }
-                for (var j = 0; j < each.declarations.length; j++) {
+                for (j = 0; j < each.declarations.length; j = (j + 1) | 0) {
                     jsCRiPS.addVariable(newStmts, each.declarations[j].id.name);
                 }
             } else if (each.type === 'ReturnStatement') {
                 pushDebugStatement(newStmts, each.loc.start.line, each.loc.end.line, newStmts.length - 1);
                 jsCRiPS.popCallStack(newStmts, newStmts.length - 1);
-            }
-
-            if (each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
+            } else if (each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
                 each.expression.right.type !== 'CallExpression') {
                 pushDebugStatement(newStmts, each.expression.loc.start.line, each.expression.loc.end.line, newStmts.length - 1);
                 jsCRiPS.updateVariable(newStmts, each.expression.left.name);
@@ -514,10 +713,27 @@ jsCRiPS.debugConverter.convert = function (source) {
         return newStmts;
     };
     ast.body = processStatements(ast.body);
-    ast.body.push(esprima.parse('jsCRiPS.debugVariablePrint();').body[0]);
+    ast.body.push(debugVariablePrint);
     ast.body.push(esprima.parse('jsCRiPS.setHighlight(' + (ast.loc.end.line) + ',' + (ast.loc.end.line) + ');').body[0]);
-    ast.body.push(esprima.parse('jsCRiPS.endRun();').body[0]);
-
+    ast.body.push({
+        "type": "ExpressionStatement",
+        "expression": {
+            "type": "CallExpression",
+            "callee": {
+                "type": "MemberExpression",
+                "computed": false,
+                "object": {
+                    "type": "Identifier",
+                    "name": "jsCRiPS"
+                },
+                "property": {
+                    "type": "Identifier",
+                    "name": "endRun"
+                }
+            },
+            "arguments": []
+        }
+    }); // esprima.parse('jsCRiPS.endRun();').body[0]
     return escodegen.generate(ast);
 };
 
@@ -713,7 +929,6 @@ function createTurtle() {
     t.warp = function (x, y) {
         var tmpPendown = t.penDown;
         t.up();
-        t.x = x;
         t.x = x;
         t.y = y;
         t.setRxRy();
@@ -1230,8 +1445,8 @@ function createListTurtle(autoHide, name) {
     }
 
     // 追加と削除
-    t.add = function (x, obj) { // x,objが両方要素をとり得るので注意
-        if (jsCRiPS.isDefined(obj)) { // add(n,obj)の場合
+    t.add = function (x, obj) { // x,objが両方Turtleをとり得るので注意
+        if (jsCRiPS.isDefined(obj)) { // add(idx,obj)の場合
             parentCheck(obj);
             obj.show(!autoHide);
             if (x < 0 || t.list.length < x) {
@@ -1459,12 +1674,15 @@ function createListTurtle(autoHide, name) {
         for (var i = 0; i < t.list.length; i++) {
             var obj = t.list[i];
             var tx = obj.getX(), ty = obj.getY(), tangle = obj.angle;
+            var trx = obj.rx, tryy = obj.ry;
             obj.warp(x + obj.width / 2, y + obj.height / 2);
             if (obj.isObject) {
                 obj.angle = 0;
             }
             drawListElem(ctx, t, obj);
             obj.warp(tx, ty);
+            obj.rx = trx;
+            obj.ry = tryy;
             obj.angle = tangle;
             if (t.cursor === i) { // cursorのあたっている要素の場合赤い枠で囲む
                 drawCursorRect(x, y, t.angle);
@@ -1810,11 +2028,6 @@ function start(f) {
     jsCRiPS.mth = Thread.create(f);
 }
 
-function restart() {
-    jsCRiPS.initProgram();
-    main();
-}
-
 function random(n) {
     return parseInt(Math.random() * n);
 }
@@ -1873,6 +2086,9 @@ jsCRiPS.endRun = function () {
 jsCRiPS.runReady = false;
 
 /* htmlから呼び出される、html側へ呼ぶ関数群、外部とのAPI */
+/* TODO 行数が多いほど遅くなる傾向にある
+ debugConverter.convertとThread.createに時間がかかっている
+ convertが1にたいして、esprimaでのparseが1/3、実行コード生成が1/3、escodegenでの生成が1/3程度の割合 */
 jsCRiPS.debugStart = function () {
 
     jsCRiPS.initProgram();
@@ -1947,17 +2163,17 @@ jsCRiPS.changeAutoSpeed = function (x) {
     jsCRiPS.AutoSpeed = (Number(x) * Number(x)) * 1000;
 };
 
-jsCRiPS.setBreakPoint = function (row) {
+function setBreakPoint(row) {
     jsCRiPS.breakPoints.push(row);
-};
+}
 
-jsCRiPS.clearBreakPoint = function (row) {
+function clearBreakPoint(row) {
     for (var i = 0; i < jsCRiPS.breakPoints.length; i++) {
         if (jsCRiPS.breakPoints[i] === row) {
             jsCRiPS.breakPoints.splice(i, 1);
         }
     }
-};
+}
 
 function print() {
     var str = '';
@@ -2193,7 +2409,7 @@ function JCRiPS(selector) {
     addSelectedElems();
 
     //    *****       define Components      *****
-    // obj.xxx make element change jsCRiPS component
+    // obj.xxx transform element to jsCRiPS component
     // obj.xxxIn create jsCRiPS component in element
     // some components only have one generation method (e.g. canvas)
     obj.console = function (userOpts) {
