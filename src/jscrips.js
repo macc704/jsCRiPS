@@ -497,6 +497,11 @@ jsCRiPS.debugConverter.convert = function (source) {
             // block.body.push(debugWait);
             // block.body.push(yieldAST);
 
+        }else{
+            block = {
+                        "type": "BlockStatement",
+                        "body": []
+                    }; // esprima.parse('{}').body[0]
         }
         if (jsCRiPS.isDefined(idx)) {
             stmt.splice(idx, 0, block);
