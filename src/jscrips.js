@@ -2005,7 +2005,7 @@ jsCRiPS.clearAllCanvas = function () {
 
 jsCRiPS.clearCanvas = function (canvas) {
     for (var i = 0; i < canvas.length; i++) {
-        canvas[i].getContext('2d').clearRect(0, 0, canvas[i].width, canvas[i].height);
+        canvas[i].getContext('2d').clearRect(-1, -1, canvas[i].width, canvas[i].height); // -1にしないと描画ゴミが残る
     }
 };
 
