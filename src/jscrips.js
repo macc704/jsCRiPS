@@ -307,11 +307,11 @@ function makeCallStack(path) {
 }
 
 jsCRiPS.setHighlight = function (startLine, endLine, type) {
-    document.getElementById('editorFrame').contentWindow.setHighlight(startLine, endLine, type);
+    jsCRiPS.editor.setHighlight(startLine, endLine, type);
 };
 
 jsCRiPS.removeHighlight = function () {
-    document.getElementById('editorFrame').contentWindow.removeHighlight();
+    jsCRiPS.editor.removeHighlight();
 };
 
 // 高速化のため、汚いコード
@@ -2076,10 +2076,10 @@ jsCRiPS.endRun = function () {
     for (var i = 0; i < jsCRiPS.runButton.length; i++) {
         var rb = jsCRiPS.runButton[i];
         if (jsCRiPS.isDefined(rb.img)) {
-            rb.img.src = rb.parent.runButtonImg;
+            rb.img.src = rb.runButtonImg;
         }
-        rb.classList.remove(rb.parent.pauseButtonClassName);
-        rb.classList.add(rb.parent.runButtonClassName);
+        rb.classList.remove(rb.pauseButtonClassName);
+        rb.classList.add(rb.runButtonClassName);
     }
     jsCRiPS.runReady = false;
 };
@@ -2134,16 +2134,16 @@ jsCRiPS.autoStart = function (enable) {
         var rb = jsCRiPS.runButton[i];
         if (enable) {
             if (jsCRiPS.isDefined(rb.img)) {
-                rb.img.src = rb.parent.pauseButtonImg;
+                rb.img.src = rb.pauseButtonImg;
             }
-            rb.classList.remove(rb.parent.runButtonClassName);
-            rb.classList.add(rb.parent.pauseButtonClassName);
+            rb.classList.remove(rb.runButtonClassName);
+            rb.classList.add(rb.pauseButtonClassName);
         } else {
             if (jsCRiPS.isDefined(rb.img)) {
-                rb.img.src = rb.parent.runButtonImg;
+                rb.img.src = rb.runButtonImg;
             }
-            rb.classList.add(rb.parent.runButtonClassName);
-            rb.classList.remove(rb.parent.pauseButtonClassName);
+            rb.classList.add(rb.runButtonClassName);
+            rb.classList.remove(rb.pauseButtonClassName);
         }
 
     }
@@ -2409,35 +2409,23 @@ function JCRiPS(selector) {
     addSelectedElems();
 
     //    *****       define Components      *****
-    // obj.xxx transform element to jsCRiPS component
-    // obj.xxxIn create jsCRiPS component in element
-    // some components only have one generation method (e.g. canvas)
     obj.console = function (userOpts) {
         var opts = {
+            rows: 6,
+            cols: 80,
+            readonly: true,
             maxLength: 10000    // テキストエリア内の最大文字数、0の場合は制限なし
         };
+        wrapElem('textarea');
         setComponentData(jsCRiPS.console, obj.elems, userOpts, opts);
     };
 
-    obj.consoleIn = function (userOpts) {
-        wrapElem('textarea');
-        obj.console(userOpts);
-    };
-
     obj.globalVariableTable = function (userOpts) {
-        makeVariableTable(jsCRiPS.globalVariableTable, userOpts);
-    };
-
-    obj.globalVariableTableIn = function (userOpts) {
         wrapElem('table');
         makeVariableTable(jsCRiPS.globalVariableTable, userOpts);
     };
 
     obj.localVariableTable = function (userOpts) {
-        makeVariableTable(jsCRiPS.localVariableTable, userOpts);
-    };
-
-    obj.localVariableTableIn = function (userOpts) {
         wrapElem('table');
         makeVariableTable(jsCRiPS.localVariableTable, userOpts);
     };
@@ -2494,7 +2482,7 @@ function JCRiPS(selector) {
         }
     }
 
-    obj.canvasIn = function (userOpts) {
+    obj.canvas = function (userOpts) {
         var opts = {
             draggable: false,
             width: 240,
@@ -2539,74 +2527,36 @@ function JCRiPS(selector) {
 
     obj.runButton = function (userOpts) {
         var opts = {
+            createImage: false,
+            runButtonImg: './img/run.png',
+            pauseButtonImg: './img/pause.png',
             runButtonClassName: 'runButton',
             pauseButtonClassName: 'pauseButton'
         };
-        setComponentData([], obj.elems, userOpts, opts, function (elem) {
+        setComponentData(jsCRiPS.runButton, obj.elems, userOpts, opts, function (elem) {
             elem.onclick = jsCRiPS.debugRun;
+            if (elem.createImage) {
+                var imgElem = document.createElement('img');
+                imgElem.src = elem.runButtonImg;
+                imgElem.alt = 'Run/Pause';
+                elem.appendChild(imgElem);
+                elem.img = imgElem;
+            }
         });
     };
 
     // disable時の画像やopacity値などを変えたい場合は、属性セレクタを使えば可能
     obj.stepButton = function (userOpts) {
-        var opts = {
-            stepButtonClassName: 'stepButton'
-        };
-        setComponentData([], obj.elems, userOpts, opts, function (elem) {
+        var opts = {};
+        setComponentData(jsCRiPS.stepButton, obj.elems, userOpts, opts, function (elem) {
             elem.onclick = jsCRiPS.debugNext;
         });
     };
 
     obj.reloadButton = function (userOpts) {
-        var opts = {
-            reloadButtonClassName: 'reloadButton'
-        };
-        setComponentData([], obj.elems, userOpts, opts, function (elem) {
+        var opts = {};
+        setComponentData(jsCRiPS.reloadButton, obj.elems, userOpts, opts, function (elem) {
             elem.onclick = jsCRiPS.debugStart;
-        });
-    };
-
-    obj.buttonsIn = function (userOpts) {
-        var opts = {
-            run: true,  // if false, don't create RunButton
-            step: true,
-            reload: true,
-            runButtonImg: "./img/run.png",
-            pauseButtonImg: "./img/pause.png",
-            stepButtonImg: "./img/step.png",
-            reloadButtonImg: "./img/reload.png",
-            runButtonClassName: 'runButton',
-            stepButtonClassName: 'stepButton',
-            reloadButtonClassName: 'reloadButton',
-            pauseButtonClassName: 'pauseButton'
-        };
-
-        setComponentData([], obj.elems, userOpts, opts, function (elem) {
-
-            function createButton(onclickFun, className, img, alt) {
-                var b = document.createElement('button');
-                b.type = 'button';
-                b.onclick = onclickFun;
-                b.className = className;
-                var imgElem = document.createElement('img');
-                imgElem.src = img;
-                imgElem.alt = alt;
-                b.appendChild(imgElem);
-                elem.appendChild(b);
-                b.img = imgElem;
-                b.parent = elem;
-                return b;
-            }
-
-            if (elem.run) {
-                jsCRiPS.runButton.push(createButton(jsCRiPS.debugRun, elem.runButtonClassName, elem.runButtonImg, 'Run/Stop'));
-            }
-            if (elem.step) {
-                jsCRiPS.stepButton.push(createButton(jsCRiPS.debugNext, elem.stepButtonClassName, elem.stepButtonImg, 'Step'));
-            }
-            if (elem.reload) {
-                jsCRiPS.reloadButton.push(createButton(jsCRiPS.debugStart, elem.reloadButtonClassName, elem.reloadButtonImg, 'Reload'));
-            }
         });
     };
 
@@ -2615,6 +2565,9 @@ function JCRiPS(selector) {
             value: 4,
             noDebug: false
         };
+        wrapElem('input', function (ne) {
+            ne.type = 'range';
+        });
         setComponentData(jsCRiPS.turtleSpeedChanger, obj.elems, userOpts, opts, function (elem) {
             elem.min = elem.noDebug ? 0 : 1;
             elem.max = 5;
@@ -2625,17 +2578,13 @@ function JCRiPS(selector) {
         });
     };
 
-    obj.turtleSpeedChangerIn = function (userOpts) {
-        wrapElem('input', function (ne) {
-            ne.type = 'range';
-        });
-        obj.turtleSpeedChanger(userOpts);
-    };
-
     obj.programSpeedChanger = function (userOpts) {
         var opts = {
             value: 0
         };
+        wrapElem('input', function (ne) {
+            ne.type = 'range';
+        });
         setComponentData(jsCRiPS.programSpeedChanger, obj.elems, userOpts, opts, function (elem) {
             elem.min = 0;
             elem.max = 1.414;
@@ -2646,60 +2595,37 @@ function JCRiPS(selector) {
         });
     };
 
-    obj.programSpeedChangerIn = function (userOpts) {
-        wrapElem('input', function (ne) {
-            ne.type = 'range';
-        });
-        obj.programSpeedChanger(userOpts);
-    };
-
     obj.editor = function (userOpts) {
         var opts = {
+            id: 'editorFrame',
+            src: 'editor.html',
+            width: '400px',
+            height: '480px',
+            frameborder: 0,
             autoResize: false,
             autoFormat: false,
-            resizeMaxLen: 200
+            resizeMaxLen: 200,
+            formatOpts: {}
         };
+        overwriteOptions(userOpts, opts);
+        wrapElem('iframe', function (ne) {
+            ne.setAttribute("frameborder", opts.frameborder);
+            ne.width = opts.width;
+            ne.height = opts.height;
+        });
         setComponentData(jsCRiPS.console, obj.elems, userOpts, opts, function (elem) {
-            elem.src = 'editor.html';
             jsCRiPS.editor = elem.contentWindow;
             elem.onload = function () {
                 if (elem.autoResize) {
                     jsCRiPS.editor.autoResize(elem.resizeMaxLen);
                 }
             };
-
         });
-    };
-
-    obj.editorIn = function (userOpts) {
-        var opts = {
-            width: "400px",
-            height: "480px",
-            autoResize: false,
-            autoFormat: false,
-            formatOpts: {}
-        };
-        overwriteOptions(userOpts, opts);
-        wrapElem('iframe', function (ne) {
-            ne.width = opts.width;
-            ne.height = opts.height;
-        });
-        obj.editor(userOpts);
     };
 
     return obj;
 
     // ***** 以下便利メソッド *****
-    // onloadイベントを追加する。
-    function addOnload(func) {
-        try {
-            window.addEventListener("load", func, false);
-        } catch (e) {
-            // IE用
-            window.attachEvent("onload", func);
-        }
-    }
-
     // selectorで指定された要素をobj.elems配列に格納していく
     function addSelectedElems() {
         var selectors = selector.toString().split(',');
