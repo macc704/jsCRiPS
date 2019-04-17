@@ -1,2 +1,1 @@
 var t = createTurtle();
-templa
