@@ -4,90 +4,18 @@ var jsCRiPS = {};
 
 /*global esprima,console,escodegen*/
 jsCRiPS.converter = {};
-//jsCRiPS.converter.convert = function (source) {
-//    var ast = esprima.parse(source);
-//    var yieldAST = jsCRiPS.withKame ?
-//        esprima.parse('jsCRiPS.th.join();').body[0] : esprima.parse(';').body[0];
-//
-//
-//    //for debug
-//    document.getElementById('ast').value = JSON.stringify(ast, null, 4);
-//
-//    var processStatement = function (stmt) {
-//        if (stmt.type === 'BlockStatement') {
-//            stmt.body = processStatements(stmt.body);
-//        } else if (stmt.type === 'IfStatement') {  // else if
-//            if (stmt.consequent) {
-//                stmt.consequent = processStatement(stmt.consequent);
-//            }
-//            if (stmt.alternate) {
-//                stmt.alternate = processStatement(stmt.alternate);
-//            }
-//        } else if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'CallExpression') {
-//            return newAssignmentBlock();
-//        } else if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'AssignmentExpression' &&
-//            stmt.expression.right.type === 'CallExpression') {
-//            return newAssignmentBlock(stmt.expression.left.name, stmt.expression.right.callee.name === 'input');
-//        } else if (stmt.type === 'VariableDeclaration' && stmt.declarations[0].init &&
-//            stmt.declarations[0].init.type === 'CallExpression') {
-//            return newAssignmentBlock(stmt.declarations[0].id.name, stmt.declarations[0].init.callee.name === 'input');
-//        }
-//        return stmt;
-//
-//        function newAssignmentBlock(left, isInput) {
-//            var block = esprima.parse('{}').body[0];
-//            block.body.push(stmt);
-//            block.body.push(yieldAST);
-//            if (isInput && left) {
-//                block.body.push(esprima.parse(left + ' = jsCRiPS.inputText;').body[0]);
-//            }
-//            return block;
-//        }
-//
-//    };
-//
-//    var processStatements = function (stmts) {
-//        var newStmts = [];
-//        stmts.forEach(function (each) {
-//            if (each.type === 'BlockStatement') {
-//                each.body = processStatements(each.body);
-//            } else if (each.type === 'IfStatement') {
-//                if (each.consequent) {
-//                    each.consequent = processStatement(each.consequent);
-//                }
-//                if (each.alternate) {
-//                    each.alternate = processStatement(each.alternate);
-//                }
-//            }
-//            if (each.body) { //while series
-//                each.body = processStatement(each.body);
-//            }
-//            newStmts.push(each);
-//            if (each.type === 'ExpressionStatement' && each.expression.type === 'CallExpression') {
-//                newStmts.push(yieldAST);
-//            } else if (each.type === 'ExpressionStatement' && each.expression.type === 'AssignmentExpression' &&
-//                each.expression.right.type === 'CallExpression') {
-//                // var x=input(),y=input() や f(input()) や if(input()=='abc')などには未対応
-//                newStmts.push(yieldAST);
-//                if (each.expression.right.callee.name === 'input') {
-//                    newStmts.push(esprima.parse(each.expression.left.name + ' = jsCRiPS.inputText;').body[0]);
-//                }
-//            } else if (each.type === 'VariableDeclaration' && each.declarations[0].init &&
-//                each.declarations[0].init.type === 'CallExpression') {
-//                newStmts.push(yieldAST);
-//                if (each.declarations[0].init.callee.name === 'input') {
-//                    newStmts.push(esprima.parse(each.declarations[0].id.name + ' = jsCRiPS.inputText;').body[0]);
-//                }
-//            }
-//        });
-//        return newStmts;
-//    };
-//
-//    ast.body = processStatements(ast.body);
-//    return escodegen.generate(ast);
-//};
-
 jsCRiPS.debugConverter = {};
+jsCRiPS.blockMehods = [];
+
+jsCRiPS.addBlockMethods = function (methodName) {
+    jsCRiPS.blockMehods.add(methodName);
+};
+jsCRiPS.addBlockMethods('input');
+
+jsCRiPS.isBlockMethods = function (methodName) {
+    return jsCRiPS.blockMehods.indexOf(methodName) >= 0;
+};
+
 jsCRiPS.debugWait = function () {
     jsCRiPS.th = Thread.create(function () {    //  入力待ち用にスレッドを生成
         if (!jsCRiPS.withKame) {
@@ -234,7 +162,6 @@ jsCRiPS.updateVariable = function (stmt, name, idx) {
     }
 };
 
-
 // ネストした関数に未対応
 jsCRiPS.pushCallStack = function (stmt, name) {
     jsCRiPS.functionNames.push(name);
@@ -307,11 +234,11 @@ function makeCallStack(path) {
 }
 
 jsCRiPS.setHighlight = function (startLine, endLine, type) {
-    document.getElementById('editorFrame').contentWindow.setHighlight(startLine, endLine, type);
+    jsCRiPS.editor.setHighlight(startLine, endLine, type);
 };
 
 jsCRiPS.removeHighlight = function () {
-    document.getElementById('editorFrame').contentWindow.removeHighlight();
+    jsCRiPS.editor.removeHighlight();
 };
 
 // 高速化のため、汚いコード
@@ -397,7 +324,7 @@ jsCRiPS.debugConverter.convert = function (source) {
 
         var block;
         if (jsCRiPS.withDebug) {
-            // pushを回避することで、1回あたり0.01ms程度速度改善
+            // pushを回避することで、自分の環境で1回あたり0.01ms程度速度改善
             block = {
                 "type": "BlockStatement",
                 "body": [{
@@ -496,12 +423,6 @@ jsCRiPS.debugConverter.convert = function (source) {
             // block.body.push(esprima.parse('jsCRiPS.isBreakPoint = jsCRiPS.breakPoints.indexOf(' + (line - 1) + ') !== -1;').body[0]);
             // block.body.push(debugWait);
             // block.body.push(yieldAST);
-
-        }else{
-            block = {
-                        "type": "BlockStatement",
-                        "body": []
-                    }; // esprima.parse('{}').body[0]
         }
         if (jsCRiPS.isDefined(idx)) {
             stmt.splice(idx, 0, block);
@@ -575,10 +496,10 @@ jsCRiPS.debugConverter.convert = function (source) {
             return newAssignmentBlock(stmt);
         } else if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'AssignmentExpression' &&
             stmt.expression.right.type === 'CallExpression') {
-            return newAssignmentBlock(stmt, stmt.expression.left.name, stmt.expression.right.callee.name === 'input');
+            return newAssignmentBlock(stmt, stmt.expression.left.name, jsCRiPS.isBlockMethods(stmt.expression.right.callee.name));
         } else if (stmt.type === 'VariableDeclaration' && stmt.declarations[0].init &&
             stmt.declarations[0].init.type === 'CallExpression') {
-            return newAssignmentBlock(stmt, stmt.declarations[0].id.name, stmt.declarations[0].init.callee.name === 'input');
+            return newAssignmentBlock(stmt, stmt.declarations[0].id.name, jsCRiPS.isBlockMethods(stmt.declarations[0].init.callee.name));
         }
         return stmt;
 
@@ -682,7 +603,7 @@ jsCRiPS.debugConverter.convert = function (source) {
                 each.expression.right.type === 'CallExpression') {
                 pushDebugStatement(newStmts, each.expression.loc.start.line, each.expression.loc.end.line, newStmts.length - 2);
                 // var x=input(),y=input() や f(input()) や if(input()=='abc')などには未対応
-                if (each.expression.right.callee.name === 'input') {  // inputの場合は必ずjoinする
+                if (jsCRiPS.isBlockMethods(each.expression.right.callee.name)) {  // inputの場合は必ずjoinする
                     pushInputExpression(newStmts, each.expression.left.name);
                 } else {
                     newStmts.push(yieldAST);
@@ -691,7 +612,7 @@ jsCRiPS.debugConverter.convert = function (source) {
             } else if (each.type === 'VariableDeclaration') {
                 if (each.declarations[0].init && each.declarations[0].init.type === 'CallExpression') {
                     pushDebugStatement(newStmts, each.declarations[0].loc.start.line, each.declarations[each.declarations.length - 1].loc.end.line, newStmts.length - 1);
-                    if (each.declarations[0].init.callee.name === 'input') {    // inputの場合は必ずjoinする
+                    if (jsCRiPS.isBlockMethods(each.declarations[0].init.callee.name)) {    // inputの場合は必ずjoinする
                         pushInputExpression(newStmts, each.declarations[0].id.name);
                     } else {
                         newStmts.push(yieldAST);
@@ -2005,7 +1926,7 @@ jsCRiPS.clearAllCanvas = function () {
 
 jsCRiPS.clearCanvas = function (canvas) {
     for (var i = 0; i < canvas.length; i++) {
-        canvas[i].getContext('2d').clearRect(-1, -1, canvas[i].width, canvas[i].height); // -1にしないと描画ゴミが残る
+        canvas[i].getContext('2d').clearRect(0, 0, canvas[i].width, canvas[i].height);
     }
 };
 
@@ -2081,10 +2002,10 @@ jsCRiPS.endRun = function () {
     for (var i = 0; i < jsCRiPS.runButton.length; i++) {
         var rb = jsCRiPS.runButton[i];
         if (jsCRiPS.isDefined(rb.img)) {
-            rb.img.src = rb.parent.runButtonImg;
+            rb.img.src = rb.runButtonImg;
         }
-        rb.classList.remove(rb.parent.pauseButtonClassName);
-        rb.classList.add(rb.parent.runButtonClassName);
+        rb.classList.remove(rb.pauseButtonClassName);
+        rb.classList.add(rb.runButtonClassName);
     }
     jsCRiPS.runReady = false;
 };
@@ -2139,16 +2060,16 @@ jsCRiPS.autoStart = function (enable) {
         var rb = jsCRiPS.runButton[i];
         if (enable) {
             if (jsCRiPS.isDefined(rb.img)) {
-                rb.img.src = rb.parent.pauseButtonImg;
+                rb.img.src = rb.pauseButtonImg;
             }
-            rb.classList.remove(rb.parent.runButtonClassName);
-            rb.classList.add(rb.parent.pauseButtonClassName);
+            rb.classList.remove(rb.runButtonClassName);
+            rb.classList.add(rb.pauseButtonClassName);
         } else {
             if (jsCRiPS.isDefined(rb.img)) {
-                rb.img.src = rb.parent.runButtonImg;
+                rb.img.src = rb.runButtonImg;
             }
-            rb.classList.add(rb.parent.runButtonClassName);
-            rb.classList.remove(rb.parent.pauseButtonClassName);
+            rb.classList.add(rb.runButtonClassName);
+            rb.classList.remove(rb.pauseButtonClassName);
         }
 
     }
@@ -2407,42 +2328,29 @@ function input(msg) {
 
 // create jsCRiPS object (like JQuery,$ method)
 // HTML要素からjsCRiPSオブジェクトを作成する
-// TODO page load 前(要素を読むこむまで)は使えない $やonloadイベントに追加する形で改善可能？
 function JCRiPS(selector) {
     var obj = {};
     obj.elems = [];
     addSelectedElems();
 
     //    *****       define Components      *****
-    // obj.xxx transform element to jsCRiPS component
-    // obj.xxxIn create jsCRiPS component in element
-    // some components only have one generation method (e.g. canvas)
     obj.console = function (userOpts) {
         var opts = {
+            rows: 6,
+            cols: 80,
+            readonly: true,
             maxLength: 10000    // テキストエリア内の最大文字数、0の場合は制限なし
         };
+        wrapElem('textarea');
         setComponentData(jsCRiPS.console, obj.elems, userOpts, opts);
     };
 
-    obj.consoleIn = function (userOpts) {
-        wrapElem('textarea');
-        obj.console(userOpts);
-    };
-
     obj.globalVariableTable = function (userOpts) {
-        makeVariableTable(jsCRiPS.globalVariableTable, userOpts);
-    };
-
-    obj.globalVariableTableIn = function (userOpts) {
         wrapElem('table');
         makeVariableTable(jsCRiPS.globalVariableTable, userOpts);
     };
 
     obj.localVariableTable = function (userOpts) {
-        makeVariableTable(jsCRiPS.localVariableTable, userOpts);
-    };
-
-    obj.localVariableTableIn = function (userOpts) {
         wrapElem('table');
         makeVariableTable(jsCRiPS.localVariableTable, userOpts);
     };
@@ -2499,7 +2407,7 @@ function JCRiPS(selector) {
         }
     }
 
-    obj.canvasIn = function (userOpts) {
+    obj.canvas = function (userOpts) {
         var opts = {
             draggable: false,
             width: 240,
@@ -2544,74 +2452,36 @@ function JCRiPS(selector) {
 
     obj.runButton = function (userOpts) {
         var opts = {
+            createImage: false,
+            runButtonImg: './img/run.png',
+            pauseButtonImg: './img/pause.png',
             runButtonClassName: 'runButton',
             pauseButtonClassName: 'pauseButton'
         };
-        setComponentData([], obj.elems, userOpts, opts, function (elem) {
+        setComponentData(jsCRiPS.runButton, obj.elems, userOpts, opts, function (elem) {
             elem.onclick = jsCRiPS.debugRun;
+            if (elem.createImage) {
+                var imgElem = document.createElement('img');
+                imgElem.src = elem.runButtonImg;
+                imgElem.alt = 'Run/Pause';
+                elem.appendChild(imgElem);
+                elem.img = imgElem;
+            }
         });
     };
 
     // disable時の画像やopacity値などを変えたい場合は、属性セレクタを使えば可能
     obj.stepButton = function (userOpts) {
-        var opts = {
-            stepButtonClassName: 'stepButton'
-        };
-        setComponentData([], obj.elems, userOpts, opts, function (elem) {
+        var opts = {};
+        setComponentData(jsCRiPS.stepButton, obj.elems, userOpts, opts, function (elem) {
             elem.onclick = jsCRiPS.debugNext;
         });
     };
 
     obj.reloadButton = function (userOpts) {
-        var opts = {
-            reloadButtonClassName: 'reloadButton'
-        };
-        setComponentData([], obj.elems, userOpts, opts, function (elem) {
+        var opts = {};
+        setComponentData(jsCRiPS.reloadButton, obj.elems, userOpts, opts, function (elem) {
             elem.onclick = jsCRiPS.debugStart;
-        });
-    };
-
-    obj.buttonsIn = function (userOpts) {
-        var opts = {
-            run: true,  // if false, don't create RunButton
-            step: true,
-            reload: true,
-            runButtonImg: "./img/run.png",
-            pauseButtonImg: "./img/pause.png",
-            stepButtonImg: "./img/step.png",
-            reloadButtonImg: "./img/reload.png",
-            runButtonClassName: 'runButton',
-            stepButtonClassName: 'stepButton',
-            reloadButtonClassName: 'reloadButton',
-            pauseButtonClassName: 'pauseButton'
-        };
-
-        setComponentData([], obj.elems, userOpts, opts, function (elem) {
-
-            function createButton(onclickFun, className, img, alt) {
-                var b = document.createElement('button');
-                b.type = 'button';
-                b.onclick = onclickFun;
-                b.className = className;
-                var imgElem = document.createElement('img');
-                imgElem.src = img;
-                imgElem.alt = alt;
-                b.appendChild(imgElem);
-                elem.appendChild(b);
-                b.img = imgElem;
-                b.parent = elem;
-                return b;
-            }
-
-            if (elem.run) {
-                jsCRiPS.runButton.push(createButton(jsCRiPS.debugRun, elem.runButtonClassName, elem.runButtonImg, 'Run/Stop'));
-            }
-            if (elem.step) {
-                jsCRiPS.stepButton.push(createButton(jsCRiPS.debugNext, elem.stepButtonClassName, elem.stepButtonImg, 'Step'));
-            }
-            if (elem.reload) {
-                jsCRiPS.reloadButton.push(createButton(jsCRiPS.debugStart, elem.reloadButtonClassName, elem.reloadButtonImg, 'Reload'));
-            }
         });
     };
 
@@ -2620,6 +2490,9 @@ function JCRiPS(selector) {
             value: 4,
             noDebug: false
         };
+        wrapElem('input', function (ne) {
+            ne.type = 'range';
+        });
         setComponentData(jsCRiPS.turtleSpeedChanger, obj.elems, userOpts, opts, function (elem) {
             elem.min = elem.noDebug ? 0 : 1;
             elem.max = 5;
@@ -2630,17 +2503,13 @@ function JCRiPS(selector) {
         });
     };
 
-    obj.turtleSpeedChangerIn = function (userOpts) {
-        wrapElem('input', function (ne) {
-            ne.type = 'range';
-        });
-        obj.turtleSpeedChanger(userOpts);
-    };
-
     obj.programSpeedChanger = function (userOpts) {
         var opts = {
             value: 0
         };
+        wrapElem('input', function (ne) {
+            ne.type = 'range';
+        });
         setComponentData(jsCRiPS.programSpeedChanger, obj.elems, userOpts, opts, function (elem) {
             elem.min = 0;
             elem.max = 1.414;
@@ -2651,60 +2520,37 @@ function JCRiPS(selector) {
         });
     };
 
-    obj.programSpeedChangerIn = function (userOpts) {
-        wrapElem('input', function (ne) {
-            ne.type = 'range';
-        });
-        obj.programSpeedChanger(userOpts);
-    };
-
     obj.editor = function (userOpts) {
         var opts = {
+            id: 'editorFrame',
+            src: 'editor.html',
+            width: '400px',
+            height: '480px',
+            frameborder: 0,
             autoResize: false,
             autoFormat: false,
-            resizeMaxLen: 200
+            resizeMaxLen: 200,
+            formatOpts: {}
         };
+        overwriteOptions(userOpts, opts);
+        wrapElem('iframe', function (ne) {
+            ne.setAttribute("frameborder", opts.frameborder);
+            ne.width = opts.width;
+            ne.height = opts.height;
+        });
         setComponentData(jsCRiPS.console, obj.elems, userOpts, opts, function (elem) {
-            elem.src = 'editor.html';
             jsCRiPS.editor = elem.contentWindow;
             elem.onload = function () {
                 if (elem.autoResize) {
                     jsCRiPS.editor.autoResize(elem.resizeMaxLen);
                 }
             };
-
         });
-    };
-
-    obj.editorIn = function (userOpts) {
-        var opts = {
-            width: "400px",
-            height: "480px",
-            autoResize: false,
-            autoFormat: false,
-            formatOpts: {}
-        };
-        overwriteOptions(userOpts, opts);
-        wrapElem('iframe', function (ne) {
-            ne.width = opts.width;
-            ne.height = opts.height;
-        });
-        obj.editor(userOpts);
     };
 
     return obj;
 
     // ***** 以下便利メソッド *****
-    // onloadイベントを追加する。
-    function addOnload(func) {
-        try {
-            window.addEventListener("load", func, false);
-        } catch (e) {
-            // IE用
-            window.attachEvent("onload", func);
-        }
-    }
-
     // selectorで指定された要素をobj.elems配列に格納していく
     function addSelectedElems() {
         var selectors = selector.toString().split(',');
