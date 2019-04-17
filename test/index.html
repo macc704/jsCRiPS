@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html>
+
+<head>
+    <script src="../lib/jquery-2.1.4.min.js"></script>
+    <script src="../lib/jquery-ui.min.js"></script>
+    <script src="../lib/esprima-2.4.1/esprima.min.js"></script>
+    <script src="../lib/escodegen-1.6.1/escodegen.browser.min.js"></script>
+    <script src="../lib/ConcurrentThread.js"></script>
+    <script src="../lib/bootstrap-3.3.5-dist/js/bootstrap.min.js"></script>
+    <script src="../lib/Slidebars-0.10.3/dist/slidebars.min.js"></script>
+    <script src="../src/jscrips.js"></script>
+    <link rel="stylesheet" href="../lib/Slidebars-0.10.3/dist/slidebars.min.css">
+    <link rel="stylesheet" href="../lib/sweetalert-master/dist/sweetalert.css">
+    <link rel="stylesheet" href="../lib/jquery-ui.min.css">
+    <!--  <link rel="stylesheet" href="../lib/bootstrap-3.3.5-dist/css/bootstrap.min.css">
+      <link rel="stylesheet" href="../lib/bootstrap-3.3.5-dist/css/bootstrap-theme.css"> -->
+    <script src="../lib/sweetalert-master/dist/sweetalert.min.js"></script>
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <style type="text/css">
+        canvas {
+            border: 1px solid #999;
+            position: absolute;
+        }
+
+        textarea {}
+
+        textarea#result {}
+
+        textarea#ast {
+            left: 340px;
+        }
+
+        textarea#console {}
+
+        nav {
+            background-color: #2c3e50;
+            color: #95a5a6;
+            height: 40px;
+            line-height: 40px;
+            padding: 0 10px 0 10px;
+        }
+
+        nav div {
+            display: inline;
+        }
+
+        #slidebarb {
+            border-style: none;
+            background-color: #8e44ad;
+            color: #95a5a6;
+            font-size: 1.2em;
+        }
+
+        #leftb {
+            top: 40px;
+            position: absolute;
+        }
+
+        #examples {
+            padding-bottom: 40px;
+        }
+
+        #sb-site {
+            height: 100%;
+        }
+
+        ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            color: #95a5a6;
+
+        }
+
+        ul li {
+            margin: 4px;
+        }
+
+        ul li ul li {
+            padding: 3px;
+            border-bottom: 1px solid #84b2e0;
+        }
+
+        ul li ul li:hover {
+            background-color: #2c3e50;
+            font-weight: bold;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            background-color: #bdc3c7;
+            height: 5px;
+            border-radius: 5px;
+            margin: 0 8px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            background-color: #e74c3c;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid white;
+            cursor: pointer;
+            transition: .3s ease-in-out;
+        }
+
+        input[type="range"].turtleSlider::-webkit-slider-thumb {
+            background-color: #090;
+        }
+
+        input[type="range"]:disabled {
+            opacity: 0.5;
+        }
+
+        h1 {
+            font-size: 2em;
+            margin: 0;
+            padding: 2px;
+        }
+
+        table td {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        nav div button img {
+            height: 18px;
+        }
+    </style>
+
+
+</head>
+
+<body>
+    <nav>
+        <div>
+            <button type="button" class="sb-toggle-left" id="slidebarb">≡</button>
+        </div>
+
+        <div>
+            <select id="fontsize" size="1" title="fontsize" onchange="setFontSize(this.value)">
+                <option value="10px">10px</option>
+                <option value="11px">11px</option>
+                <option value="12px" selected="selected">12px</option>
+                <option value="13px">13px</option>
+                <option value="14px">14px</option>
+                <option value="16px">16px</option>
+                <option value="18px">18px</option>
+                <option value="20px">20px</option>
+                <option value="24px">24px</option>
+            </select>
+        </div>
+        <div>
+            <select id="theme" size="1" title="themes" onchange="setTheme(this.value)">
+                <optgroup label="Bright">
+                    <option value="ace/theme/chrome">Chrome</option>
+                    <option value="ace/theme/clouds">Clouds</option>
+                    <option value="ace/theme/crimson_editor">Crimson Editor</option>
+                    <option value="ace/theme/dawn">Dawn</option>
+                    <option value="ace/theme/dreamweaver">Dreamweaver</option>
+                    <option value="ace/theme/eclipse">Eclipse</option>
+                    <option value="ace/theme/github">GitHub</option>
+                    <option value="ace/theme/iplastic">IPlastic</option>
+                    <option value="ace/theme/solarized_light">Solarized Light</option>
+                    <option value="ace/theme/textmate">TextMate</option>
+                    <option value="ace/theme/tomorrow">Tomorrow</option>
+                    <option value="ace/theme/xcode">XCode</option>
+                    <option value="ace/theme/kuroir">Kuroir</option>
+                    <option value="ace/theme/katzenmilch">KatzenMilch</option>
+                    <option value="ace/theme/sqlserver">SQL Server</option>
+                </optgroup>
+                <optgroup label="Dark">
+                    <option value="ace/theme/ambiance">Ambiance</option>
+                    <option value="ace/theme/chaos">Chaos</option>
+                    <option value="ace/theme/clouds_midnight">Clouds Midnight</option>
+                    <option value="ace/theme/cobalt">Cobalt</option>
+                    <option value="ace/theme/idle_fingers">idle Fingers</option>
+                    <option value="ace/theme/kr_theme">krTheme</option>
+                    <option value="ace/theme/merbivore">Merbivore</option>
+                    <option value="ace/theme/merbivore_soft">Merbivore Soft</option>
+                    <option value="ace/theme/mono_industrial">Mono Industrial</option>
+                    <option value="ace/theme/monokai" selected="selected">Monokai</option>
+                    <option value="ace/theme/pastel_on_dark">Pastel on dark</option>
+                    <option value="ace/theme/solarized_dark">Solarized Dark</option>
+                    <option value="ace/theme/terminal">Terminal</option>
+                    <option value="ace/theme/tomorrow_night">Tomorrow Night</option>
+                    <option value="ace/theme/tomorrow_night_blue">Tomorrow Night Blue</option>
+                    <option value="ace/theme/tomorrow_night_bright">Tomorrow Night Bright</option>
+                    <option value="ace/theme/tomorrow_night_eighties">Tomorrow Night 80s</option>
+                    <option value="ace/theme/twilight">Twilight</option>
+                    <option value="ace/theme/vibrant_ink">Vibrant Ink</option>
+                </optgroup>
+            </select>
+        </div>
+        <div id="buttons">
+        </div>
+        <div>
+            <span style="font-weight: bold">Turtle</span>
+            : Fast <input type="range" class="turtleSlider">Slow
+        </div>
+
+        <div>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <span style="font-weight: bold">Program</span>
+            : Fast<input type="range" class="programSlider">Slow
+        </div>
+
+    </nav>
+
+
+    <div id="sb-site">
+        <h1 id="ptitle">No title</h1>
+
+        <!--シンタックスハイライトとかのためにTextAreaからAceっていうのを使ってみた-->
+        <!--が、ConcurrentThread.jsに関数が汚染されているためiframeで実装中-->
+        <!--エラーチェックしてくれる場合、Windowで定義されてるlengthやnameで警告がでる-->
+        <div id="editor">
+            <iframe id="editorFrame" width="400px" height="480px" frameborder="0"
+                style="float:left;display:block"></iframe>
+        </div>
+        <!--Canvasを一つに統一すべき？ -->
+        <div id="canvases" style="float:left;">
+        </div>
+        <div style="clear:both">
+            <br>Console<br>
+        </div>
+        <div id="consoleDiv">
+            <textarea id="console" rows="6" cols="80" title="msgArea" readonly></textarea>
+        </div>
+        <br>
+        <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#debugConsole"
+            aria-expanded="false" aria-controls="debugConsole">
+            Open Debug Console
+        </button>
+        <br>
+
+        <div class="collapse" id="debugConsole">
+            <div class="well">
+                <textarea id="result" cols="45" rows="20">
+    </textarea>
+                <textarea id="ast" cols="45" rows="20">
+    </textarea>
+            </div>
+        </div>
+
+        <div id="globalDebugView"
+            style="position:absolute;top:10px;left:800px;width:400px;height:400px;border:1px solid;">
+        </div>
+        <div id="localDebugView"
+            style="position:absolute;top:410px;left:800px;width:400px;height:200px;border:1px solid;">
+        </div>
+
+
+    </div>
+
+    <div class="sb-slidebar sb-left sb-width-custom" data-sb-width="200px" id="leftb">
+        <!-- <ul id="examples">
+        <li>1</li>
+        <li>
+            2
+            <ul>
+                <li class="srcli">2.2.1.1_House</li>
+                <li class="srcli">2.5.1.1_Curve</li>
+            </ul>
+        </li>
+        <li>3
+            <ul>
+                <li class="srcli">3.2.1.1_VariableHouse</li>
+                <li class="srcli">3.2.3.1.1_MultiVariableHouse</li>
+                <li class="srcli">3.3.1.1_DoubleHouse</li>
+                <li class="srcli">3.4.1.1_InputHouse</li>
+                <li class="srcli">3.4.2.1_PromptHouse</li>
+                <li class="srcli">3.5.1.1_RandomHouse</li>
+            </ul>
+        </li>
+        <li>4
+            <ul>
+                <li class="srcli">4.2.1.1_Condition</li>
+                <li class="srcli">4.2.3.1.1_Janken</li>
+                <li class="srcli">4.3.1.1_Rohrer</li>
+                <li class="srcli">4.3.2.1_Rohrer2</li>
+            </ul>
+        </li>
+        <li>5
+            <ul>
+                <li class="srcli">5.2.1.1_House</li>
+                <li class="srcli">5.2.2.1_WhileHouse</li>
+                <li class="srcli">5.3.1.1_Circle</li>
+                <li class="srcli">4.3.2.1_Rohrer2</li>
+            </ul>
+        </li>
+        <li>6
+            <ul>
+                <li class="srcli">6.2.1.1_FourSquares</li>
+                <li class="srcli">6.3.1.1_Petal</li>
+                <li class="srcli">6.3.2.1_Flower</li>
+                <li class="srcli">6.3.3.1_BadFlower</li>
+                <li class="srcli">6.4.1.1_MultiCircle</li>
+                <li class="srcli">6.4.2.1_SquareAndTriangle</li>
+            </ul>
+        </li>
+        <li>7
+            <ul>
+                <li class="srcli">7.2.1.1_TwoTurtles</li>
+                <li class="srcli">7.3.1_FourTurtles</li>
+                <li class="srcli">7.3.2_FourTurtles2</li>
+            </ul>
+        </li>
+        <li>8
+            <ul>
+            </ul>
+        </li>
+        <li>9
+            <ul>
+                <li class="srcli">9.2.1_RotateCar</li>
+                <li class="srcli">9.3.1_OnAndOffCar</li>
+                <li class="srcli">未実装9.4.1.1_JankenCharacters</li>
+                <li class="srcli">未実装9.4.1.2_JankenAnimation</li>
+                <li class="srcli">9.4.2.1_WalkingMan</li>
+                <li class="srcli">9.4.3.1_WalkingManWithBg</li>
+                <li class="srcli">9.5.1.1_RotateText</li>
+                <li class="srcli">9.5.2.1_Counter</li>
+                <li class="srcli">9.5.2.2_Counter2</li>
+                <li class="srcli">9.6.1.1.1_AnimationSample</li>
+            </ul>
+        </li>
+        <li>10
+            <ul>
+                <li class="srcli">10.2.1.1_HandleKey</li>
+                <li class="srcli">10.2.2.1_CheckKeycode</li>
+                <li class="srcli">10.2.3.1_HandleKeyDown</li>
+                <li class="srcli">10.3.1.1_HandleMouse</li>
+                <li class="srcli">10.3.1.2_HandleMouse2</li>
+                <li class="srcli">10.3.2.1_HandleMouse3</li>
+                <li class="srcli">10.3.3.1_HandleMouse4</li>
+                <li class="srcli">10.3.4.1_HandleMouseDown</li>
+                <li class="srcli">10.4.1.1_IntersectsJudge</li>
+                <li class="srcli">10.4.2.1_ContainsJudge</li>
+                <li class="srcli">未実装10.5.4.1_ShootingGame</li>
+            </ul>
+        </li>
+        <li>11
+            <ul>
+                <li class="srcli">11.2.3.1_InputAndPrint</li>
+                <li class="srcli">11.3.1.1_ConvertYearApplication1</li>
+                <li class="srcli">11.4.1.1_ScoreAverage</li>
+            </ul>
+        </li>
+        <li>12
+            <ul>
+                <li class="srcli">12.2.2.1_DrawRectangleMethod</li>
+                <li class="srcli">12.2.3.1_DrawThreeRectanglesMethod</li>
+                <li class="srcli">未実装12.2.4.1_DrawRectangleMethodError</li>
+                <li class="srcli">12.3.2.1_DrawTwoRectangles1</li>
+                <li class="srcli">12.3.2.2_DrawTwoRectangles2</li>
+                <li class="srcli">12.3.3.1_NewHouse1</li>
+                <li class="srcli">12.3.3.2_NewHouse2</li>
+                <li class="srcli">未実装12.4.1.1_DrawVariableRectangleMethodError</li>
+                <li class="srcli">12.4.2.1_DrawVariableRectangleMethod</li>
+                <li class="srcli">12.5.1.1_House05</li>
+            </ul>
+        </li>
+        <li>13
+            <ul>
+                <li class="srcli">未実装13.2.2.1_AiShow01</li>
+                <li class="srcli">未実装13.2.3.1_AiShow02</li>
+                <li class="srcli">未実装13.2.4.1_AiShow02d</li>
+                <li class="srcli">未実装13.2.5.1_AiShow03</li>
+                <li class="srcli">未実装13.2.6.1_AiShow03d</li>
+                <li class="srcli">13.3.1.1_ConvertYearApplication1</li>
+                <li class="srcli">13.3.2.1_ConvertYearApplication3</li>
+                <li class="srcli">13.4.1.1_Power01</li>
+                <li class="srcli">13.4.2.1_Power02</li>
+                <li class="srcli">13.4.3.1_Power03</li>
+
+            </ul>
+        </li>
+        <li>14
+            <ul>
+                <li class="srcli">14.2.2.1_Factorial</li>
+                <li class="srcli">14.2.2.2_FactorialWithPrint</li>
+                <li class="srcli">14.2.3.1_Fibonacci</li>
+                <li class="srcli">14.2.3.2_FibonacciWithPrint</li>
+                <li class="srcli">14.3.2_DrawTree</li>
+                <li class="srcli">14.3.3_DrawTreeWithPrint</li>
+            </ul>
+        </li>
+        <li>15
+            <ul>
+                <li class="srcli">15.2.1.1_FourTurtles0</li>
+                <li class="srcli">15.2.1.2_FourTurtles1</li>
+                <li class="srcli">15.2.2.1_WalkingMan2</li>
+            </ul>
+        </li>
+        <li>16
+            <ul>
+                <li class="srcli">16.2.1.1_MoveCards</li>
+                <li class="srcli">16.3.2.1_LinearSearch</li>
+                <li class="srcli">16.3.3.1_SelectionSort</li>
+            </ul>
+        </li>
+        <li>17
+            <ul>
+                <li class="srcli">17.2.1.1.1_InputTurtleSample1</li>
+                <li class="srcli">17.2.2.1_ButtonSample</li>
+                <li class="srcli">17.3.1_DictionaryApplication</li>
+            </ul>
+    </ul> -->
+    </div>
+    <script>
+        // ドロワーメニューの設定
+        (function ($) {
+            $(document).ready(function () {
+                $.slidebars();
+            });
+        })(jQuery);
+
+        // 課題読み込む時の設定
+        (function ($) {
+            $(document).ready(function () {
+                var loadfile = function (path) {
+                    jsCRiPS.removeHighlight();
+                    $('#ptitle').html(path);
+                    $('#editorFrame').contents().find("#dummy").load(path,
+                        function (response, status) {
+                            if (status === 'error') {
+                                println("ERROR ファイル[" + path + "]が見つかりません")
+                            } else {
+                                document.getElementById('editorFrame').contentWindow.paste(response);
+                                jsCRiPS.debugStart();
+                                document.getElementById('editorFrame').contentWindow.clearAllBreakPoints();
+                            }
+                        });
+                };
+                var x = function () {
+                    loadfile("./examples/" + $(this).text() + ".js");
+                };
+                $(".srcli").click(x);
+            });
+        })(jQuery);
+
+        // フォントサイズ、テーマ変更した時の設定
+        function setFontSize(n) {
+            document.getElementById('editorFrame').contentWindow.setFontSize(n);
+        }
+
+        function setTheme(theme) {
+            document.getElementById('editorFrame').contentWindow.setTheme(theme);
+        }
+        // デバッグの変数ビューをサイズ可変にする
+        $(function () {
+            $('#globalDebugView').resizable({
+                minHeight: 400,
+                minWidth: 400,
+                handles: 'se'
+            });
+            $('#localDebugView').resizable({
+                minHeight: 200,
+                minWidth: 400,
+                handles: 'se'
+            });
+        });
+    </script>
+
+    <script>
+
+        function debugMain() {
+            var source = jsCRiPS.editor.getSource();
+            var converted = jsCRiPS.debugConverter.convert(source);
+            document.getElementById('result').value = converted;
+            eval('var func = function(){' + converted + '}');
+            start(func);
+        }
+
+        JCRiPS('#console').console({
+            maxLength: 0
+        });
+
+        JCRiPS('#globalDebugView').globalVariableTableIn({
+            tableClassName: 'myGlobalVariableTable'
+        });
+        JCRiPS('#localDebugView').localVariableTableIn({
+            draggable: false
+        });
+
+        JCRiPS('#canvases').canvasIn({
+            draggable: true
+        });
+
+        JCRiPS('#buttons').buttonsIn({
+            //runButtonImg:"./img/man2.gif"
+        });
+
+        JCRiPS('.turtleSlider').turtleSpeedChanger({
+            noDebug: true
+        });
+        JCRiPS('.programSlider').programSpeedChanger();
+
+        JCRiPS('#editorFrame').editor({
+            //autoResize:true
+        });
+
+    </script>
+
+</body>
+
+
+</html>

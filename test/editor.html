@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head lang='en'>
     <meta charset='UTF-8'>
     <title></title>
@@ -23,7 +24,6 @@
             border-radius: 0 0 20px;
             box-shadow: 0 0 1px 1px red inset;
         }
-
     </style>
     <script>
         function resizeFrame() {
@@ -33,28 +33,30 @@
     </script>
     <script src="../lib/jquery-2.1.4.min.js"></script>
 </head>
+
 <body>
-<div id='editor'>var t = createTurtle();
-    for(var i=0;i<12;i++){
+    <div id='editor'>var t = createTurtle();</div>
+    <!--
+for(var i=0;i<12;i++){
     t.fd(10);
     t.rt(30);
-    }
-</div>
+}
+-->
 
-<div id='dummy' style='display: none'>dummy</div>
+    <div id='dummy' style='display: none'>dummy</div>
 
-<script src='../lib/src-noconflict/ace.js'></script>
-<script src='../lib/js-beautify/lib/beautify.js'></script>
+    <script src='../lib/src-noconflict/ace.js'></script>
+    <script src='../lib/js-beautify/lib/beautify.js'></script>
 
-<script>
-    var editor = ace.edit('editor');
-    editor.setTheme('ace/theme/monokai');
-    editor.getSession().setMode('ace/mode/javascript');
-    editor.$blockScrolling = Infinity;
+    <script>
+        var editor = ace.edit('editor');
+        editor.setTheme('ace/theme/monokai');
+        editor.getSession().setMode('ace/mode/javascript');
+        editor.$blockScrolling = Infinity;
 
-    $(document).ready(function () {
-        var loadFile = function (path) {
-            $('#dummy').load(path,
+        $(document).ready(function () {
+            var loadFile = function (path) {
+                $('#dummy').load(path,
                     function (response, status) {
                         if (status === 'error') {
                             println('ERROR ファイル[' + path + ']が見つかりません')
@@ -62,130 +64,131 @@
                             paste(response);
                         }
                     });
-        };
-        loadFile('./examples/2.2.1.1_House.js');
-    });
+            };
+            loadFile('./examples/2.2.1.1_House.js');
+        });
 
 
-    function autoResize(maxLen) {
-        //自動でリサイズする設定だったもの
-        function heightUpdateFunction() {
-            // http://stackoverflow.com/questions/11584061/
-            var newHeight = editor.getSession().getScreenLength()
+        function autoResize(maxLen) {
+            //自動でリサイズする設定だったもの
+            function heightUpdateFunction() {
+                // http://stackoverflow.com/questions/11584061/
+                var newHeight = editor.getSession().getScreenLength()
                     * editor.renderer.lineHeight + 20;
-            if (maxLen < newHeight) {
-                window.parent.$('#editorFrame').height(newHeight.toString() + 'px');
-                // This call is required for the editor to fix all of
-                // its inner structure for adapting to a change in size
-                editor.resize();
-                //  いらない？  $('#editor-section').height(newHeight.toString() + 'px');
+                if (maxLen < newHeight) {
+                    window.parent.$('#editorFrame').height(newHeight.toString() + 'px');
+                    // This call is required for the editor to fix all of
+                    // its inner structure for adapting to a change in size
+                    editor.resize();
+                    //  いらない？  $('#editor-section').height(newHeight.toString() + 'px');
+                }
+            }
+
+            // Set initial size to match initial content
+            heightUpdateFunction();
+            // Whenever a change happens inside the ACE editor, update the size again
+            editor.getSession().on('change', heightUpdateFunction);
+        }
+
+        function getSource() {
+            return editor.getValue();
+        }
+
+        function paste(str) {
+            editor.getSession().setValue(str);
+            format();
+        }
+
+        function setFontSize(n) {
+            editor.setFontSize(n);
+            //heightUpdateFunction();
+        }
+
+        function setTheme(theme) {
+            editor.setTheme(theme);
+        }
+
+        var range = null;
+        function setHighlight(startLine, endLine, type) {
+            var session = editor.getSession();
+            if (range !== null) {
+                session.removeMarker(range.id);
+            }
+            if (typeof type === 'undefined') {
+                range = session.highlightLines(startLine, endLine, 'default_highlight_line');
             }
         }
 
-        // Set initial size to match initial content
-        heightUpdateFunction();
-        // Whenever a change happens inside the ACE editor, update the size again
-        editor.getSession().on('change', heightUpdateFunction);
-    }
-
-    function getSource() {
-        return editor.getValue();
-    }
-
-    function paste(str) {
-        editor.getSession().setValue(str);
-        format();
-    }
-
-    function setFontSize(n) {
-        editor.setFontSize(n);
-        //heightUpdateFunction();
-    }
-
-    function setTheme(theme) {
-        editor.setTheme(theme);
-    }
-
-    var range = null;
-    function setHighlight(startLine, endLine, type) {
-        var session = editor.getSession();
-        if (range !== null) {
-            session.removeMarker(range.id);
-        }
-        if (typeof type === 'undefined') {
-            range = session.highlightLines(startLine, endLine, 'default_highlight_line');
-        }
-    }
-
-    function removeHighlight() {
-        var session = editor.getSession();
-        if (range !== null) {
-            session.removeMarker(range.id);
-        }
-    }
-
-    function clearAllBreakPoints() {
-        for (var i = 0; i < breakPointRows.length; i++) {
-            var row = breakPointRows[i];
-            editor.getSession().clearBreakpoint(row);
-            window.parent.clearBreakPoint(row);// need to implement
-        }
-    }
-
-    // http://qiita.com/nyamogera/items/73fe808909f9ffcd4d4aを少し変更して、複数のbreakpointに対応
-    // エディタ上の行番号は1,2,3,...だが、取得する行番号は0,1,2,...
-    var breakPointRows = [];
-    editor.on("guttermousedown", function (e) {
-        var target = e.domEvent.target;
-        if (target.className.indexOf("ace_gutter-cell") == -1) {
-            return;
-        }
-        if (!editor.isFocused()) {
-            return;
-        }
-        if (e.clientX > 25 + target.getBoundingClientRect().left) {
-            return;
+        function removeHighlight() {
+            var session = editor.getSession();
+            if (range !== null) {
+                session.removeMarker(range.id);
+            }
         }
 
-        var row = e.getDocumentPosition().row;
-        if (breakPointRows.indexOf(row) !== -1) {  // すでにbreakpointが設置されていた行の場合は削除
-            e.editor.session.clearBreakpoint(row);
-            breakPointRows.splice(breakPointRows.indexOf(row), 1);
-            window.parent.clearBreakPoint(row);   // need to implement
-        } else {
-            e.editor.session.setBreakpoint(row);
-            breakPointRows.push(row);
-            window.parent.setBreakPoint(row);   // need to implement
-        }
-        e.stop();
-    });
-
-    function format(userOpts) {
-        var input = editor.getValue();
-        var defaultOpts ={
-            'indent_size': 2,
-            'brace_style' : 'none'
-        };
-        var opts = (typeof userOpts === 'undefined') ? defaultOpts : userOpts;
-        editor.getSession().doc.setValue(js_beautify(input, opts));
-    }
-
-    document.addEventListener('keydown', function (e) {
-        // key bind
-        if (e.ctrlKey && e.keyCode === 83) { // key = [S] (83)
-            console.log('Ctrl+S!');
-            format();
-            e.preventDefault();
-            return false;
+        function clearAllBreakPoints() {
+            for (var i = 0; i < breakPointRows.length; i++) {
+                var row = breakPointRows[i];
+                editor.getSession().clearBreakpoint(row);
+                window.parent.clearBreakPoint(row);// need to implement
+            }
         }
 
-        if (e.ctrlKey && e.shiftKey && e.keyCode === 70) { // key = [F] (70)
-            format();
-            e.preventDefault();
-            return false;
-        }
-    });
+        // http://qiita.com/nyamogera/items/73fe808909f9ffcd4d4aを少し変更して、複数のbreakpointに対応
+        // エディタ上の行番号は1,2,3,...だが、取得する行番号は0,1,2,...
+        var breakPointRows = [];
+        editor.on("guttermousedown", function (e) {
+            var target = e.domEvent.target;
+            if (target.className.indexOf("ace_gutter-cell") == -1) {
+                return;
+            }
+            if (!editor.isFocused()) {
+                return;
+            }
+            if (e.clientX > 25 + target.getBoundingClientRect().left) {
+                return;
+            }
 
-</script>
+            var row = e.getDocumentPosition().row;
+            if (breakPointRows.indexOf(row) !== -1) {  // すでにbreakpointが設置されていた行の場合は削除
+                e.editor.session.clearBreakpoint(row);
+                breakPointRows.splice(breakPointRows.indexOf(row), 1);
+                window.parent.clearBreakPoint(row);   // need to implement
+            } else {
+                e.editor.session.setBreakpoint(row);
+                breakPointRows.push(row);
+                window.parent.setBreakPoint(row);   // need to implement
+            }
+            e.stop();
+        });
+
+        function format(userOpts) {
+            var input = editor.getValue();
+            var defaultOpts = {
+                'indent_size': 2,
+                'brace_style': 'none'
+            };
+            var opts = (typeof userOpts === 'undefined') ? defaultOpts : userOpts;
+            editor.getSession().doc.setValue(js_beautify(input, opts));
+        }
+
+        document.addEventListener('keydown', function (e) {
+            // key bind
+            if (e.ctrlKey && e.keyCode === 83) { // key = [S] (83)
+                console.log('Ctrl+S!');
+                format();
+                e.preventDefault();
+                return false;
+            }
+
+            if (e.ctrlKey && e.shiftKey && e.keyCode === 70) { // key = [F] (70)
+                format();
+                e.preventDefault();
+                return false;
+            }
+        });
+
+    </script>
 </body>
+
 </html>
